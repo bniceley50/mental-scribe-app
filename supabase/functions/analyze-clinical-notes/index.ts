@@ -138,6 +138,19 @@ serve(async (req) => {
 
     const { notes, action, file_content, conversation_history }: AnalysisRequest = await req.json();
 
+    // Audit log the AI analysis request
+    const ipAddress = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
+    const userAgent = req.headers.get("user-agent") || "unknown";
+    
+    await supabase.from('audit_logs').insert({
+      user_id: user.id,
+      action: 'ai_analysis_request',
+      resource_type: 'clinical_notes',
+      metadata: { action, notes_length: notes?.length || 0, has_file: !!file_content },
+      ip_address: ipAddress,
+      user_agent: userAgent
+    });
+
     if (!notes && !file_content) {
       throw new Error("Either notes or file_content is required");
     }

@@ -25,6 +25,38 @@ const Index = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Session timeout monitoring (30 minutes of inactivity)
+  useEffect(() => {
+    const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+    let timeoutId: NodeJS.Timeout;
+
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          await supabase.auth.signOut();
+          navigate("/auth");
+        }
+      }, SESSION_TIMEOUT);
+    };
+
+    // Reset timer on user activity
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+    events.forEach(event => {
+      document.addEventListener(event, resetTimer);
+    });
+
+    resetTimer();
+
+    return () => {
+      clearTimeout(timeoutId);
+      events.forEach(event => {
+        document.removeEventListener(event, resetTimer);
+      });
+    };
+  }, [navigate]);
+
   return (
     <>
       <WelcomeGuide />

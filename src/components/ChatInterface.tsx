@@ -1,23 +1,70 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Send, FileText, Sparkles } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Send, FileText, Sparkles, Upload, Clock, FileUp } from "lucide-react";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+
+interface Message {
+  id: string;
+  type: "user" | "assistant";
+  content: string;
+  timestamp: Date;
+}
 
 const ChatInterface = () => {
   const [input, setInput] = useState("");
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: "welcome",
+      type: "assistant",
+      content:
+        "Hello! I'm your ClinicalAI Assistant. I can help you:\n\n• Generate comprehensive SOAP notes from your session observations\n• Create detailed session summaries\n• Extract key clinical points\n• Develop progress reports\n\nSimply paste your session notes below, upload a file, or use one of the quick actions to get started.",
+      timestamp: new Date(),
+    },
+  ]);
   const [loading, setLoading] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim()) return;
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
+  const handleSubmit = async (customPrompt?: string) => {
+    const messageContent = customPrompt || input.trim();
+    if (!messageContent) return;
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      type: "user",
+      content: messageContent,
+      timestamp: new Date(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInput("");
     setLoading(true);
+
+    setTimeout(scrollToBottom, 100);
+
     try {
       // TODO: Integrate with OpenAI API via edge function
-      toast.info("AI analysis coming soon!");
-      console.log("Analyzing notes:", input);
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      const aiMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: "assistant",
+        content:
+          "I've analyzed your notes. Here's a comprehensive clinical documentation:\n\n**SOAP Note:**\n\nSubjective: [Analysis coming soon]\n\nObjective: [Analysis coming soon]\n\nAssessment: [Analysis coming soon]\n\nPlan: [Analysis coming soon]",
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, aiMessage]);
+      toast.success("Analysis complete!");
+      setTimeout(scrollToBottom, 100);
     } catch (error) {
       toast.error("Failed to analyze notes");
     } finally {
@@ -25,78 +72,249 @@ const ChatInterface = () => {
     }
   };
 
+  const handleQuickAction = (action: string) => {
+    const prompts: Record<string, string> = {
+      soap: "Please generate a detailed SOAP note based on the session information provided.",
+      summary: "Create a comprehensive session summary highlighting key therapeutic moments and client progress.",
+      keypoints: "Extract and organize the most clinically significant points from this session.",
+      progress: "Generate a detailed progress report documenting therapeutic gains and areas for continued focus.",
+    };
+    handleSubmit(prompts[action]);
+  };
+
+  const handleFileUpload = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    if (file.type !== "text/plain" && !file.name.endsWith(".txt")) {
+      toast.error("Please upload a text file (.txt)");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const content = e.target?.result as string;
+      setInput(content);
+      toast.success("File loaded successfully");
+    };
+    reader.readAsText(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragging(false);
+    handleFileUpload(e.dataTransfer.files);
+  };
+
+  const formatTime = (date: Date) => {
+    return date.toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
   return (
-    <div className="space-y-6">
-      <Card className="shadow-md border-border/50 bg-card/80 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="w-5 h-5 text-primary" />
-            Session Notes Input
-          </CardTitle>
-          <CardDescription>
-            Paste your patient session notes below to generate clinical documentation
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Enter your session notes here...&#10;&#10;Include patient observations, session content, interventions used, and any notable behavioral or emotional changes..."
-              className="min-h-[300px] resize-y transition-all focus:shadow-md"
-              disabled={loading}
-            />
-            <div className="flex justify-end gap-3">
+    <div className="space-y-4">
+      {/* Messages Display */}
+      <Card className="h-[500px] overflow-y-auto p-6 shadow-md border-border/50 bg-card/80 backdrop-blur-sm">
+        <div className="space-y-4">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={cn(
+                "flex w-full animate-fade-in",
+                message.type === "user" ? "justify-end" : "justify-start"
+              )}
+            >
+              <div
+                className={cn(
+                  "max-w-[80%] rounded-lg px-4 py-3 shadow-sm transition-all",
+                  message.type === "user"
+                    ? "bg-primary/10 text-foreground border border-primary/20"
+                    : "bg-card text-foreground border border-border"
+                )}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  {message.type === "assistant" && (
+                    <Sparkles className="w-4 h-4 text-accent" />
+                  )}
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {formatTime(message.timestamp)}
+                  </span>
+                </div>
+                <p className="whitespace-pre-wrap text-sm leading-relaxed">
+                  {message.content}
+                </p>
+              </div>
+            </div>
+          ))}
+
+          {loading && (
+            <div className="flex justify-start animate-fade-in">
+              <div className="max-w-[80%] rounded-lg px-4 py-3 bg-card border border-border shadow-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Sparkles className="w-4 h-4 text-accent animate-pulse" />
+                  <span className="text-sm">Analyzing notes</span>
+                  <span className="flex gap-1">
+                    <span className="animate-bounce" style={{ animationDelay: "0ms" }}>.</span>
+                    <span className="animate-bounce" style={{ animationDelay: "150ms" }}>.</span>
+                    <span className="animate-bounce" style={{ animationDelay: "300ms" }}>.</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div ref={messagesEndRef} />
+        </div>
+      </Card>
+
+      {/* Quick Actions */}
+      <Card className="p-4 shadow-sm border-border/50 bg-card/80 backdrop-blur-sm">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="w-4 h-4 text-accent" />
+          <span className="text-sm font-medium text-foreground">Quick Actions</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleQuickAction("soap")}
+            disabled={loading}
+            className="transition-all hover:bg-primary/10 hover:border-primary/30"
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            SOAP Note
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleQuickAction("summary")}
+            disabled={loading}
+            className="transition-all hover:bg-primary/10 hover:border-primary/30"
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Session Summary
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleQuickAction("keypoints")}
+            disabled={loading}
+            className="transition-all hover:bg-primary/10 hover:border-primary/30"
+          >
+            <Sparkles className="w-4 h-4 mr-2" />
+            Key Points
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleQuickAction("progress")}
+            disabled={loading}
+            className="transition-all hover:bg-primary/10 hover:border-primary/30"
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            Progress Report
+          </Button>
+        </div>
+      </Card>
+
+      {/* Input Area */}
+      <Card
+        className={cn(
+          "p-4 shadow-md border-border/50 bg-card/80 backdrop-blur-sm transition-all",
+          isDragging && "border-primary border-2 bg-primary/5"
+        )}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+      >
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <FileUp className="w-4 h-4" />
+            <span>Type your notes below or drag & drop a text file</span>
+          </div>
+
+          <Textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Enter your session notes here...&#10;&#10;Include patient observations, session content, interventions used, and any notable behavioral or emotional changes..."
+            className="min-h-[120px] resize-y transition-all focus:shadow-md"
+            disabled={loading}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && e.ctrlKey) {
+                handleSubmit();
+              }
+            }}
+          />
+
+          <div className="flex justify-between items-center">
+            <div className="flex gap-2">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".txt"
+                className="hidden"
+                onChange={(e) => handleFileUpload(e.target.files)}
+              />
               <Button
                 type="button"
                 variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading}
+                className="transition-all"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Upload File
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
                 onClick={() => setInput("")}
                 disabled={loading || !input}
                 className="transition-all"
               >
                 Clear
               </Button>
-              <Button
-                type="submit"
-                disabled={loading || !input.trim()}
-                className="bg-primary hover:bg-primary/90 transition-all shadow-sm"
-              >
-                {loading ? (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4 mr-2" />
-                    Generate Documentation
-                  </>
-                )}
-              </Button>
             </div>
-          </form>
-        </CardContent>
-      </Card>
 
-      <Card className="shadow-md border-border/50 bg-card/80 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-accent" />
-            AI-Generated Output
-          </CardTitle>
-          <CardDescription>
-            SOAP notes and clinical summary will appear here
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="min-h-[200px] p-6 rounded-lg bg-muted/50 border border-border text-center flex items-center justify-center">
-            <div className="text-muted-foreground">
-              <Sparkles className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>Generated documentation will appear here</p>
-              <p className="text-sm mt-2">Enter your session notes above to get started</p>
-            </div>
+            <Button
+              onClick={() => handleSubmit()}
+              disabled={loading || !input.trim()}
+              className="bg-primary hover:bg-primary/90 transition-all shadow-sm"
+            >
+              {loading ? (
+                <>
+                  <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Analyze Notes
+                </>
+              )}
+            </Button>
           </div>
-        </CardContent>
+
+          <p className="text-xs text-muted-foreground text-center">
+            Press Ctrl+Enter to submit • Supports .txt files
+          </p>
+        </div>
       </Card>
     </div>
   );

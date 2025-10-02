@@ -25,12 +25,11 @@ const Index = () => {
 
   return (
     <Layout>
-      <div className="max-w-5xl mx-auto">
-        <div className="mb-8 text-center">
-          <h2 className="text-3xl font-semibold text-foreground mb-3">Clinical Note Analysis</h2>
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-6 text-center">
+          <h2 className="text-3xl font-semibold text-foreground mb-2">Clinical Note Analysis</h2>
           <p className="text-muted-foreground max-w-2xl mx-auto">
-            Transform your session notes into professional SOAP notes and clinical summaries
-            using AI-powered analysis
+            Transform your session notes into professional clinical documentation using AI
           </p>
         </div>
         <ChatInterface />

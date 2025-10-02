@@ -2,13 +2,14 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Send, FileText, Sparkles, Clock, Paperclip } from "lucide-react";
+import { Send, FileText, Sparkles, Clock, Paperclip, StopCircle } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useMessages, Message as DBMessage } from "@/hooks/useMessages";
 import { useConversations } from "@/hooks/useConversations";
 import { FileDropZone } from "./FileDropZone";
 import { FilePreview } from "./FilePreview";
+import { MessageActions, StreamingMessage } from "./MessageActions";
 import {
   extractTextFromFile,
   uploadFileToStorage,
@@ -36,6 +37,9 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
   const [loading, setLoading] = useState(false);
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [showFileUpload, setShowFileUpload] = useState(false);
+  const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [lastUserMessage, setLastUserMessage] = useState<string>("");
+  const [lastAction, setLastAction] = useState<string>("session_summary");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { messages: dbMessages, addMessage } = useMessages(conversationId);
@@ -91,6 +95,10 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     const messageContent = customPrompt || input.trim();
     if (!messageContent) return;
 
+    // Store for regeneration
+    setLastUserMessage(messageContent);
+    setLastAction(customAction || "session_summary");
+
     let currentConversationId = conversationId;
 
     // Create new conversation if none exists
@@ -112,6 +120,10 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
 
     setInput("");
     setLoading(true);
+
+    // Create abort controller for stopping generation
+    const controller = new AbortController();
+    setAbortController(controller);
 
     // Determine action type
     const action = customAction || "session_summary";
@@ -157,11 +169,18 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
           );
           
           setLoading(false);
+          setAbortController(null);
           toast.success("Analysis complete!");
         },
         onError: (error) => {
           console.error("Streaming error:", error);
-          toast.error(error);
+          
+          // Check if it was user-initiated abort
+          if (controller.signal.aborted) {
+            toast.info("Generation stopped");
+          } else {
+            toast.error(error);
+          }
           
           // Remove the temporary streaming message
           setDisplayMessages((prev) =>
@@ -169,7 +188,13 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
           );
           
           setLoading(false);
+          setAbortController(null);
         },
+      });
+
+      // Handle abort signal
+      controller.signal.addEventListener("abort", () => {
+        // The onError callback will handle cleanup
       });
     } catch (error: any) {
       console.error("Error during analysis:", error);
@@ -181,6 +206,21 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       );
       
       setLoading(false);
+      setAbortController(null);
+    }
+  };
+
+  const handleStopGeneration = () => {
+    if (abortController) {
+      abortController.abort();
+      setAbortController(null);
+      setLoading(false);
+    }
+  };
+
+  const handleRegenerate = () => {
+    if (lastUserMessage) {
+      handleSubmit(lastUserMessage, lastAction);
     }
   };
 
@@ -285,49 +325,48 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
             <div
               key={message.id}
               className={cn(
-                "flex w-full animate-fade-in",
+                "flex w-full",
                 message.role === "user" ? "justify-end" : "justify-start"
               )}
             >
               <div
                 className={cn(
-                  "max-w-[80%] rounded-lg px-4 py-3 shadow-sm transition-all",
+                  "max-w-[85%] rounded-lg px-4 py-3 shadow-sm transition-all animate-fade-in",
                   message.role === "user"
                     ? "bg-primary/10 text-foreground border border-primary/20"
                     : "bg-card text-foreground border border-border"
                 )}
               >
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-2">
                   {message.role === "assistant" && (
-                    <Sparkles className="w-4 h-4 text-accent" />
+                    <Sparkles className="w-4 h-4 text-accent flex-shrink-0" />
                   )}
                   <span className="text-xs text-muted-foreground flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     {formatTime(message.created_at)}
                   </span>
                 </div>
-                <p className="whitespace-pre-wrap text-sm leading-relaxed">
-                  {message.content}
-                </p>
+
+                {message.role === "assistant" ? (
+                  <>
+                    <StreamingMessage
+                      content={message.content}
+                      isStreaming={message.isStreaming || false}
+                    />
+                    <MessageActions
+                      content={message.content}
+                      isStreaming={message.isStreaming}
+                      onRegenerate={message.isStreaming ? undefined : handleRegenerate}
+                    />
+                  </>
+                ) : (
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap">
+                    {message.content}
+                  </p>
+                )}
               </div>
             </div>
           ))}
-
-          {loading && (
-            <div className="flex justify-start animate-fade-in">
-              <div className="max-w-[80%] rounded-lg px-4 py-3 bg-card border border-border shadow-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Sparkles className="w-4 h-4 text-accent animate-pulse" />
-                  <span className="text-sm">Analyzing notes</span>
-                  <span className="flex gap-1">
-                    <span className="animate-bounce" style={{ animationDelay: "0ms" }}>.</span>
-                    <span className="animate-bounce" style={{ animationDelay: "150ms" }}>.</span>
-                    <span className="animate-bounce" style={{ animationDelay: "300ms" }}>.</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
 
           <div ref={messagesEndRef} />
         </div>
@@ -464,6 +503,18 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
                 </>
               )}
             </Button>
+
+            {loading && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleStopGeneration}
+                className="ml-2"
+              >
+                <StopCircle className="w-4 h-4 mr-2" />
+                Stop
+              </Button>
+            )}
           </div>
 
           <p className="text-xs text-muted-foreground text-center">

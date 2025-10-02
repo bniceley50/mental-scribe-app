@@ -1,12 +1,46 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 10;
+const userRequestCounts = new Map<string, { count: number; resetTime: number }>();
+
+// Allowed origins for CORS
+const allowedOrigins = [
+  "https://mental-scribe-app.lovable.app",
+  "http://localhost:5173",
+  "http://localhost:8080",
+];
+
+const getCorsHeaders = (origin: string | null) => {
+  const isAllowed = origin && allowedOrigins.includes(origin);
+  return {
+    "Access-Control-Allow-Origin": isAllowed ? origin : allowedOrigins[0],
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Credentials": "true",
+  };
 };
+
+function checkRateLimit(userId: string): boolean {
+  const now = Date.now();
+  const userLimit = userRequestCounts.get(userId);
+
+  if (!userLimit || now > userLimit.resetTime) {
+    userRequestCounts.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+
+  if (userLimit.count >= MAX_REQUESTS_PER_WINDOW) {
+    return false;
+  }
+
+  userLimit.count++;
+  return true;
+}
 
 interface AnalysisRequest {
   notes: string;
@@ -58,6 +92,9 @@ Be thorough and professional.`,
 };
 
 serve(async (req) => {
+  const origin = req.headers.get("origin");
+  const corsHeaders = getCorsHeaders(origin);
+
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -66,6 +103,37 @@ serve(async (req) => {
   try {
     if (!openAIApiKey) {
       throw new Error("OpenAI API key is not configured");
+    }
+
+    // Authenticate user
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Authentication required" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabase = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Check rate limit
+    if (!checkRateLimit(user.id)) {
+      return new Response(
+        JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const { notes, action, file_content, conversation_history }: AnalysisRequest = await req.json();
@@ -132,10 +200,22 @@ serve(async (req) => {
 
   } catch (error: any) {
     console.error("Error in analyze-clinical-notes function:", error);
+    
+    // Sanitize error messages for security
+    let userMessage = "An error occurred during analysis";
+    if (error.message?.includes("API key")) {
+      userMessage = "Service configuration error. Please contact support.";
+    } else if (error.message?.includes("OpenAI") || error.message?.includes("rate limit")) {
+      userMessage = "AI service temporarily unavailable. Please try again.";
+    } else if (error.message?.includes("Authentication") || error.message?.includes("Unauthorized")) {
+      userMessage = "Authentication error. Please sign in again.";
+    }
+
+    const origin = req.headers.get("origin");
+    const corsHeaders = getCorsHeaders(origin);
+    
     return new Response(
-      JSON.stringify({ 
-        error: error.message || "An error occurred during analysis"
-      }),
+      JSON.stringify({ error: userMessage }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },

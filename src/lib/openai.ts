@@ -1,5 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
 
+const MAX_NOTE_LENGTH = 50000; // ~10,000 words
+const MAX_FILE_LENGTH = 100000;
+
 interface AnalyzeNotesParams {
   notes: string;
   action: "soap_note" | "session_summary" | "key_points" | "progress_report";
@@ -20,6 +23,21 @@ export const analyzeNotesStreaming = async ({
   onError,
 }: AnalyzeNotesParams) => {
   try {
+    // Validate input lengths
+    if (notes.length > MAX_NOTE_LENGTH) {
+      onError("Clinical note is too long. Please limit to 10,000 words.");
+      return;
+    }
+
+    if (fileContent && fileContent.length > MAX_FILE_LENGTH) {
+      onError("Uploaded file content is too long. Please use smaller files.");
+      return;
+    }
+
+    // Sanitize notes - remove potentially harmful content
+    const sanitizedNotes = notes.trim();
+    const sanitizedFile = fileContent?.trim();
+
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       throw new Error("User not authenticated");
@@ -34,9 +52,9 @@ export const analyzeNotesStreaming = async ({
           "Authorization": `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
-          notes,
+          notes: sanitizedNotes,
           action,
-          file_content: fileContent,
+          file_content: sanitizedFile,
           conversation_history: conversationHistory,
         }),
       }

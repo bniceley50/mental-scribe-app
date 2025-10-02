@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Send, FileText, Sparkles, Clock, Paperclip, StopCircle } from "lucide-react";
+import { Send, FileText, Sparkles, Clock, Paperclip, StopCircle, Download, Copy, Trash2 } from "lucide-react";
 import { toast as showToast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useMessages, Message as DBMessage } from "@/hooks/useMessages";
@@ -18,6 +18,24 @@ import {
   deleteFile,
 } from "@/lib/fileUpload";
 import { analyzeNotesStreaming } from "@/lib/openai";
+import { exportConversationToPDF, exportConversationToText, copyConversationToClipboard } from "@/lib/exportUtils";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface UploadedFile {
   id: string;
@@ -40,10 +58,12 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [lastUserMessage, setLastUserMessage] = useState<string>("");
   const [lastAction, setLastAction] = useState<string>("session_summary");
+  const [clearDialogOpen, setClearDialogOpen] = useState(false);
+  const [conversationTitle, setConversationTitle] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { messages: dbMessages, addMessage } = useMessages(conversationId);
-  const { createConversation } = useConversations();
+  const { createConversation, conversations } = useConversations();
 
   const [displayMessages, setDisplayMessages] = useState<Array<DBMessage & { isStreaming?: boolean }>>([]);
 
@@ -75,10 +95,16 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
   useEffect(() => {
     if (conversationId) {
       loadConversationFiles();
+      // Load conversation title
+      const conversation = conversations.find((c) => c.id === conversationId);
+      if (conversation) {
+        setConversationTitle(conversation.title);
+      }
     } else {
       setUploadedFiles([]);
+      setConversationTitle("");
     }
-  }, [conversationId]);
+  }, [conversationId, conversations]);
 
   const loadConversationFiles = async () => {
     if (!conversationId) return;
@@ -307,6 +333,42 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     handleSubmit(prompt, "session_summary");
   };
 
+  const handleClearConversation = () => {
+    setClearDialogOpen(true);
+  };
+
+  const handleConfirmClear = () => {
+    if (onConversationCreated) {
+      onConversationCreated("");
+    }
+    setClearDialogOpen(false);
+    showToast.success("Started new conversation");
+  };
+
+  const handleExportPDF = async () => {
+    if (!conversationId) {
+      showToast.error("No conversation to export");
+      return;
+    }
+    await exportConversationToPDF(conversationId, conversationTitle || "Conversation");
+  };
+
+  const handleExportText = async () => {
+    if (!conversationId) {
+      showToast.error("No conversation to export");
+      return;
+    }
+    await exportConversationToText(conversationId, conversationTitle || "Conversation");
+  };
+
+  const handleCopyToClipboard = async () => {
+    if (!conversationId) {
+      showToast.error("No conversation to copy");
+      return;
+    }
+    await copyConversationToClipboard(conversationId, conversationTitle || "Conversation");
+  };
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString("en-US", {
@@ -318,6 +380,48 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
 
   return (
     <div className="space-y-4">
+      {/* Conversation Actions */}
+      {conversationId && displayMessages.length > 1 && (
+        <div className="flex justify-between items-center">
+          <h3 className="text-lg font-medium text-foreground">{conversationTitle}</h3>
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportPDF}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Download as PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportText}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Download as Text
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleCopyToClipboard}>
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copy to Clipboard
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleClearConversation}
+              className="hover:bg-destructive/10 hover:text-destructive"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Clear Conversation
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Messages Display */}
       <Card className="h-[500px] overflow-y-auto p-6 shadow-md border-border/50 bg-card/80 backdrop-blur-sm">
         <div className="space-y-4">
@@ -522,6 +626,25 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
           </p>
         </div>
       </Card>
+
+      {/* Clear Conversation Dialog */}
+      <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear Conversation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will start a new conversation. Your current conversation will be saved in the
+              history sidebar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmClear}>
+              Start New Conversation
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

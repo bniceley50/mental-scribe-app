@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast as showToast } from "sonner";
 import { ConversationSidebar } from "./ConversationSidebar";
+import { PrivacyFooter } from "./PrivacyFooter";
 
 interface LayoutProps {
   children: ReactNode;
@@ -42,12 +43,12 @@ const Layout = ({ children, currentConversationId, onConversationSelect }: Layou
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50" role="banner">
         <div className="flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center" aria-hidden="true">
               <Brain className="w-6 h-6 text-white" />
             </div>
             <h1 className="text-xl font-semibold text-foreground">ClinicalAI Assistant</h1>
@@ -57,6 +58,7 @@ const Layout = ({ children, currentConversationId, onConversationSelect }: Layou
             size="sm"
             onClick={handleLogout}
             className="text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Logout"
           >
             <LogOut className="w-4 h-4 mr-2" />
             Logout
@@ -64,10 +66,11 @@ const Layout = ({ children, currentConversationId, onConversationSelect }: Layou
         </div>
       </header>
 
-      <div className="flex">
+      <div className="flex flex-1"
+        role="main">
         {/* Sidebar */}
-        <aside className="w-80 min-h-[calc(100vh-73px)] border-r border-border bg-card/30 backdrop-blur-sm flex flex-col">
-          <nav className="p-4 space-y-2 border-b border-border">
+        <aside className="w-80 border-r border-border bg-card/30 backdrop-blur-sm flex flex-col" role="complementary" aria-label="Navigation and conversations">
+          <nav className="p-4 space-y-2 border-b border-border" aria-label="Main navigation">
             {navItems.map((item) => {
               const Icon = item.icon;
               return (
@@ -99,9 +102,12 @@ const Layout = ({ children, currentConversationId, onConversationSelect }: Layou
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-8 bg-gradient-to-b from-background to-secondary/20">
-          {children}
-        </main>
+        <div className="flex-1 flex flex-col">
+          <main className="flex-1 p-8 bg-gradient-to-b from-background to-secondary/20">
+            {children}
+          </main>
+          <PrivacyFooter />
+        </div>
       </div>
     </div>
   );

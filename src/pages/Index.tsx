@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import ChatInterface from "@/components/ChatInterface";
+import { WelcomeGuide } from "@/components/WelcomeGuide";
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
@@ -25,10 +26,12 @@ const Index = () => {
   }, [navigate]);
 
   return (
-    <Layout 
-      currentConversationId={currentConversationId}
-      onConversationSelect={(id) => setCurrentConversationId(id)}
-    >
+    <>
+      <WelcomeGuide />
+      <Layout 
+        currentConversationId={currentConversationId}
+        onConversationSelect={(id) => setCurrentConversationId(id)}
+      >
       <div className="max-w-6xl mx-auto">
         <div className="mb-6 text-center">
           <h2 className="text-3xl font-semibold text-foreground mb-2">Clinical Note Analysis</h2>
@@ -42,6 +45,7 @@ const Index = () => {
         />
       </div>
     </Layout>
+    </>
   );
 };
 

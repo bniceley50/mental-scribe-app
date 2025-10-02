@@ -2,7 +2,9 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Send, FileText, Sparkles, Clock, Paperclip, StopCircle, Download, Copy, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Send, FileText, Sparkles, Clock, Paperclip, StopCircle, Download, Copy, Trash2, BookTemplate, Save } from "lucide-react";
 import { toast as showToast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useMessages, Message as DBMessage } from "@/hooks/useMessages";
@@ -10,6 +12,8 @@ import { useConversations } from "@/hooks/useConversations";
 import { FileDropZone } from "./FileDropZone";
 import { FilePreview } from "./FilePreview";
 import { MessageActions, StreamingMessage } from "./MessageActions";
+import { ExamplePrompts } from "./ExamplePrompts";
+import { NoteTemplates } from "./NoteTemplates";
 import {
   extractTextFromFile,
   uploadFileToStorage,
@@ -60,12 +64,37 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
   const [lastAction, setLastAction] = useState<string>("session_summary");
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [conversationTitle, setConversationTitle] = useState<string>("");
+  const [draftSaveTimeout, setDraftSaveTimeout] = useState<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { messages: dbMessages, addMessage } = useMessages(conversationId);
   const { createConversation, conversations } = useConversations();
 
   const [displayMessages, setDisplayMessages] = useState<Array<DBMessage & { isStreaming?: boolean }>>([]);
+
+  // Auto-save draft
+  useEffect(() => {
+    if (input && !conversationId) {
+      if (draftSaveTimeout) clearTimeout(draftSaveTimeout);
+      const timeout = setTimeout(() => {
+        localStorage.setItem("clinicalai_draft", input);
+      }, 1000);
+      setDraftSaveTimeout(timeout);
+    }
+    return () => {
+      if (draftSaveTimeout) clearTimeout(draftSaveTimeout);
+    };
+  }, [input, conversationId]);
+
+  // Load draft on mount
+  useEffect(() => {
+    if (!conversationId) {
+      const draft = localStorage.getItem("clinicalai_draft");
+      if (draft) {
+        setInput(draft);
+      }
+    }
+  }, [conversationId]);
 
   useEffect(() => {
     if (dbMessages.length === 0 && !conversationId) {
@@ -369,6 +398,20 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     await copyConversationToClipboard(conversationId, conversationTitle || "Conversation");
   };
 
+  const handleSelectExample = (example: string) => {
+    setInput(example);
+    localStorage.removeItem("clinicalai_draft");
+  };
+
+  const handleSelectTemplate = (template: string) => {
+    setInput(template);
+    localStorage.removeItem("clinicalai_draft");
+  };
+
+  const wordCount = input.trim().split(/\s+/).filter(Boolean).length;
+  const charCount = input.length;
+  const estimatedTime = wordCount > 0 ? Math.max(5, Math.ceil(wordCount / 50)) : 0;
+
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleTimeString("en-US", {
@@ -476,53 +519,114 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         </div>
       </Card>
 
+      {/* Disclaimer */}
+      {displayMessages.some((m) => m.role === "assistant") && (
+        <Card className="p-3 bg-amber-500/5 border-amber-500/20">
+          <p className="text-xs text-muted-foreground text-center">
+            ⚠️ <strong>Professional Review Required:</strong> All AI-generated clinical documentation
+            must be reviewed and verified by a qualified healthcare professional before use.
+          </p>
+        </Card>
+      )}
+
       {/* Quick Actions */}
       <Card className="p-4 shadow-sm border-border/50 bg-card/80 backdrop-blur-sm">
-        <div className="flex items-center gap-2 mb-2">
-          <Sparkles className="w-4 h-4 text-accent" />
-          <span className="text-sm font-medium text-foreground">Quick Actions</span>
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-accent" />
+            <span className="text-sm font-medium text-foreground">Quick Actions</span>
+          </div>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <NoteTemplates onSelectTemplate={handleSelectTemplate} />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Access pre-formatted note templates</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleQuickAction("soap")}
-            disabled={loading}
-            className="transition-all hover:bg-primary/10 hover:border-primary/30"
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            SOAP Note
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleQuickAction("summary")}
-            disabled={loading}
-            className="transition-all hover:bg-primary/10 hover:border-primary/30"
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            Session Summary
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleQuickAction("keypoints")}
-            disabled={loading}
-            className="transition-all hover:bg-primary/10 hover:border-primary/30"
-          >
-            <Sparkles className="w-4 h-4 mr-2" />
-            Key Points
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => handleQuickAction("progress")}
-            disabled={loading}
-            className="transition-all hover:bg-primary/10 hover:border-primary/30"
-          >
-            <FileText className="w-4 h-4 mr-2" />
-            Progress Report
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickAction("soap")}
+                  disabled={loading}
+                  className="transition-all hover:bg-primary/10 hover:border-primary/30"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  SOAP Note
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Generate structured SOAP note</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickAction("summary")}
+                  disabled={loading}
+                  className="transition-all hover:bg-primary/10 hover:border-primary/30"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Session Summary
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Create comprehensive session summary</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickAction("keypoints")}
+                  disabled={loading}
+                  className="transition-all hover:bg-primary/10 hover:border-primary/30"
+                >
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Key Points
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Extract key clinical insights</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickAction("progress")}
+                  disabled={loading}
+                  className="transition-all hover:bg-primary/10 hover:border-primary/30"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Progress Report
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Generate detailed progress report</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </Card>
 
@@ -552,6 +656,11 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       {/* Input Area */}
       <Card className="p-4 shadow-md border-border/50 bg-card/80 backdrop-blur-sm">
         <div className="space-y-3">
+          {/* Example Prompts - Show when no conversation exists */}
+          {!conversationId && displayMessages.length <= 1 && (
+            <ExamplePrompts onSelectExample={handleSelectExample} disabled={loading} />
+          )}
+
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -564,6 +673,41 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
               }
             }}
           />
+
+          {/* Character/Word Count and Estimated Time */}
+          {input && (
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="flex items-center gap-4">
+                <span>{charCount} characters</span>
+                <span>•</span>
+                <span>{wordCount} words</span>
+                {estimatedTime > 0 && (
+                  <>
+                    <span>•</span>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            ~{estimatedTime}s processing time
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Estimated time based on content length</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </>
+                )}
+              </div>
+              {!conversationId && (
+                <Badge variant="secondary" className="text-xs">
+                  <Save className="w-3 h-3 mr-1" />
+                  Draft auto-saved
+                </Badge>
+              )}
+            </div>
+          )}
 
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
@@ -621,8 +765,9 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
             )}
           </div>
 
-          <p className="text-xs text-muted-foreground text-center">
-            Press Ctrl+Enter to submit • Upload PDF or text documents
+          <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-2">
+            <kbd className="px-2 py-0.5 bg-secondary rounded text-xs">Ctrl+Enter</kbd>
+            to submit • Upload PDF or text documents for analysis
           </p>
         </div>
       </Card>

@@ -31,7 +31,7 @@ export const ConversationSidebar = ({
   onConversationSelect,
   onNewConversation,
 }: ConversationSidebarProps) => {
-  const { conversations, loading, deleteConversation } = useConversations();
+  const { conversations, loading, deleteConversation, hasMore, loadMore } = useConversations();
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
@@ -205,12 +205,29 @@ export const ConversationSidebar = ({
               <p className="text-xs mt-1">Start a new conversation to get started</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              <ConversationGroup title="Today" conversations={groupedConversations.today} />
-              <ConversationGroup title="Yesterday" conversations={groupedConversations.yesterday} />
-              <ConversationGroup title="This Week" conversations={groupedConversations.thisWeek} />
-              <ConversationGroup title="Older" conversations={groupedConversations.older} />
-            </div>
+            <>
+              <div className="space-y-2">
+                <ConversationGroup title="Today" conversations={groupedConversations.today} />
+                <ConversationGroup title="Yesterday" conversations={groupedConversations.yesterday} />
+                <ConversationGroup title="This Week" conversations={groupedConversations.thisWeek} />
+                <ConversationGroup title="Older" conversations={groupedConversations.older} />
+              </div>
+              
+              {/* Load More Button */}
+              {hasMore && (
+                <div className="mt-4 px-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={loadMore}
+                    className="w-full"
+                    disabled={loading}
+                  >
+                    Load more conversations...
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </ScrollArea>
       </div>

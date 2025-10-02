@@ -12,22 +12,37 @@ interface Conversation {
 export const useConversations = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [limit] = useState(20);
 
-  const fetchConversations = async () => {
+  const fetchConversations = async (offset = 0) => {
     try {
-      const { data, error } = await supabase
+      const { data, error, count } = await supabase
         .from("conversations")
-        .select("id, title, created_at, updated_at")
+        .select("id, title, created_at, updated_at", { count: "exact" })
         .order("updated_at", { ascending: false })
-        .limit(20);
+        .range(offset, offset + limit - 1);
 
       if (error) throw error;
-      setConversations(data || []);
+      
+      if (offset === 0) {
+        setConversations(data || []);
+      } else {
+        setConversations((prev) => [...prev, ...(data || [])]);
+      }
+      
+      setHasMore((data?.length || 0) === limit);
     } catch (error: any) {
       console.error("Error fetching conversations:", error);
       toast.error("Failed to load conversation history");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMore = () => {
+    if (!loading && hasMore) {
+      fetchConversations(conversations.length);
     }
   };
 
@@ -97,8 +112,10 @@ export const useConversations = () => {
   return {
     conversations,
     loading,
+    hasMore,
     createConversation,
     deleteConversation,
     refreshConversations: fetchConversations,
+    loadMore,
   };
 };

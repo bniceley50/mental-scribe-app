@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Send, FileText, Sparkles, Clock, Paperclip, StopCircle } from "lucide-react";
-import { toast } from "sonner";
+import { toast as showToast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useMessages, Message as DBMessage } from "@/hooks/useMessages";
 import { useConversations } from "@/hooks/useConversations";
@@ -107,7 +107,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       currentConversationId = await createConversation(title);
       
       if (!currentConversationId) {
-        toast.error("Failed to create conversation");
+        showToast.error("Failed to create conversation");
         return;
       }
       
@@ -170,16 +170,16 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
           
           setLoading(false);
           setAbortController(null);
-          toast.success("Analysis complete!");
+          showToast.success("Analysis complete!");
         },
         onError: (error) => {
           console.error("Streaming error:", error);
           
           // Check if it was user-initiated abort
           if (controller.signal.aborted) {
-            toast.info("Generation stopped");
+            showToast.info("Generation stopped");
           } else {
-            toast.error(error);
+            showToast.error(error);
           }
           
           // Remove the temporary streaming message
@@ -198,7 +198,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       });
     } catch (error: any) {
       console.error("Error during analysis:", error);
-      toast.error("Failed to analyze notes");
+      showToast.error("Failed to analyze notes");
       
       // Remove the temporary streaming message
       setDisplayMessages((prev) =>
@@ -251,7 +251,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       currentConversationId = await createConversation(title);
       
       if (!currentConversationId) {
-        toast.error("Failed to create conversation");
+        showToast.error("Failed to create conversation");
         return;
       }
       
@@ -259,7 +259,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     }
 
     try {
-      toast.info("Processing file...");
+      showToast.info("Processing file...");
       
       // Extract text from file
       const extractedText = await extractTextFromFile(file);
@@ -281,13 +281,13 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       );
 
       if (fileId) {
-        toast.success("File uploaded successfully!");
+        showToast.success("File uploaded successfully!");
         await loadConversationFiles();
         setShowFileUpload(false);
       }
     } catch (error: any) {
       console.error("Error processing file:", error);
-      toast.error(error.message || "Failed to process file");
+      showToast.error(error.message || "Failed to process file");
     }
   };
 

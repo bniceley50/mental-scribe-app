@@ -66,6 +66,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
   const [conversationTitle, setConversationTitle] = useState<string>("");
   const [draftSaveTimeout, setDraftSaveTimeout] = useState<NodeJS.Timeout | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
   
   const { messages: dbMessages, addMessage } = useMessages(conversationId);
   const { createConversation, conversations } = useConversations();
@@ -656,7 +657,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       )}
 
       {/* Input Area */}
-      <Card className="p-4 shadow-md border-border/50 bg-card/80 backdrop-blur-sm">
+      <Card className="p-4 shadow-md border-border/50 bg-card/80 backdrop-blur-sm" onClick={() => inputRef.current?.focus()}>
         <div className="space-y-3">
           {/* Example Prompts - Show when no conversation exists */}
           {!conversationId && displayMessages.length <= 1 && (
@@ -664,6 +665,8 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
           )}
 
           <Textarea
+            ref={inputRef}
+            autoFocus
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Enter your session notes here...&#10;&#10;Include patient observations, session content, interventions used, and any notable behavioral or emotional changes..."

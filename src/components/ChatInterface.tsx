@@ -16,6 +16,7 @@ import {
   getConversationFiles,
   deleteFile,
 } from "@/lib/fileUpload";
+import { analyzeNotesStreaming } from "@/lib/openai";
 
 interface UploadedFile {
   id: string;
@@ -86,7 +87,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     return firstLine.length > 50 ? firstLine.substring(0, 50) + "..." : firstLine;
   };
 
-  const handleSubmit = async (customPrompt?: string) => {
+  const handleSubmit = async (customPrompt?: string, customAction?: string) => {
     const messageContent = customPrompt || input.trim();
     if (!messageContent) return;
 
@@ -112,32 +113,93 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     setInput("");
     setLoading(true);
 
+    // Determine action type
+    const action = customAction || "session_summary";
+
+    // Start streaming AI response
+    let aiResponse = "";
+    const streamingMessageId = `streaming-${Date.now()}`;
+    
+    // Add a temporary streaming message to display
+    setDisplayMessages((prev) => [
+      ...prev,
+      {
+        id: streamingMessageId,
+        role: "assistant",
+        content: "",
+        created_at: new Date().toISOString(),
+        isStreaming: true,
+      },
+    ]);
+
     try {
-      // TODO: Integrate with OpenAI API via edge function
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      const aiResponse =
-        "I've analyzed your notes. Here's a comprehensive clinical documentation:\n\n**SOAP Note:**\n\nSubjective: [Analysis coming soon]\n\nObjective: [Analysis coming soon]\n\nAssessment: [Analysis coming soon]\n\nPlan: [Analysis coming soon]";
-
-      // Save AI response to database
-      await addMessage("assistant", aiResponse);
-      
-      toast.success("Analysis complete!");
-    } catch (error) {
+      await analyzeNotesStreaming({
+        notes: messageContent,
+        action: action as any,
+        onChunk: (chunk) => {
+          aiResponse += chunk;
+          // Update the streaming message in real-time
+          setDisplayMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === streamingMessageId
+                ? { ...msg, content: aiResponse }
+                : msg
+            )
+          );
+        },
+        onComplete: async () => {
+          // Save complete AI response to database
+          await addMessage("assistant", aiResponse);
+          
+          // Remove the temporary streaming message (it will be replaced by the DB message)
+          setDisplayMessages((prev) =>
+            prev.filter((msg) => msg.id !== streamingMessageId)
+          );
+          
+          setLoading(false);
+          toast.success("Analysis complete!");
+        },
+        onError: (error) => {
+          console.error("Streaming error:", error);
+          toast.error(error);
+          
+          // Remove the temporary streaming message
+          setDisplayMessages((prev) =>
+            prev.filter((msg) => msg.id !== streamingMessageId)
+          );
+          
+          setLoading(false);
+        },
+      });
+    } catch (error: any) {
+      console.error("Error during analysis:", error);
       toast.error("Failed to analyze notes");
-    } finally {
+      
+      // Remove the temporary streaming message
+      setDisplayMessages((prev) =>
+        prev.filter((msg) => msg.id !== streamingMessageId)
+      );
+      
       setLoading(false);
     }
   };
 
   const handleQuickAction = (action: string) => {
+    const actionMap: Record<string, string> = {
+      soap: "soap_note",
+      summary: "session_summary",
+      keypoints: "key_points",
+      progress: "progress_report",
+    };
+
     const prompts: Record<string, string> = {
       soap: "Please generate a detailed SOAP note based on the session information provided.",
       summary: "Create a comprehensive session summary highlighting key therapeutic moments and client progress.",
       keypoints: "Extract and organize the most clinically significant points from this session.",
       progress: "Generate a detailed progress report documenting therapeutic gains and areas for continued focus.",
     };
-    handleSubmit(prompts[action]);
+
+    handleSubmit(prompts[action], actionMap[action]);
   };
 
   const handleFileSelect = async (file: File) => {
@@ -201,8 +263,8 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
   };
 
   const handleAnalyzeFile = (content: string, fileName: string) => {
-    const prompt = `Please analyze the following document content from "${fileName}":\n\n${content}`;
-    handleSubmit(prompt);
+    const prompt = `Please analyze the following document content from "${fileName}":\n\n${content.substring(0, 3000)}${content.length > 3000 ? "..." : ""}`;
+    handleSubmit(prompt, "session_summary");
   };
 
   const formatTime = (dateString: string) => {

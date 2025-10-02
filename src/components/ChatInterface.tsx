@@ -2,11 +2,28 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Send, FileText, Sparkles, Upload, Clock, FileUp } from "lucide-react";
+import { Send, FileText, Sparkles, Clock, Paperclip } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useMessages, Message as DBMessage } from "@/hooks/useMessages";
 import { useConversations } from "@/hooks/useConversations";
+import { FileDropZone } from "./FileDropZone";
+import { FilePreview } from "./FilePreview";
+import {
+  extractTextFromFile,
+  uploadFileToStorage,
+  saveFileMetadata,
+  getConversationFiles,
+  deleteFile,
+} from "@/lib/fileUpload";
+
+interface UploadedFile {
+  id: string;
+  file_name: string;
+  file_type: string;
+  file_url: string;
+  processed_content: string;
+}
 
 interface ChatInterfaceProps {
   conversationId: string | null;
@@ -16,8 +33,8 @@ interface ChatInterfaceProps {
 const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceProps) => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [showFileUpload, setShowFileUpload] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   const { messages: dbMessages, addMessage } = useMessages(conversationId);
@@ -49,6 +66,20 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
   useEffect(() => {
     scrollToBottom();
   }, [displayMessages]);
+
+  useEffect(() => {
+    if (conversationId) {
+      loadConversationFiles();
+    } else {
+      setUploadedFiles([]);
+    }
+  }, [conversationId]);
+
+  const loadConversationFiles = async () => {
+    if (!conversationId) return;
+    const files = await getConversationFiles(conversationId);
+    setUploadedFiles(files);
+  };
 
   const generateTitle = (content: string): string => {
     const firstLine = content.split("\n")[0];
@@ -109,38 +140,69 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     handleSubmit(prompts[action]);
   };
 
-  const handleFileUpload = (files: FileList | null) => {
-    if (!files || files.length === 0) return;
+  const handleFileSelect = async (file: File) => {
+    let currentConversationId = conversationId;
 
-    const file = files[0];
-    if (file.type !== "text/plain" && !file.name.endsWith(".txt")) {
-      toast.error("Please upload a text file (.txt)");
-      return;
+    // Create conversation if none exists
+    if (!currentConversationId) {
+      const title = `Document Analysis: ${file.name}`;
+      currentConversationId = await createConversation(title);
+      
+      if (!currentConversationId) {
+        toast.error("Failed to create conversation");
+        return;
+      }
+      
+      onConversationCreated?.(currentConversationId);
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const content = e.target?.result as string;
-      setInput(content);
-      toast.success("File loaded successfully");
-    };
-    reader.readAsText(file);
+    try {
+      toast.info("Processing file...");
+      
+      // Extract text from file
+      const extractedText = await extractTextFromFile(file);
+      
+      // Upload file to storage
+      const uploadResult = await uploadFileToStorage(file, currentConversationId);
+      if (!uploadResult) return;
+
+      // Determine file type
+      const fileType = file.type === "application/pdf" ? "pdf" : "text";
+
+      // Save file metadata
+      const fileId = await saveFileMetadata(
+        currentConversationId,
+        file.name,
+        fileType,
+        uploadResult.url,
+        extractedText
+      );
+
+      if (fileId) {
+        toast.success("File uploaded successfully!");
+        await loadConversationFiles();
+        setShowFileUpload(false);
+      }
+    } catch (error: any) {
+      console.error("Error processing file:", error);
+      toast.error(error.message || "Failed to process file");
+    }
   };
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
+  const handleDeleteFile = async (fileId: string) => {
+    const file = uploadedFiles.find((f) => f.id === fileId);
+    if (!file) return;
+
+    const filePath = file.file_url.split("/clinical-documents/")[1];
+    const success = await deleteFile(fileId, filePath);
+    if (success) {
+      await loadConversationFiles();
+    }
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragging(false);
-    handleFileUpload(e.dataTransfer.files);
+  const handleAnalyzeFile = (content: string, fileName: string) => {
+    const prompt = `Please analyze the following document content from "${fileName}":\n\n${content}`;
+    handleSubmit(prompt);
   };
 
   const formatTime = (dateString: string) => {
@@ -259,22 +321,32 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         </div>
       </Card>
 
-      {/* Input Area */}
-      <Card
-        className={cn(
-          "p-4 shadow-md border-border/50 bg-card/80 backdrop-blur-sm transition-all",
-          isDragging && "border-primary border-2 bg-primary/5"
-        )}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-      >
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <FileUp className="w-4 h-4" />
-            <span>Type your notes below or drag & drop a text file</span>
-          </div>
+      {/* Uploaded Files */}
+      {uploadedFiles.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-foreground flex items-center gap-2">
+            <Paperclip className="w-4 h-4" />
+            Uploaded Documents ({uploadedFiles.length})
+          </p>
+          {uploadedFiles.map((file) => (
+            <FilePreview
+              key={file.id}
+              file={file}
+              onDelete={handleDeleteFile}
+              onAnalyze={handleAnalyzeFile}
+            />
+          ))}
+        </div>
+      )}
 
+      {/* File Upload Zone */}
+      {showFileUpload && (
+        <FileDropZone onFileSelect={handleFileSelect} disabled={loading} />
+      )}
+
+      {/* Input Area */}
+      <Card className="p-4 shadow-md border-border/50 bg-card/80 backdrop-blur-sm">
+        <div className="space-y-3">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -290,23 +362,16 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
 
           <div className="flex justify-between items-center">
             <div className="flex gap-2">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".txt"
-                className="hidden"
-                onChange={(e) => handleFileUpload(e.target.files)}
-              />
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => setShowFileUpload(!showFileUpload)}
                 disabled={loading}
                 className="transition-all"
               >
-                <Upload className="w-4 h-4 mr-2" />
-                Upload File
+                <Paperclip className="w-4 h-4 mr-2" />
+                {showFileUpload ? "Hide Upload" : "Upload Document"}
               </Button>
               <Button
                 type="button"
@@ -340,7 +405,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
           </div>
 
           <p className="text-xs text-muted-foreground text-center">
-            Press Ctrl+Enter to submit • Supports .txt files
+            Press Ctrl+Enter to submit • Upload PDF or text documents
           </p>
         </div>
       </Card>

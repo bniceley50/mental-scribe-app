@@ -1,8 +1,27 @@
-# Welcome to your Lovable project
+# Mental Scribe - Clinical Note Assistant
 
-## Project info
+A HIPAA-aware clinical documentation assistant powered by AI to help mental health professionals create structured clinical notes.
+
+## Project Info
 
 **URL**: https://lovable.dev/projects/b290dcd4-80b3-4d0e-a9ae-3d208a63c988
+
+## Features
+
+- **AI-Powered Note Generation**: Generate SOAP notes, progress reports, and session summaries
+- **Template Library**: Pre-built templates for various clinical documentation types
+- **Conversation History**: Save and manage multiple sessions
+- **Export Options**: Export notes as PDF, text, or copy to clipboard
+- **File Upload**: Upload and analyze session documents
+- **Security First**: Content sanitization, encrypted storage, end-to-end security
+
+## Tech Stack
+
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS
+- **UI Components**: shadcn/ui
+- **Backend**: Supabase (Database, Auth, Storage, Edge Functions)
+- **AI Integration**: OpenAI API via Supabase Edge Functions
+- **Testing**: Vitest, React Testing Library
 
 ## How can I edit this code?
 
@@ -60,6 +79,19 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
+## Testing
+
+```bash
+# Run tests
+npm test
+
+# Run tests with UI
+npm run test:ui
+
+# Run tests with coverage
+npm run test:coverage
+```
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/b290dcd4-80b3-4d0e-a9ae-3d208a63c988) and click on Share -> Publish.
@@ -71,3 +103,12 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+## Security & Privacy
+
+- **No PHI Storage**: This tool does not store Protected Health Information
+- **Content Sanitization**: All user inputs are sanitized to prevent XSS attacks
+- **Encrypted Storage**: Session data encrypted at rest
+- **HIPAA-Aware Design**: Built with healthcare privacy in mind
+
+⚠️ **Important**: This tool is for clinical documentation assistance only. Always review AI-generated content for accuracy and compliance with your organization's policies.

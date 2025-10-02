@@ -114,7 +114,9 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
   }, [dbMessages, conversationId]);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    });
   };
 
   useEffect(() => {

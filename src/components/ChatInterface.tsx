@@ -1,70 +1,97 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Send, FileText, Sparkles, Upload, Clock, FileUp } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useMessages, Message as DBMessage } from "@/hooks/useMessages";
+import { useConversations } from "@/hooks/useConversations";
 
-interface Message {
-  id: string;
-  type: "user" | "assistant";
-  content: string;
-  timestamp: Date;
+interface ChatInterfaceProps {
+  conversationId: string | null;
+  onConversationCreated?: (id: string) => void;
 }
 
-const ChatInterface = () => {
+const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceProps) => {
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "welcome",
-      type: "assistant",
-      content:
-        "Hello! I'm your ClinicalAI Assistant. I can help you:\n\n• Generate comprehensive SOAP notes from your session observations\n• Create detailed session summaries\n• Extract key clinical points\n• Develop progress reports\n\nSimply paste your session notes below, upload a file, or use one of the quick actions to get started.",
-      timestamp: new Date(),
-    },
-  ]);
   const [loading, setLoading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const { messages: dbMessages, addMessage } = useMessages(conversationId);
+  const { createConversation } = useConversations();
+
+  const [displayMessages, setDisplayMessages] = useState<Array<DBMessage & { isStreaming?: boolean }>>([]);
+
+  useEffect(() => {
+    if (dbMessages.length === 0 && !conversationId) {
+      // Show welcome message for new conversations
+      setDisplayMessages([
+        {
+          id: "welcome",
+          role: "assistant",
+          content:
+            "Hello! I'm your ClinicalAI Assistant. I can help you:\n\n• Generate comprehensive SOAP notes from your session observations\n• Create detailed session summaries\n• Extract key clinical points\n• Develop progress reports\n\nSimply paste your session notes below, upload a file, or use one of the quick actions to get started.",
+          created_at: new Date().toISOString(),
+        },
+      ]);
+    } else {
+      setDisplayMessages(dbMessages);
+    }
+  }, [dbMessages, conversationId]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [displayMessages]);
+
+  const generateTitle = (content: string): string => {
+    const firstLine = content.split("\n")[0];
+    return firstLine.length > 50 ? firstLine.substring(0, 50) + "..." : firstLine;
   };
 
   const handleSubmit = async (customPrompt?: string) => {
     const messageContent = customPrompt || input.trim();
     if (!messageContent) return;
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      type: "user",
-      content: messageContent,
-      timestamp: new Date(),
-    };
+    let currentConversationId = conversationId;
 
-    setMessages((prev) => [...prev, userMessage]);
+    // Create new conversation if none exists
+    if (!currentConversationId) {
+      const title = generateTitle(messageContent);
+      currentConversationId = await createConversation(title);
+      
+      if (!currentConversationId) {
+        toast.error("Failed to create conversation");
+        return;
+      }
+      
+      onConversationCreated?.(currentConversationId);
+    }
+
+    // Save user message to database
+    const userMsg = await addMessage("user", messageContent);
+    if (!userMsg) return;
+
     setInput("");
     setLoading(true);
-
-    setTimeout(scrollToBottom, 100);
 
     try {
       // TODO: Integrate with OpenAI API via edge function
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      const aiMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: "assistant",
-        content:
-          "I've analyzed your notes. Here's a comprehensive clinical documentation:\n\n**SOAP Note:**\n\nSubjective: [Analysis coming soon]\n\nObjective: [Analysis coming soon]\n\nAssessment: [Analysis coming soon]\n\nPlan: [Analysis coming soon]",
-        timestamp: new Date(),
-      };
+      const aiResponse =
+        "I've analyzed your notes. Here's a comprehensive clinical documentation:\n\n**SOAP Note:**\n\nSubjective: [Analysis coming soon]\n\nObjective: [Analysis coming soon]\n\nAssessment: [Analysis coming soon]\n\nPlan: [Analysis coming soon]";
 
-      setMessages((prev) => [...prev, aiMessage]);
+      // Save AI response to database
+      await addMessage("assistant", aiResponse);
+      
       toast.success("Analysis complete!");
-      setTimeout(scrollToBottom, 100);
     } catch (error) {
       toast.error("Failed to analyze notes");
     } finally {
@@ -116,7 +143,8 @@ const ChatInterface = () => {
     handleFileUpload(e.dataTransfer.files);
   };
 
-  const formatTime = (date: Date) => {
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
     return date.toLocaleTimeString("en-US", {
       hour: "numeric",
       minute: "2-digit",
@@ -129,29 +157,29 @@ const ChatInterface = () => {
       {/* Messages Display */}
       <Card className="h-[500px] overflow-y-auto p-6 shadow-md border-border/50 bg-card/80 backdrop-blur-sm">
         <div className="space-y-4">
-          {messages.map((message) => (
+          {displayMessages.map((message) => (
             <div
               key={message.id}
               className={cn(
                 "flex w-full animate-fade-in",
-                message.type === "user" ? "justify-end" : "justify-start"
+                message.role === "user" ? "justify-end" : "justify-start"
               )}
             >
               <div
                 className={cn(
                   "max-w-[80%] rounded-lg px-4 py-3 shadow-sm transition-all",
-                  message.type === "user"
+                  message.role === "user"
                     ? "bg-primary/10 text-foreground border border-primary/20"
                     : "bg-card text-foreground border border-border"
                 )}
               >
                 <div className="flex items-center gap-2 mb-1">
-                  {message.type === "assistant" && (
+                  {message.role === "assistant" && (
                     <Sparkles className="w-4 h-4 text-accent" />
                   )}
                   <span className="text-xs text-muted-foreground flex items-center gap-1">
                     <Clock className="w-3 h-3" />
-                    {formatTime(message.timestamp)}
+                    {formatTime(message.created_at)}
                   </span>
                 </div>
                 <p className="whitespace-pre-wrap text-sm leading-relaxed">

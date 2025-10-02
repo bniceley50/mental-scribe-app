@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import ChatInterface from "@/components/ChatInterface";
@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const navigate = useNavigate();
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -24,7 +25,10 @@ const Index = () => {
   }, [navigate]);
 
   return (
-    <Layout>
+    <Layout 
+      currentConversationId={currentConversationId}
+      onConversationSelect={(id) => setCurrentConversationId(id)}
+    >
       <div className="max-w-6xl mx-auto">
         <div className="mb-6 text-center">
           <h2 className="text-3xl font-semibold text-foreground mb-2">Clinical Note Analysis</h2>
@@ -32,7 +36,10 @@ const Index = () => {
             Transform your session notes into professional clinical documentation using AI
           </p>
         </div>
-        <ChatInterface />
+        <ChatInterface 
+          conversationId={currentConversationId}
+          onConversationCreated={(id) => setCurrentConversationId(id)}
+        />
       </div>
     </Layout>
   );

@@ -1,10 +1,16 @@
+import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Clock } from "lucide-react";
 
 const History = () => {
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+
   return (
-    <Layout>
+    <Layout
+      currentConversationId={selectedConversationId}
+      onConversationSelect={setSelectedConversationId}
+    >
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
           <h2 className="text-3xl font-semibold text-foreground mb-2">Analysis History</h2>
@@ -22,8 +28,8 @@ const History = () => {
           <CardContent>
             <div className="text-center py-12 text-muted-foreground">
               <Clock className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No analysis history yet</p>
-              <p className="text-sm mt-2">Start by analyzing your first clinical notes</p>
+              <p>Select a conversation from the sidebar to view its history</p>
+              <p className="text-sm mt-2">All your conversations are saved automatically</p>
             </div>
           </CardContent>
         </Card>

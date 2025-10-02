@@ -1,10 +1,16 @@
+import { useState } from "react";
 import Layout from "@/components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { User } from "lucide-react";
 
 const Settings = () => {
+  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+
   return (
-    <Layout>
+    <Layout
+      currentConversationId={selectedConversationId}
+      onConversationSelect={setSelectedConversationId}
+    >
       <div className="max-w-4xl mx-auto space-y-6">
         <div>
           <h2 className="text-3xl font-semibold text-foreground mb-2">Settings</h2>

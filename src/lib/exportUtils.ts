@@ -1,7 +1,11 @@
 import jsPDF from "jspdf";
 import { supabase } from "@/integrations/supabase/client";
 import { toast as showToast } from "sonner";
+import DOMPurify from "dompurify";
 
+/**
+ * Represents a message in a conversation
+ */
 interface Message {
   id: string;
   role: string;
@@ -9,6 +13,42 @@ interface Message {
   created_at: string;
 }
 
+/**
+ * Sanitizes text content to prevent XSS and injection attacks
+ * @param content - The text content to sanitize
+ * @returns Sanitized text content
+ */
+const sanitizeContent = (content: string): string => {
+  return DOMPurify.sanitize(content, { ALLOWED_TAGS: [] });
+};
+
+/**
+ * Creates a download link and triggers a file download
+ * @param blob - The file blob to download
+ * @param filename - The name for the downloaded file
+ */
+const triggerDownload = (blob: Blob, filename: string): void => {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  
+  try {
+    // Append to body, click, and cleanup
+    document.body.appendChild(anchor);
+    anchor.click();
+  } finally {
+    // Always cleanup, even if click fails
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(url);
+  }
+};
+
+/**
+ * Exports a conversation to a PDF file
+ * @param conversationId - The ID of the conversation to export
+ * @param title - The title for the exported PDF
+ */
 export const exportConversationToPDF = async (conversationId: string, title: string) => {
   try {
     showToast.info("Generating PDF...");
@@ -30,10 +70,11 @@ export const exportConversationToPDF = async (conversationId: string, title: str
     const maxWidth = pageWidth - 2 * margin;
     let y = margin;
 
-    // Add title
+    // Sanitize and add title
+    const sanitizedTitle = sanitizeContent(title);
     pdf.setFontSize(18);
     pdf.setFont("helvetica", "bold");
-    pdf.text(title, margin, y);
+    pdf.text(sanitizedTitle, margin, y);
     y += 10;
 
     // Add date
@@ -61,10 +102,11 @@ export const exportConversationToPDF = async (conversationId: string, title: str
       pdf.text(`${role} - ${timestamp}`, margin, y);
       y += 7;
 
-      // Message content
+      // Sanitize and add message content
       pdf.setFontSize(10);
       pdf.setFont("helvetica", "normal");
-      const lines = pdf.splitTextToSize(message.content, maxWidth);
+      const sanitizedContent = sanitizeContent(message.content);
+      const lines = pdf.splitTextToSize(sanitizedContent, maxWidth);
       
       lines.forEach((line: string) => {
         if (y > pageHeight - 20) {
@@ -78,8 +120,9 @@ export const exportConversationToPDF = async (conversationId: string, title: str
       y += 5; // Space between messages
     });
 
-    // Save PDF
-    const fileName = `${title.replace(/[^a-z0-9]/gi, "_")}_${Date.now()}.pdf`;
+    // Save PDF with sanitized filename
+    const sanitizedFilename = sanitizeContent(title).replace(/[^a-z0-9]/gi, "_");
+    const fileName = `${sanitizedFilename}_${Date.now()}.pdf`;
     pdf.save(fileName);
     showToast.success("PDF downloaded successfully!");
   } catch (error: any) {
@@ -88,6 +131,11 @@ export const exportConversationToPDF = async (conversationId: string, title: str
   }
 };
 
+/**
+ * Exports a conversation to a plain text file
+ * @param conversationId - The ID of the conversation to export
+ * @param title - The title for the exported text file
+ */
 export const exportConversationToText = async (conversationId: string, title: string) => {
   try {
     // Fetch messages
@@ -99,30 +147,30 @@ export const exportConversationToText = async (conversationId: string, title: st
 
     if (error) throw error;
 
-    // Create text content
-    let text = `${title}\n`;
+    // Sanitize title
+    const sanitizedTitle = sanitizeContent(title);
+
+    // Create text content with sanitized data
+    let text = `${sanitizedTitle}\n`;
     text += `Generated: ${new Date().toLocaleString()}\n`;
     text += "=".repeat(80) + "\n\n";
 
     messages?.forEach((message: Message) => {
       const role = message.role === "user" ? "You" : "AI Assistant";
       const timestamp = new Date(message.created_at).toLocaleString();
+      const sanitizedContent = sanitizeContent(message.content);
+      
       text += `[${role} - ${timestamp}]\n`;
-      text += `${message.content}\n\n`;
+      text += `${sanitizedContent}\n\n`;
       text += "-".repeat(80) + "\n\n";
     });
 
-    // Download as text file
+    // Download as text file with proper cleanup
     const blob = new Blob([text], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${title.replace(/[^a-z0-9]/gi, "_")}_${Date.now()}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
+    const sanitizedFilename = sanitizeContent(title).replace(/[^a-z0-9]/gi, "_");
+    const filename = `${sanitizedFilename}_${Date.now()}.txt`;
+    
+    triggerDownload(blob, filename);
     showToast.success("Text file downloaded successfully!");
   } catch (error: any) {
     console.error("Error exporting to text:", error);
@@ -130,6 +178,11 @@ export const exportConversationToText = async (conversationId: string, title: st
   }
 };
 
+/**
+ * Copies a conversation to the clipboard as formatted text
+ * @param conversationId - The ID of the conversation to copy
+ * @param title - The title for the copied content
+ */
 export const copyConversationToClipboard = async (conversationId: string, title: string) => {
   try {
     // Fetch messages
@@ -141,16 +194,21 @@ export const copyConversationToClipboard = async (conversationId: string, title:
 
     if (error) throw error;
 
-    // Create formatted text
-    let text = `${title}\n`;
+    // Sanitize title
+    const sanitizedTitle = sanitizeContent(title);
+
+    // Create formatted text with sanitized content
+    let text = `${sanitizedTitle}\n`;
     text += `Generated: ${new Date().toLocaleString()}\n`;
     text += "=".repeat(80) + "\n\n";
 
     messages?.forEach((message: Message) => {
       const role = message.role === "user" ? "You" : "AI Assistant";
       const timestamp = new Date(message.created_at).toLocaleString();
+      const sanitizedContent = sanitizeContent(message.content);
+      
       text += `[${role} - ${timestamp}]\n`;
-      text += `${message.content}\n\n`;
+      text += `${sanitizedContent}\n\n`;
       text += "-".repeat(80) + "\n\n";
     });
 

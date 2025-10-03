@@ -763,6 +763,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
                 size="sm"
                 onClick={handleStopGeneration}
                 className="ml-2"
+                data-testid="stop-generation"
               >
                 <StopCircle className="w-4 h-4 mr-2" />
                 Stop

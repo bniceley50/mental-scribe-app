@@ -106,6 +106,74 @@ export type Database = {
           },
         ]
       }
+      structured_notes: {
+        Row: {
+          client_perspective: string | null
+          clinical_impression: string | null
+          conversation_id: string
+          created_at: string
+          current_status: string | null
+          goals_progress: string | null
+          id: string
+          is_telehealth: boolean | null
+          new_issues_details: string | null
+          new_issues_presented: boolean | null
+          next_steps: string | null
+          response_to_interventions: string | null
+          safety_assessment: string | null
+          session_date: string
+          treatment_plan: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_perspective?: string | null
+          clinical_impression?: string | null
+          conversation_id: string
+          created_at?: string
+          current_status?: string | null
+          goals_progress?: string | null
+          id?: string
+          is_telehealth?: boolean | null
+          new_issues_details?: string | null
+          new_issues_presented?: boolean | null
+          next_steps?: string | null
+          response_to_interventions?: string | null
+          safety_assessment?: string | null
+          session_date?: string
+          treatment_plan?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_perspective?: string | null
+          clinical_impression?: string | null
+          conversation_id?: string
+          created_at?: string
+          current_status?: string | null
+          goals_progress?: string | null
+          id?: string
+          is_telehealth?: boolean | null
+          new_issues_details?: string | null
+          new_issues_presented?: boolean | null
+          next_steps?: string | null
+          response_to_interventions?: string | null
+          safety_assessment?: string | null
+          session_date?: string
+          treatment_plan?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "structured_notes_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       uploaded_files: {
         Row: {
           conversation_id: string

@@ -4,7 +4,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Send, FileText, Sparkles, Clock, Paperclip, StopCircle, Download, Copy, Trash2, BookTemplate, Save } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Send, FileText, Sparkles, Clock, Paperclip, StopCircle, Download, Copy, Trash2, BookTemplate, Save, Table } from "lucide-react";
 import { toast as showToast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useMessages, Message as DBMessage } from "@/hooks/useMessages";
@@ -15,6 +16,7 @@ import { MessageActions, StreamingMessage } from "./MessageActions";
 import { ExamplePrompts } from "./ExamplePrompts";
 import { NoteTemplates } from "./NoteTemplates";
 import { AdvancedAnalysis } from "./AdvancedAnalysis";
+import { StructuredNoteForm } from "./StructuredNoteForm";
 import {
   extractTextFromFile,
   uploadFileToStorage,
@@ -657,13 +659,27 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         <FileDropZone onFileSelect={handleFileSelect} disabled={loading} />
       )}
 
-      {/* Input Area */}
-      <Card className="p-4 shadow-md border-border/50 bg-card/80 backdrop-blur-sm" onClick={() => inputRef.current?.focus()}>
-        <div className="space-y-3">
-          {/* Example Prompts - Show when no conversation exists */}
-          {!conversationId && displayMessages.length <= 1 && (
-            <ExamplePrompts onSelectExample={handleSelectExample} disabled={loading} />
-          )}
+      {/* Input Area with Tabs */}
+      <Tabs defaultValue="freeform" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="freeform" className="flex items-center gap-2">
+            <FileText className="w-4 h-4" />
+            Free-form Notes
+          </TabsTrigger>
+          <TabsTrigger value="structured" className="flex items-center gap-2">
+            <Table className="w-4 h-4" />
+            Structured Form
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Free-form Note Tab */}
+        <TabsContent value="freeform">
+          <Card className="p-4 shadow-md border-border/50 bg-card/80 backdrop-blur-sm" onClick={() => inputRef.current?.focus()}>
+            <div className="space-y-3">
+              {/* Example Prompts - Show when no conversation exists */}
+              {!conversationId && displayMessages.length <= 1 && (
+                <ExamplePrompts onSelectExample={handleSelectExample} disabled={loading} />
+              )}
 
           <Textarea
             ref={inputRef}
@@ -779,13 +795,34 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         </div>
       </Card>
 
-      {/* Advanced Analysis Section */}
+      {/* Advanced Analysis Section - Only for freeform */}
       {input.trim() && (
         <AdvancedAnalysis 
           noteContent={input} 
           conversationId={conversationId || "temp"} 
         />
       )}
+        </TabsContent>
+
+        {/* Structured Form Tab */}
+        <TabsContent value="structured">
+          {conversationId ? (
+            <StructuredNoteForm conversationId={conversationId} />
+          ) : (
+            <Card className="p-8 text-center">
+              <p className="text-muted-foreground">
+                Please start a conversation first to use the structured note form.
+              </p>
+              <Button 
+                onClick={() => handleSubmit("Started new session", "session_summary")}
+                className="mt-4"
+              >
+                Start New Session
+              </Button>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
 
       {/* Clear Conversation Dialog */}
       <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>

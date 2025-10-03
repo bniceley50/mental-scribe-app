@@ -1,10 +1,111 @@
 # Test Plan: ChatInterface Component
 
-## Overview
+> **Last Updated:** 2025-01-03  
+> **Status:** Implementation In Progress (67% Complete)  
+> **Test File:** `src/components/__tests__/ChatInterface.test.tsx`
 
-This document outlines the comprehensive testing strategy for the `ChatInterface` component, which is the core UI component for user interaction in Mental Scribe.
+## 📊 Test Coverage Summary
+
+| Category | Total Cases | Implemented | Coverage |
+|----------|-------------|-------------|----------|
+| Component Rendering | 4 | 4 | ✅ 100% |
+| User Input | 6 | 5 | 🟡 83% |
+| Message Rendering | 2 | 2 | ✅ 100% |
+| Quick Actions | 7 | 5 | 🟡 71% |
+| File Upload | 6 | 3 | 🟡 50% |
+| AI Streaming | 6 | 5 | 🟡 83% |
+| Conversation State | 3 | 2 | 🟡 67% |
+| Export Integration | 3 | 3 | ✅ 100% |
+| Accessibility | 2 | 2 | ✅ 100% |
+| **TOTAL** | **39** | **31** | **🎯 79%** |
+
+### Current Stats
+- ✅ **31 tests implemented** (up from 12)
+- 🎯 **79% coverage** (approaching 80% target!)
+- 🚀 **High-priority gaps:** 8 remaining
+
+---
+
+
+## 🎯 Implementation Status
+
+### ✅ Completed Tests (31)
+
+**Component Rendering (4/4)**
+- ✅ Textarea input rendering
+- ✅ Analyze Notes button rendering  
+- ✅ Example prompts display
+- ✅ Templates button display
+
+**User Input (5/6)**
+- ✅ Text input updates
+- ✅ Multiline input handling
+- ✅ Auto-focus on mount
+- ✅ Empty input validation
+- ✅ Valid input state
+- ⬜️ Draft auto-save (localStorage)
+
+**Message Rendering (2/2)**
+- ✅ User message display
+- ✅ AI message display
+
+**Quick Actions (5/7)**
+- ✅ Templates button render
+- ✅ Templates dialog open
+- ✅ Export button visibility (no conversation)
+- ✅ Export button visibility (with conversation)
+- ✅ Export menu options
+- ⬜️ Template selection and loading
+- ⬜️ Quick action buttons (SOAP, Summary, etc.)
+
+**File Upload (3/6)**
+- ✅ Upload button render
+- ✅ File upload toggle
+- ✅ Basic file processing
+- ⬜️ File validation (size/type)
+- ⬜️ File extraction verification
+- ⬜️ File preview display
+
+**AI Streaming (5/6)**
+- ✅ Loading state display
+- ✅ Chunk streaming
+- ✅ Error handling
+- ✅ Stop generation
+- ✅ Completion success message
+- ⬜️ Response regeneration
+
+**Conversation State (2/3)**
+- ✅ New conversation creation
+- ✅ Clear conversation button
+- ⬜️ Conversation title update
+
+**Export Integration (3/3)**
+- ✅ Export button visibility check
+- ✅ Export menu rendering
+- ✅ Export options display
+
+**Accessibility (2/2)**
+- ✅ Keyboard navigation
+- ✅ ARIA labels on buttons
+
+### 🎯 High-Priority Remaining Tests (8)
+
+1. **Draft Auto-save** - Verify localStorage persistence
+2. **Template Loading** - Test template content loads into textarea
+3. **Quick Action Buttons** - Verify SOAP/Summary/Key Points/Progress actions
+4. **File Validation** - Test size and type rejection
+5. **Response Regeneration** - Test regenerate button functionality
+6. **Conversation Title** - Verify title updates on message send
+7. **File Extraction** - Verify text extraction from PDFs/docs
+8. **File Preview** - Test uploaded file display component
+
+---
+
+## Component Details
 
 **Component Location**: `src/components/ChatInterface.tsx`
+
+**Test File Location**: `src/components/__tests__/ChatInterface.test.tsx`
 
 **Dependencies**:
 - `useMessages` hook
@@ -678,6 +779,51 @@ npm run test:coverage -- ChatInterface.test.tsx
 - [ ] Tests are deterministic (no random failures)
 - [ ] Coverage targets met
 
+
+---
+
+## 🚀 Next Steps & Roadmap
+
+### Phase 1: Complete Core Functionality (Target: 85%+ coverage)
+
+**Priority 1 - Quick Wins (Est. 20 min):**
+1. Draft auto-save test
+2. Template loading test  
+3. Conversation title update test
+
+**Priority 2 - Quick Actions (Est. 40 min):**
+4. SOAP Note button test
+5. Session Summary button test
+6. Key Points button test
+7. Progress Report button test
+
+**Priority 3 - File Upload (Est. 30 min):**
+8. File size validation test
+9. File type validation test
+10. File extraction verification test
+
+### Phase 2: Edge Cases & Error Scenarios (Target: 90%+ coverage)
+
+**Error Handling:**
+- Network timeout during streaming
+- API rate limit responses
+- File upload failures  
+- Malformed AI responses
+
+**Edge Cases:**
+- Very long input (>10,000 words)
+- Special characters in input
+- Multiple rapid submissions
+- Concurrent file uploads
+
+### Phase 3: Integration & E2E Tests
+
+**Cross-Component Flows:**
+- Complete conversation workflow (create → message → export)
+- File upload → analysis → export pipeline
+- Template → edit → submit flow
+- Error recovery scenarios
+
 ---
 
 ## References
@@ -686,3 +832,10 @@ npm run test:coverage -- ChatInterface.test.tsx
 - [React Testing Library](https://testing-library.com/react)
 - [Testing Best Practices](https://kentcdodds.com/blog/common-mistakes-with-react-testing-library)
 - [Component Testing Patterns](https://martinfowler.com/articles/practical-test-pyramid.html)
+
+---
+
+**Test Commands:**
+- `npm test` - Run all 31 tests
+- `npm run test:coverage` - Generate detailed coverage report
+- `npm run test:ui` - Interactive test UI

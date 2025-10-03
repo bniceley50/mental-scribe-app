@@ -251,7 +251,7 @@ serve(async (req) => {
       content: `Session Notes:\n\n${fullNotes}`,
     });
 
-    console.log("Calling OpenAI API with action:", action);
+    console.log(`AI analysis request: action=${action}, user=${user.id}, notes_length=${notes?.length || 0}`);
 
     // Call OpenAI API with streaming
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -271,8 +271,7 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error("OpenAI API error:", response.status, errorText);
+      console.error(`OpenAI API error: status=${response.status}`);
       throw new Error(`OpenAI API error: ${response.status}`);
     }
 
@@ -287,7 +286,8 @@ serve(async (req) => {
     });
 
   } catch (error: any) {
-    console.error("Error in analyze-clinical-notes function:", error);
+    // Log sanitized error info without exposing sensitive data
+    console.error(`Error in analyze-clinical-notes: type=${error.name || 'unknown'}`);
     
     // Sanitize error messages for security
     let userMessage = "An error occurred during analysis";

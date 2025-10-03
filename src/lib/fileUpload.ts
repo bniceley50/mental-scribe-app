@@ -1,9 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import * as pdfjsLib from "pdfjs-dist";
+import DOMPurify from "dompurify";
 
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+
+// Security constants
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const PDF_MAGIC_BYTES = [0x25, 0x50, 0x44, 0x46]; // %PDF
 
 interface UploadedFile {
   id: string;
@@ -12,6 +17,12 @@ interface UploadedFile {
   file_url: string;
   processed_content: string;
 }
+
+const verifyPDFMagicBytes = async (file: File): Promise<boolean> => {
+  const buffer = await file.slice(0, 4).arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  return PDF_MAGIC_BYTES.every((byte, index) => bytes[index] === byte);
+};
 
 export const extractTextFromPDF = async (file: File): Promise<string> => {
   try {
@@ -36,10 +47,24 @@ export const extractTextFromPDF = async (file: File): Promise<string> => {
 };
 
 export const extractTextFromFile = async (file: File): Promise<string> => {
+  // Validate file size
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error(`File size exceeds maximum allowed size of 10MB`);
+  }
+
   if (file.type === "application/pdf") {
-    return await extractTextFromPDF(file);
+    // Verify PDF magic bytes
+    const isValidPDF = await verifyPDFMagicBytes(file);
+    if (!isValidPDF) {
+      throw new Error("Invalid PDF file format");
+    }
+    const rawText = await extractTextFromPDF(file);
+    // Sanitize extracted text to prevent XSS
+    return DOMPurify.sanitize(rawText, { ALLOWED_TAGS: [] });
   } else if (file.type === "text/plain" || file.name.endsWith(".txt")) {
-    return await file.text();
+    const rawText = await file.text();
+    // Sanitize extracted text to prevent XSS
+    return DOMPurify.sanitize(rawText, { ALLOWED_TAGS: [] });
   } else {
     throw new Error("Unsupported file type");
   }

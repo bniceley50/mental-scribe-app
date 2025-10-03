@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast as showToast } from "sonner";
 import { ConversationSidebar } from "./ConversationSidebar";
 import { PrivacyFooter } from "./PrivacyFooter";
+import { HelpDialog } from "./HelpDialog";
 
 interface LayoutProps {
   children: ReactNode;
@@ -53,21 +54,23 @@ const Layout = ({ children, currentConversationId, onConversationSelect }: Layou
             </div>
             <h1 className="text-xl font-semibold text-foreground">ClinicalAI Assistant</h1>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleLogout}
-            className="text-muted-foreground hover:text-foreground transition-colors"
-            aria-label="Logout"
-          >
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
-          </Button>
+          <div className="flex items-center gap-2">
+            <HelpDialog />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLogout}
+              className="text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Logout"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </div>
         </div>
       </header>
 
-      <div className="flex flex-1"
-        role="main">
+      <div className="flex flex-1" role="main">
         {/* Sidebar */}
         <aside className="w-80 border-r border-border bg-card/30 backdrop-blur-sm flex flex-col" role="complementary" aria-label="Navigation and conversations">
           <nav className="p-4 space-y-2 border-b border-border" aria-label="Main navigation">

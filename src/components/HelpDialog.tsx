@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -19,12 +20,24 @@ import {
   Sparkles,
   FileText,
   Brain,
-  Table
+  Table,
+  RotateCcw
 } from "lucide-react";
+import { useOnboarding } from "@/hooks/useOnboarding";
 
 export const HelpDialog = () => {
+  const [open, setOpen] = useState(false);
+  const { resetOnboarding } = useOnboarding();
+
+  const handleRestartTour = () => {
+    setOpen(false);
+    setTimeout(() => {
+      resetOnboarding();
+    }, 300);
+  };
+
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className="rounded-full">
           <HelpCircle className="h-5 w-5" />
@@ -234,6 +247,18 @@ export const HelpDialog = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Restart Tour Button */}
+          <div className="flex justify-center pt-4">
+            <Button
+              onClick={handleRestartTour}
+              variant="outline"
+              className="gap-2"
+            >
+              <RotateCcw className="h-4 w-4" />
+              Restart Welcome Tour
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

@@ -662,7 +662,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       )}
 
       {/* Input Area with Tabs */}
-      <Tabs defaultValue="freeform" className="w-full">
+      <Tabs defaultValue="freeform" className="w-full" data-onboarding="tabs">
         <TabsList className="grid w-full grid-cols-2 mb-4">
           <TabsTrigger value="freeform" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
@@ -735,12 +735,14 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
 
           <div className="flex justify-between items-center gap-2">
             <div className="flex gap-2 flex-wrap">
-              <VoiceInput
-                onResult={(transcript) => {
-                  setInput(prev => prev ? `${prev} ${transcript}` : transcript);
-                }}
-                disabled={loading}
-              />
+              <div data-onboarding="voice-input">
+                <VoiceInput
+                  onResult={(transcript) => {
+                    setInput(prev => prev ? `${prev} ${transcript}` : transcript);
+                  }}
+                  disabled={loading}
+                />
+              </div>
               
               <Button
                 type="button"
@@ -767,9 +769,11 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
             </div>
 
             <div className="flex gap-2 items-center">
-              {input && (
-                <SpeakButton text={input} disabled={loading} />
-              )}
+              <div data-onboarding="speak-button">
+                {input && (
+                  <SpeakButton text={input} disabled={loading} />
+                )}
+              </div>
               
               <Button
                 onClick={() => handleSubmit()}
@@ -813,15 +817,17 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
 
       {/* Advanced Analysis Section - Only for freeform */}
       {input.trim() && (
-        <AdvancedAnalysis 
-          noteContent={input} 
-          conversationId={conversationId || "temp"} 
-        />
+        <div data-onboarding="advanced-analysis">
+          <AdvancedAnalysis 
+            noteContent={input} 
+            conversationId={conversationId || "temp"} 
+          />
+        </div>
       )}
         </TabsContent>
 
         {/* Structured Form Tab */}
-        <TabsContent value="structured">
+        <TabsContent value="structured" data-onboarding="structured-form">
           {conversationId ? (
             <StructuredNoteForm conversationId={conversationId} />
           ) : (

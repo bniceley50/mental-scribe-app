@@ -3,11 +3,25 @@ import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import ChatInterface from "@/components/ChatInterface";
 import { WelcomeGuide } from "@/components/WelcomeGuide";
+import { WelcomeBanner } from "@/components/WelcomeBanner";
+import { OnboardingTooltip } from "@/components/OnboardingTooltip";
+import { useOnboarding } from "@/hooks/useOnboarding";
 import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const navigate = useNavigate();
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const { hasCompletedOnboarding, startOnboarding } = useOnboarding();
+
+  // Start onboarding for first-time users after a brief delay
+  useEffect(() => {
+    if (!hasCompletedOnboarding) {
+      const timer = setTimeout(() => {
+        startOnboarding();
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [hasCompletedOnboarding, startOnboarding]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -59,6 +73,7 @@ const Index = () => {
 
   return (
     <>
+      <OnboardingTooltip />
       <WelcomeGuide />
       <Layout 
         currentConversationId={currentConversationId}
@@ -71,7 +86,8 @@ const Index = () => {
             Transform your session notes into professional clinical documentation using AI
           </p>
         </div>
-        <ChatInterface 
+        <WelcomeBanner />
+        <ChatInterface
           conversationId={currentConversationId}
           onConversationCreated={(id) => setCurrentConversationId(id)}
         />

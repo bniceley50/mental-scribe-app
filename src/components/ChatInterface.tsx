@@ -14,6 +14,7 @@ import { FilePreview } from "./FilePreview";
 import { MessageActions, StreamingMessage } from "./MessageActions";
 import { ExamplePrompts } from "./ExamplePrompts";
 import { NoteTemplates } from "./NoteTemplates";
+import { AdvancedAnalysis } from "./AdvancedAnalysis";
 import {
   extractTextFromFile,
   uploadFileToStorage,
@@ -777,6 +778,14 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
           </p>
         </div>
       </Card>
+
+      {/* Advanced Analysis Section */}
+      {input.trim() && (
+        <AdvancedAnalysis 
+          noteContent={input} 
+          conversationId={conversationId || "temp"} 
+        />
+      )}
 
       {/* Clear Conversation Dialog */}
       <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>

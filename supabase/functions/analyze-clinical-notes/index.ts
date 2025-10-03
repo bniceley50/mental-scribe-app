@@ -44,7 +44,7 @@ function checkRateLimit(userId: string): boolean {
 
 interface AnalysisRequest {
   notes: string;
-  action: "soap_note" | "session_summary" | "key_points" | "progress_report";
+  action: "soap_note" | "session_summary" | "key_points" | "progress_report" | "medical_entities" | "clinical_summary" | "risk_assessment";
   file_content?: string;
   conversation_history?: Array<{ role: string; content: string }>;
 }
@@ -86,6 +86,80 @@ Present as a bulleted list with clear, concise points.`,
 - Recommended adjustments to treatment plan
 
 Be thorough and professional.`,
+
+    medical_entities: `You are an expert clinical NLP system. Extract and categorize all medical entities from the clinical notes.
+
+Extract the following in a structured JSON format:
+{
+  "diagnoses": ["list of mentioned diagnoses, conditions, or suspected conditions"],
+  "medications": ["list of medications with dosages if mentioned"],
+  "symptoms": ["list of reported symptoms"],
+  "procedures": ["list of procedures, treatments, or interventions"],
+  "vitals": ["list of vital signs if mentioned"],
+  "risk_factors": ["list of identified risk factors"],
+  "mental_status": {
+    "mood": "description",
+    "affect": "description",
+    "thought_process": "description",
+    "orientation": "description"
+  },
+  "clinical_concerns": ["list of immediate clinical concerns"]
+}
+
+Be thorough and accurate. Only include entities explicitly mentioned in the notes.`,
+
+    clinical_summary: `You are a clinical AI assistant. Provide a comprehensive yet concise clinical summary.
+
+Create a structured summary with the following sections:
+
+**Chief Complaint/Presenting Problem:**
+Brief overview of primary concern
+
+**Clinical Assessment:**
+- Current mental status
+- Symptom severity and progression
+- Functional impairment level
+- Risk assessment (self-harm, harm to others)
+
+**Treatment Progress:**
+- Response to current interventions
+- Adherence to treatment plan
+- Barriers to progress
+
+**Clinical Recommendations:**
+- Continue current interventions
+- Modifications needed
+- Additional referrals or consultations
+- Follow-up timeline
+
+Use professional clinical language and be evidence-based.`,
+
+    risk_assessment: `You are a clinical risk assessment specialist. Perform a comprehensive risk assessment based on the provided notes.
+
+Analyze and provide:
+
+**Immediate Risk Factors:**
+- Suicidal ideation (passive/active)
+- Self-harm behaviors
+- Harm to others
+- Substance use concerns
+- Medical urgency
+
+**Protective Factors:**
+- Social support
+- Coping skills
+- Reasons for living
+- Treatment engagement
+
+**Risk Level:** (Low/Moderate/High)
+
+**Recommendations:**
+- Safety planning needs
+- Level of care appropriate
+- Immediate interventions required
+- Follow-up urgency
+
+Be thorough and err on the side of caution for safety.`,
   };
 
   return prompts[action as keyof typeof prompts] || prompts.session_summary;
@@ -189,9 +263,10 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "gpt-4o",
         messages: messages,
-        temperature: 0.7,
-        max_completion_tokens: 2000,
+        temperature: action === "medical_entities" ? 0.3 : 0.7, // Lower temp for extraction tasks
+        max_completion_tokens: action === "clinical_summary" || action === "risk_assessment" ? 3000 : 2000,
         stream: true,
+        response_format: action === "medical_entities" ? { type: "json_object" } : undefined,
       }),
     });
 

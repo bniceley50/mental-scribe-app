@@ -9,6 +9,7 @@ import { Brain } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
+import { isPasswordLeaked } from "@/lib/passwordSecurity";
 
 const authSchema = z.object({
   email: z.string()
@@ -43,6 +44,14 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // Check if password has been leaked in data breaches (HIBP k-Anonymity)
+      const leaked = await isPasswordLeaked(validation.data.password);
+      if (leaked) {
+        toast.error("This password has appeared in a data breach. For your safety, please choose a different password.");
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.signUp({
         email: validation.data.email,
         password: validation.data.password,

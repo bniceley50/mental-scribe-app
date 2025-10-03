@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Send, FileText, Sparkles, Clock, Paperclip, StopCircle, Download, Copy, Trash2, BookTemplate, Save, Table } from "lucide-react";
+import { Send, FileText, Sparkles, Clock, Paperclip, StopCircle, Download, Copy, Trash2, BookTemplate, Save, Table, Shield } from "lucide-react";
 import { toast as showToast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useMessages, Message as DBMessage } from "@/hooks/useMessages";
@@ -45,6 +45,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Part2Badge } from "@/components/Part2Badge";
 
 interface UploadedFile {
   id: string;
@@ -70,6 +73,8 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
   const [clearDialogOpen, setClearDialogOpen] = useState(false);
   const [conversationTitle, setConversationTitle] = useState<string>("");
   const [draftSaveTimeout, setDraftSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [isPart2Protected, setIsPart2Protected] = useState(false);
+  const [showPart2Warning, setShowPart2Warning] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   
@@ -167,7 +172,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     // Create new conversation if none exists
     if (!currentConversationId) {
       const title = generateTitle(messageContent);
-      currentConversationId = await createConversation(title);
+      currentConversationId = await createConversation(title, isPart2Protected);
       
       if (!currentConversationId) {
         showToast.error("Failed to create conversation");
@@ -175,6 +180,13 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       }
       
       onConversationCreated?.(currentConversationId);
+      
+      // Show Part 2 warning if flagged
+      if (isPart2Protected) {
+        showToast.info("Session marked as 42 CFR Part 2 protected", {
+          description: "All access to this conversation will be audited"
+        });
+      }
     }
 
     // Save user message to database
@@ -434,7 +446,12 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       {/* Conversation Actions */}
       {conversationId && displayMessages.length > 1 && (
         <div className="flex justify-between items-center">
-          <h3 className="text-lg font-medium text-foreground">{conversationTitle}</h3>
+          <div className="flex items-center gap-3">
+            <h3 className="text-lg font-medium text-foreground">{conversationTitle}</h3>
+            {conversations.find(c => c.id === conversationId)?.is_part2_protected && (
+              <Part2Badge consentStatus={conversations.find(c => c.id === conversationId)?.part2_consent_status} />
+            )}
+          </div>
           <div className="flex gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -730,6 +747,25 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
                   Draft auto-saved
                 </Badge>
               )}
+            </div>
+          )}
+
+          {/* Part 2 Classification Checkbox */}
+          {!conversationId && (
+            <div className="flex items-center gap-3 p-3 rounded-lg border border-purple-500/20 bg-purple-500/5">
+              <Checkbox 
+                id="part2-protected"
+                checked={isPart2Protected}
+                onCheckedChange={(checked) => setIsPart2Protected(checked as boolean)}
+                disabled={loading}
+              />
+              <Label 
+                htmlFor="part2-protected"
+                className="text-sm font-medium cursor-pointer flex items-center gap-2"
+              >
+                <Shield className="w-4 h-4 text-purple-600" />
+                This session involves substance use disorder treatment (42 CFR Part 2)
+              </Label>
             </div>
           )}
 

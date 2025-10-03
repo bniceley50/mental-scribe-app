@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { MessageSquare, Trash2, Search, Plus, Download, Calendar } from "lucide-react";
+import { MessageSquare, Trash2, Search, Plus, Download, Calendar, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -9,6 +9,7 @@ import { useConversations } from "@/hooks/useConversations";
 import { useMessages } from "@/hooks/useMessages";
 import { exportConversationToPDF } from "@/lib/exportUtils";
 import { formatDistanceToNow } from "date-fns";
+import { Part2Badge } from "@/components/Part2Badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -122,9 +123,14 @@ export const ConversationSidebar = ({
           <div className="flex items-start gap-2 flex-1 min-w-0">
             <MessageSquare className="w-4 h-4 flex-shrink-0 mt-0.5 text-primary" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">
-                {conversation.title}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {conversation.title}
+                </p>
+                {conversation.is_part2_protected && (
+                  <Part2Badge consentStatus={conversation.part2_consent_status} size="sm" />
+                )}
+              </div>
               {lastMessage && (
                 <p className="text-xs text-muted-foreground truncate mt-0.5">
                   {lastMessage.content.substring(0, 50)}...

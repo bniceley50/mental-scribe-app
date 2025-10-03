@@ -17,10 +17,13 @@ export type Database = {
       audit_logs: {
         Row: {
           action: string
+          consent_id: string | null
           created_at: string
+          data_classification: Database["public"]["Enums"]["data_classification"]
           id: string
           ip_address: string | null
           metadata: Json | null
+          part2_disclosure_purpose: string | null
           resource_id: string | null
           resource_type: string
           user_agent: string | null
@@ -28,10 +31,13 @@ export type Database = {
         }
         Insert: {
           action: string
+          consent_id?: string | null
           created_at?: string
+          data_classification?: Database["public"]["Enums"]["data_classification"]
           id?: string
           ip_address?: string | null
           metadata?: Json | null
+          part2_disclosure_purpose?: string | null
           resource_id?: string | null
           resource_type: string
           user_agent?: string | null
@@ -39,10 +45,13 @@ export type Database = {
         }
         Update: {
           action?: string
+          consent_id?: string | null
           created_at?: string
+          data_classification?: Database["public"]["Enums"]["data_classification"]
           id?: string
           ip_address?: string | null
           metadata?: Json | null
+          part2_disclosure_purpose?: string | null
           resource_id?: string | null
           resource_type?: string
           user_agent?: string | null
@@ -83,21 +92,36 @@ export type Database = {
       conversations: {
         Row: {
           created_at: string
+          data_classification: Database["public"]["Enums"]["data_classification"]
           id: string
+          is_part2_protected: boolean
+          part2_consent_date: string | null
+          part2_consent_expiry: string | null
+          part2_consent_status: string | null
           title: string
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
+          data_classification?: Database["public"]["Enums"]["data_classification"]
           id?: string
+          is_part2_protected?: boolean
+          part2_consent_date?: string | null
+          part2_consent_expiry?: string | null
+          part2_consent_status?: string | null
           title: string
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          data_classification?: Database["public"]["Enums"]["data_classification"]
           id?: string
+          is_part2_protected?: boolean
+          part2_consent_date?: string | null
+          part2_consent_expiry?: string | null
+          part2_consent_status?: string | null
           title?: string
           updated_at?: string
           user_id?: string
@@ -109,26 +133,85 @@ export type Database = {
           content: string
           conversation_id: string
           created_at: string
+          data_classification: Database["public"]["Enums"]["data_classification"]
           id: string
+          is_part2_protected: boolean
           role: string
         }
         Insert: {
           content: string
           conversation_id: string
           created_at?: string
+          data_classification?: Database["public"]["Enums"]["data_classification"]
           id?: string
+          is_part2_protected?: boolean
           role: string
         }
         Update: {
           content?: string
           conversation_id?: string
           created_at?: string
+          data_classification?: Database["public"]["Enums"]["data_classification"]
           id?: string
+          is_part2_protected?: boolean
           role?: string
         }
         Relationships: [
           {
             foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      part2_consents: {
+        Row: {
+          consent_type: string
+          conversation_id: string
+          created_at: string
+          disclosure_purpose: string | null
+          expiry_date: string | null
+          granted_date: string
+          id: string
+          recipient_info: Json | null
+          revoked_date: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          consent_type: string
+          conversation_id: string
+          created_at?: string
+          disclosure_purpose?: string | null
+          expiry_date?: string | null
+          granted_date?: string
+          id?: string
+          recipient_info?: Json | null
+          revoked_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          consent_type?: string
+          conversation_id?: string
+          created_at?: string
+          disclosure_purpose?: string | null
+          expiry_date?: string | null
+          granted_date?: string
+          id?: string
+          recipient_info?: Json | null
+          revoked_date?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "part2_consents_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
@@ -143,8 +226,10 @@ export type Database = {
           conversation_id: string
           created_at: string
           current_status: string | null
+          data_classification: Database["public"]["Enums"]["data_classification"]
           goals_progress: string | null
           id: string
+          is_part2_protected: boolean
           is_telehealth: boolean | null
           new_issues_details: string | null
           new_issues_presented: boolean | null
@@ -162,8 +247,10 @@ export type Database = {
           conversation_id: string
           created_at?: string
           current_status?: string | null
+          data_classification?: Database["public"]["Enums"]["data_classification"]
           goals_progress?: string | null
           id?: string
+          is_part2_protected?: boolean
           is_telehealth?: boolean | null
           new_issues_details?: string | null
           new_issues_presented?: boolean | null
@@ -181,8 +268,10 @@ export type Database = {
           conversation_id?: string
           created_at?: string
           current_status?: string | null
+          data_classification?: Database["public"]["Enums"]["data_classification"]
           goals_progress?: string | null
           id?: string
+          is_part2_protected?: boolean
           is_telehealth?: boolean | null
           new_issues_details?: string | null
           new_issues_presented?: boolean | null
@@ -278,6 +367,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      data_classification: "standard_phi" | "part2_protected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -406,6 +496,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      data_classification: ["standard_phi", "part2_protected"],
     },
   },
 } as const

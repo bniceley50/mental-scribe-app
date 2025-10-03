@@ -7,6 +7,9 @@ interface Conversation {
   title: string;
   created_at: string;
   updated_at: string;
+  is_part2_protected?: boolean;
+  data_classification?: string;
+  part2_consent_status?: string;
 }
 
 export const useConversations = () => {
@@ -19,7 +22,7 @@ export const useConversations = () => {
     try {
       const { data, error, count } = await supabase
         .from("conversations")
-        .select("id, title, created_at, updated_at", { count: "exact" })
+        .select("id, title, created_at, updated_at, is_part2_protected, data_classification, part2_consent_status", { count: "exact" })
         .order("updated_at", { ascending: false })
         .range(offset, offset + limit - 1);
 
@@ -46,14 +49,22 @@ export const useConversations = () => {
     }
   };
 
-  const createConversation = async (title: string): Promise<string | null> => {
+  const createConversation = async (
+    title: string, 
+    isPart2Protected: boolean = false
+  ): Promise<string | null> => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
       const { data, error } = await supabase
         .from("conversations")
-        .insert([{ user_id: user.id, title }])
+        .insert([{ 
+          user_id: user.id, 
+          title,
+          is_part2_protected: isPart2Protected,
+          data_classification: isPart2Protected ? 'part2_protected' : 'standard_phi'
+        }])
         .select("id")
         .single();
 

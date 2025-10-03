@@ -17,6 +17,8 @@ import { ExamplePrompts } from "./ExamplePrompts";
 import { NoteTemplates } from "./NoteTemplates";
 import { AdvancedAnalysis } from "./AdvancedAnalysis";
 import { StructuredNoteForm } from "./StructuredNoteForm";
+import { VoiceInput } from "./VoiceInput";
+import { SpeakButton } from "./SpeakButton";
 import {
   extractTextFromFile,
   uploadFileToStorage,
@@ -731,8 +733,15 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
             </div>
           )}
 
-          <div className="flex justify-between items-center">
-            <div className="flex gap-2">
+          <div className="flex justify-between items-center gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <VoiceInput
+                onResult={(transcript) => {
+                  setInput(prev => prev ? `${prev} ${transcript}` : transcript);
+                }}
+                disabled={loading}
+              />
+              
               <Button
                 type="button"
                 variant="outline"
@@ -744,6 +753,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
                 <Paperclip className="w-4 h-4 mr-2" />
                 {showFileUpload ? "Hide Upload" : "Upload Document"}
               </Button>
+              
               <Button
                 type="button"
                 variant="ghost"
@@ -756,23 +766,29 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
               </Button>
             </div>
 
-            <Button
-              onClick={() => handleSubmit()}
-              disabled={loading || !input.trim()}
-              className="bg-primary hover:bg-primary/90 transition-all shadow-sm"
-            >
-              {loading ? (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4 mr-2" />
-                  Analyze Notes
-                </>
+            <div className="flex gap-2 items-center">
+              {input && (
+                <SpeakButton text={input} disabled={loading} />
               )}
-            </Button>
+              
+              <Button
+                onClick={() => handleSubmit()}
+                disabled={loading || !input.trim()}
+                className="bg-primary hover:bg-primary/90 transition-all shadow-sm"
+              >
+                {loading ? (
+                  <>
+                    <Sparkles className="w-4 h-4 mr-2 animate-spin" />
+                    Analyzing...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4 mr-2" />
+                    Analyze Notes
+                  </>
+                )}
+              </Button>
+            </div>
 
             {loading && (
               <Button

@@ -4,6 +4,7 @@ import { Copy, Download, Check, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import ReactMarkdown from "react-markdown";
+import { SpeakButton } from "./SpeakButton";
 
 interface MessageActionsProps {
   content: string;
@@ -63,6 +64,8 @@ export const MessageActions = ({ content, isStreaming, onRegenerate }: MessageAc
 
   return (
     <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50">
+      <SpeakButton text={content} />
+      
       <Button
         variant="ghost"
         size="sm"

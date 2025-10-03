@@ -24,6 +24,8 @@ export type Database = {
           ip_address: string | null
           metadata: Json | null
           part2_disclosure_purpose: string | null
+          program_id: string | null
+          purpose: string | null
           resource_id: string | null
           resource_type: string
           user_agent: string | null
@@ -38,6 +40,8 @@ export type Database = {
           ip_address?: string | null
           metadata?: Json | null
           part2_disclosure_purpose?: string | null
+          program_id?: string | null
+          purpose?: string | null
           resource_id?: string | null
           resource_type: string
           user_agent?: string | null
@@ -52,12 +56,22 @@ export type Database = {
           ip_address?: string | null
           metadata?: Json | null
           part2_disclosure_purpose?: string | null
+          program_id?: string | null
+          purpose?: string | null
           resource_id?: string | null
           resource_type?: string
           user_agent?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       compliance_reports: {
         Row: {
@@ -98,6 +112,7 @@ export type Database = {
           part2_consent_date: string | null
           part2_consent_expiry: string | null
           part2_consent_status: string | null
+          program_id: string | null
           title: string
           updated_at: string
           user_id: string
@@ -110,6 +125,7 @@ export type Database = {
           part2_consent_date?: string | null
           part2_consent_expiry?: string | null
           part2_consent_status?: string | null
+          program_id?: string | null
           title: string
           updated_at?: string
           user_id: string
@@ -122,9 +138,60 @@ export type Database = {
           part2_consent_date?: string | null
           part2_consent_expiry?: string | null
           part2_consent_status?: string | null
+          program_id?: string | null
           title?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      disclosure_consents: {
+        Row: {
+          artifact_hash: string
+          created_at: string
+          created_by: string
+          id: string
+          purpose: string
+          revoked_at: string | null
+          scope: Json
+          subject_external_id: string
+          updated_at: string
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          artifact_hash: string
+          created_at?: string
+          created_by: string
+          id?: string
+          purpose: string
+          revoked_at?: string | null
+          scope: Json
+          subject_external_id: string
+          updated_at?: string
+          valid_from: string
+          valid_until?: string | null
+        }
+        Update: {
+          artifact_hash?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          purpose?: string
+          revoked_at?: string | null
+          scope?: Json
+          subject_external_id?: string
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
         }
         Relationships: []
       }
@@ -219,6 +286,33 @@ export type Database = {
           },
         ]
       }
+      programs: {
+        Row: {
+          created_at: string
+          id: string
+          is_part2: boolean
+          name: string
+          org_unit_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_part2?: boolean
+          name: string
+          org_unit_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_part2?: boolean
+          name?: string
+          org_unit_code?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       structured_notes: {
         Row: {
           client_perspective: string | null
@@ -234,6 +328,7 @@ export type Database = {
           new_issues_details: string | null
           new_issues_presented: boolean | null
           next_steps: string | null
+          program_id: string | null
           response_to_interventions: string | null
           safety_assessment: string | null
           session_date: string
@@ -255,6 +350,7 @@ export type Database = {
           new_issues_details?: string | null
           new_issues_presented?: boolean | null
           next_steps?: string | null
+          program_id?: string | null
           response_to_interventions?: string | null
           safety_assessment?: string | null
           session_date?: string
@@ -276,6 +372,7 @@ export type Database = {
           new_issues_details?: string | null
           new_issues_presented?: boolean | null
           next_steps?: string | null
+          program_id?: string | null
           response_to_interventions?: string | null
           safety_assessment?: string | null
           session_date?: string
@@ -291,6 +388,13 @@ export type Database = {
             referencedRelation: "conversations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "structured_notes_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
         ]
       }
       uploaded_files: {
@@ -302,6 +406,7 @@ export type Database = {
           file_url: string
           id: string
           processed_content: string | null
+          program_id: string | null
         }
         Insert: {
           conversation_id: string
@@ -311,6 +416,7 @@ export type Database = {
           file_url: string
           id?: string
           processed_content?: string | null
+          program_id?: string | null
         }
         Update: {
           conversation_id?: string
@@ -320,6 +426,7 @@ export type Database = {
           file_url?: string
           id?: string
           processed_content?: string | null
+          program_id?: string | null
         }
         Relationships: [
           {
@@ -327,6 +434,45 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "uploaded_files_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_program_memberships: {
+        Row: {
+          created_at: string
+          id: string
+          program_id: string
+          role: Database["public"]["Enums"]["program_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          program_id: string
+          role: Database["public"]["Enums"]["program_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          program_id?: string
+          role?: Database["public"]["Enums"]["program_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_program_memberships_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
             referencedColumns: ["id"]
           },
         ]
@@ -357,6 +503,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      derive_classification: {
+        Args: { _program_id: string }
+        Returns: Database["public"]["Enums"]["data_classification"]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -364,10 +514,15 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_program_member: {
+        Args: { _program_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "user"
       data_classification: "standard_phi" | "part2_protected"
+      program_role: "treating_provider" | "care_team" | "program_admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -497,6 +652,7 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "user"],
       data_classification: ["standard_phi", "part2_protected"],
+      program_role: ["treating_provider", "care_team", "program_admin"],
     },
   },
 } as const

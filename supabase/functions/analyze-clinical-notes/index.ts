@@ -188,6 +188,7 @@ serve(async (req) => {
       );
     }
 
+    // Auth client for user validation
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -212,11 +213,16 @@ serve(async (req) => {
 
     const { notes, action, file_content, conversation_history }: AnalysisRequest = await req.json();
 
-    // Audit log the AI analysis request
+    // Audit log using service role (bypasses RLS for audit_logs table)
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+    );
+    
     const ipAddress = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
     const userAgent = req.headers.get("user-agent") || "unknown";
     
-    await supabase.from('audit_logs').insert({
+    const { error: auditError } = await supabaseAdmin.from('audit_logs').insert({
       user_id: user.id,
       action: 'ai_analysis_request',
       resource_type: 'clinical_notes',
@@ -224,6 +230,10 @@ serve(async (req) => {
       ip_address: ipAddress,
       user_agent: userAgent
     });
+    
+    if (auditError) {
+      console.error('Audit log failed:', auditError.message);
+    }
 
     if (!notes && !file_content) {
       throw new Error("Either notes or file_content is required");

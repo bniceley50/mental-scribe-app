@@ -122,11 +122,10 @@ const SecuritySettings = () => {
   };
 
   const hashCode = async (code: string): Promise<string> => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(code);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    // Note: Actual hashing now happens server-side with salt via trigger
+    // This is just for display purposes - we store plaintext temporarily
+    // and the database trigger will hash it properly with salt
+    return code;
   };
 
   const downloadRecoveryCodes = () => {

@@ -361,6 +361,7 @@ export type Database = {
           code_hash: string
           created_at: string
           id: string
+          salt: string | null
           used_at: string | null
           user_id: string
         }
@@ -368,6 +369,7 @@ export type Database = {
           code_hash: string
           created_at?: string
           id?: string
+          salt?: string | null
           used_at?: string | null
           user_id: string
         }
@@ -375,6 +377,7 @@ export type Database = {
           code_hash?: string
           created_at?: string
           id?: string
+          salt?: string | null
           used_at?: string | null
           user_id?: string
         }
@@ -887,6 +890,10 @@ export type Database = {
         Args: { _program_id: string }
         Returns: Database["public"]["Enums"]["data_classification"]
       }
+      generate_salt: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
       has_active_part2_consent: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
@@ -900,6 +907,10 @@ export type Database = {
       }
       hash_external_id: {
         Args: { raw_id: string }
+        Returns: string
+      }
+      hash_recovery_code: {
+        Args: { code: string; salt: string }
         Returns: string
       }
       is_account_locked: {

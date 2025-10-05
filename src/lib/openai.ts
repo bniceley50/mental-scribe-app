@@ -5,9 +5,11 @@ const MAX_FILE_LENGTH = 100000;
 
 interface AnalyzeNotesParams {
   notes: string;
-  action: "soap_note" | "session_summary" | "key_points" | "progress_report";
+  action: "soap_note" | "session_summary" | "key_points" | "progress_report" | "edit_content";
   fileContent?: string;
   conversationHistory?: Array<{ role: string; content: string }>;
+  editInstruction?: string;
+  originalContent?: string;
   onChunk: (text: string) => void;
   onComplete: () => void;
   onError: (error: string) => void;
@@ -18,6 +20,8 @@ export const analyzeNotesStreaming = async ({
   action,
   fileContent,
   conversationHistory,
+  editInstruction,
+  originalContent,
   onChunk,
   onComplete,
   onError,
@@ -56,6 +60,8 @@ export const analyzeNotesStreaming = async ({
           action,
           file_content: sanitizedFile,
           conversation_history: conversationHistory,
+          edit_instruction: editInstruction,
+          original_content: originalContent,
         }),
       }
     );

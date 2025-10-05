@@ -40,9 +40,11 @@ async function checkRateLimit(userId: string): Promise<boolean> {
 
 interface AnalysisRequest {
   notes: string;
-  action: "soap_note" | "session_summary" | "key_points" | "progress_report" | "medical_entities" | "clinical_summary" | "risk_assessment";
+  action: "soap_note" | "session_summary" | "key_points" | "progress_report" | "medical_entities" | "clinical_summary" | "risk_assessment" | "edit_content";
   file_content?: string;
   conversation_history?: Array<{ role: string; content: string }>;
+  edit_instruction?: string;
+  original_content?: string;
 }
 
 const getSystemPrompt = (action: string): string => {
@@ -137,6 +139,19 @@ Analyze and provide:
 - Follow-up urgency
 
 Be thorough and err on the side of caution for safety.`,
+
+    edit_content: `You are a clinical documentation editor. Your task is to modify existing clinical content based on the user's natural language instruction.
+
+Guidelines:
+- Preserve clinical accuracy and professional terminology
+- Maintain HIPAA compliance and appropriate documentation standards
+- Apply the requested changes precisely while keeping unchanged portions intact
+- If asked to condense, remove redundancy while keeping key clinical information
+- If asked to expand, add relevant clinical detail and context
+- If asked to rephrase, maintain the same meaning with improved clarity
+- Always preserve patient safety information and critical clinical data
+
+The user will provide the original content and their editing instruction.`,
   };
 
   return prompts[action as keyof typeof prompts] || prompts.session_summary;
@@ -190,7 +205,7 @@ serve(async (req) => {
       );
     }
 
-    const { notes, action, file_content, conversation_history }: AnalysisRequest = await req.json();
+    const { notes, action, file_content, conversation_history, edit_instruction, original_content }: AnalysisRequest = await req.json();
 
     // Audit log using service role
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -211,13 +226,6 @@ serve(async (req) => {
       console.error('Audit log failed:', auditError.message);
     }
 
-    if (!notes && !file_content) {
-      throw new Error("Either notes or file_content is required");
-    }
-
-    // Combine notes and file content if both exist
-    const fullNotes = [notes, file_content].filter(Boolean).join("\n\n");
-
     // Build messages array
     const messages = [
       {
@@ -231,11 +239,26 @@ serve(async (req) => {
       messages.push(...conversation_history);
     }
 
-    // Add current notes
-    messages.push({
-      role: "user",
-      content: `Session Notes:\n\n${fullNotes}`,
-    });
+    // Handle edit_content action differently
+    if (action === "edit_content" && original_content && edit_instruction) {
+      messages.push({
+        role: "user",
+        content: `Original content:\n\n${original_content}\n\n---\n\nEdit instruction: ${edit_instruction}`,
+      });
+    } else {
+      if (!notes && !file_content) {
+        throw new Error("Either notes or file_content is required");
+      }
+
+      // Combine notes and file content if both exist
+      const fullNotes = [notes, file_content].filter(Boolean).join("\n\n");
+
+      // Add current notes
+      messages.push({
+        role: "user",
+        content: `Session Notes:\n\n${fullNotes}`,
+      });
+    }
 
     console.log(`AI analysis request: action=${action}, user=${user.id}, notes_length=${notes?.length || 0}`);
 

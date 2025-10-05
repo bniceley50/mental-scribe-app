@@ -19,6 +19,7 @@ import { AdvancedAnalysis } from "./AdvancedAnalysis";
 import { StructuredNoteForm } from "./StructuredNoteForm";
 import { VoiceInput } from "./VoiceInput";
 import { SpeakButton } from "./SpeakButton";
+import { EditMessageDialog } from "./EditMessageDialog";
 import {
   extractTextFromFile,
   uploadFileToStorage,
@@ -78,6 +79,8 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
   const [isPart2Protected, setIsPart2Protected] = useState(false);
   const [showPart2Warning, setShowPart2Warning] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingMessage, setEditingMessage] = useState<DBMessage | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   
@@ -317,6 +320,79 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     }
   };
 
+  const handleEditMessage = (message: DBMessage) => {
+    setEditingMessage(message);
+    setEditDialogOpen(true);
+  };
+
+  const handleApplyEdit = async (editInstruction: string) => {
+    if (!editingMessage || !conversationId) return;
+
+    setLoading(true);
+    
+    let editedContent = "";
+    const streamingMessageId = `editing-${Date.now()}`;
+    
+    // Add a temporary streaming message
+    setDisplayMessages((prev) => [
+      ...prev,
+      {
+        id: streamingMessageId,
+        role: "assistant",
+        content: "",
+        created_at: new Date().toISOString(),
+        isStreaming: true,
+      },
+    ]);
+
+    try {
+      await analyzeNotesStreaming({
+        notes: "", // Not used for edit action
+        action: "edit_content",
+        originalContent: editingMessage.content,
+        editInstruction: editInstruction,
+        onChunk: (chunk) => {
+          editedContent += chunk;
+          setDisplayMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === streamingMessageId
+                ? { ...msg, content: editedContent }
+                : msg
+            )
+          );
+        },
+        onComplete: async () => {
+          // Save the edited content as a new assistant message
+          await addMessage("assistant", editedContent);
+          
+          // Remove the temporary streaming message
+          setDisplayMessages((prev) =>
+            prev.filter((msg) => msg.id !== streamingMessageId)
+          );
+          
+          setLoading(false);
+          setEditDialogOpen(false);
+          setEditingMessage(null);
+          showToast.success("Edit applied successfully!");
+        },
+        onError: (error) => {
+          console.error("Edit error:", error);
+          showToast.error(error);
+          
+          setDisplayMessages((prev) =>
+            prev.filter((msg) => msg.id !== streamingMessageId)
+          );
+          
+          setLoading(false);
+        },
+      });
+    } catch (error) {
+      console.error("Error applying edit:", error);
+      showToast.error("Failed to apply edit");
+      setLoading(false);
+    }
+  };
+
   const handleQuickAction = (action: string) => {
     const actionMap: Record<string, string> = {
       soap: "soap_note",
@@ -552,6 +628,8 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
                         content={message.content}
                         isStreaming={message.isStreaming}
                         onRegenerate={message.isStreaming ? undefined : handleRegenerate}
+                        onEdit={() => handleEditMessage(message)}
+                        showEdit={!message.isStreaming}
                       />
                     </>
                   ) : (
@@ -913,6 +991,15 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Edit Message Dialog */}
+      <EditMessageDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        originalContent={editingMessage?.content || ""}
+        onEdit={handleApplyEdit}
+        isLoading={loading}
+      />
 
       {/* Clear Conversation Dialog */}
       <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>

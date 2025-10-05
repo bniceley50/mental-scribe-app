@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Copy, Download, Check, RefreshCw } from "lucide-react";
+import { Copy, Download, Check, RefreshCw, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 import ReactMarkdown from "react-markdown";
@@ -10,9 +10,11 @@ interface MessageActionsProps {
   content: string;
   isStreaming?: boolean;
   onRegenerate?: () => void;
+  onEdit?: () => void;
+  showEdit?: boolean;
 }
 
-export const MessageActions = ({ content, isStreaming, onRegenerate }: MessageActionsProps) => {
+export const MessageActions = ({ content, isStreaming, onRegenerate, onEdit, showEdit = false }: MessageActionsProps) => {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -65,6 +67,18 @@ export const MessageActions = ({ content, isStreaming, onRegenerate }: MessageAc
   return (
     <div className="flex items-center gap-2 mt-3 pt-3 border-t border-border/50">
       <SpeakButton text={content} />
+
+      {showEdit && onEdit && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onEdit}
+          className="h-7 text-xs"
+        >
+          <Wand2 className="w-3 h-3 mr-1" />
+          Edit with AI
+        </Button>
+      )}
       
       <Button
         variant="ghost"

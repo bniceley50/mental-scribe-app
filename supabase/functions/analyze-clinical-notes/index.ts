@@ -175,15 +175,19 @@ serve(async (req) => {
       );
     }
 
-    // Auth client for user validation
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    // Decode JWT directly (verify_jwt=true ensures it's valid)
+    let user: { id: string } | null = null;
+    try {
+      const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+      const payload = JSON.parse(atob(token.split(".")[1] || ""));
+      if (payload?.sub) {
+        user = { id: payload.sub };
+      }
+    } catch (_) {
+      // fall through to unauthorized
+    }
 
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
+    if (!user) {
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }

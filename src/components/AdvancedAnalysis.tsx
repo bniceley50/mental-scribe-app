@@ -75,6 +75,8 @@ export const AdvancedAnalysis = ({ noteContent, conversationId }: AdvancedAnalys
           headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${session.access_token}`,
+            // Include publishable API key to satisfy the gateway requirements
+            "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           },
           body: JSON.stringify({
             notes: noteContent,

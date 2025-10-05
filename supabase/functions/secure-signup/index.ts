@@ -98,6 +98,29 @@ serve(async (req) => {
 
     const { email, password } = await req.json();
 
+    // SECURITY ENHANCEMENT: Check account lockout before processing
+    const { data: isLocked, error: lockoutError } = await supabaseAdmin.rpc(
+      'is_account_locked',
+      { _identifier: email, _lockout_minutes: 15 }
+    );
+
+    if (lockoutError) {
+      console.error('Lockout check error:', lockoutError);
+    }
+
+    if (isLocked) {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Account temporarily locked due to multiple failed login attempts. Please try again in 15 minutes.',
+          code: 'ACCOUNT_LOCKED'
+        }),
+        { 
+          status: 429, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
     // Validate inputs
     if (!email || !password) {
       return new Response(JSON.stringify({ error: 'Email and password required' }), {

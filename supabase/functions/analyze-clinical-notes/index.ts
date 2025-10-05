@@ -6,10 +6,13 @@ const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-// CORS headers for all requests
+// CORS headers for all requests with CSP security
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Content-Security-Policy": "default-src 'self'; script-src 'self'; object-src 'none';",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
 };
 
 /**

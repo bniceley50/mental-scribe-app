@@ -294,6 +294,30 @@ export type Database = {
         }
         Relationships: []
       }
+      failed_login_attempts: {
+        Row: {
+          attempted_at: string
+          email: string | null
+          id: string
+          ip_address: string
+          user_id: string | null
+        }
+        Insert: {
+          attempted_at?: string
+          email?: string | null
+          id?: string
+          ip_address: string
+          user_id?: string | null
+        }
+        Update: {
+          attempted_at?: string
+          email?: string | null
+          id?: string
+          ip_address?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -331,6 +355,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      mfa_recovery_codes: {
+        Row: {
+          code_hash: string
+          created_at: string
+          id: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          code_hash: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          code_hash?: string
+          created_at?: string
+          id?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       part2_consents: {
         Row: {
@@ -759,8 +807,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      cleanup_old_failed_logins: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_old_rate_limits: {
         Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      clear_failed_logins: {
+        Args: { _identifier: string }
         Returns: undefined
       }
       derive_classification: {
@@ -782,6 +838,10 @@ export type Database = {
         Args: { raw_id: string }
         Returns: string
       }
+      is_account_locked: {
+        Args: { _identifier: string; _lockout_minutes?: number }
+        Returns: boolean
+      }
       is_clinical_staff: {
         Args: { _program_id: string; _user_id: string }
         Returns: boolean
@@ -789,6 +849,10 @@ export type Database = {
       is_program_member: {
         Args: { _program_id: string; _user_id: string }
         Returns: boolean
+      }
+      record_failed_login: {
+        Args: { _email: string; _ip_address: string; _user_id: string }
+        Returns: undefined
       }
       sanitize_audit_metadata: {
         Args: { meta: Json }

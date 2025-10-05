@@ -30,6 +30,8 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mfaCode, setMfaCode] = useState("");
+  const [isMfaRequired, setIsMfaRequired] = useState(false);
   const navigate = useNavigate();
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -85,17 +87,86 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      // Check account lockout before attempting sign in
+      const { data: lockoutCheck } = await supabase.rpc('is_account_locked', {
+        _identifier: validation.data.email
+      });
+
+      if (lockoutCheck) {
+        toast.error("Account temporarily locked due to multiple failed login attempts. Please try again in 15 minutes.");
+        setLoading(false);
+        return;
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: validation.data.email,
         password: validation.data.password,
       });
 
-      if (error) throw error;
+      if (error) {
+        // Record failed login attempt
+        await supabase.rpc('record_failed_login', {
+          _user_id: null,
+          _email: validation.data.email,
+          _ip_address: 'unknown'
+        });
+        
+        throw error;
+      }
+
+      // Check if MFA is required
+      if (data?.user && !data.session) {
+        setIsMfaRequired(true);
+        toast.info("Please enter your authentication code");
+        setLoading(false);
+        return;
+      }
+
+      // Clear failed login attempts on successful sign in
+      await supabase.rpc('clear_failed_logins', {
+        _identifier: validation.data.email
+      });
 
       toast.success("Signed in successfully!");
       navigate("/");
     } catch (error: any) {
       toast.error(error.message || "Failed to sign in");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMfaVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      // Use challenge and verify for MFA
+      const { data } = await supabase.auth.mfa.listFactors();
+      const factorId = data?.all?.[0]?.id;
+      
+      if (!factorId) {
+        toast.error("MFA setup required");
+        setLoading(false);
+        return;
+      }
+
+      const { error } = await supabase.auth.mfa.challengeAndVerify({
+        factorId,
+        code: mfaCode
+      });
+
+      if (error) throw error;
+
+      // Clear failed login attempts on successful MFA
+      await supabase.rpc('clear_failed_logins', {
+        _identifier: email
+      });
+
+      toast.success("Successfully verified!");
+      navigate("/");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to verify authentication code");
     } finally {
       setLoading(false);
     }
@@ -123,39 +194,77 @@ const Auth = () => {
             </TabsList>
 
             <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email">Email</Label>
-                  <Input
-                    id="signin-email"
-                    type="email"
-                    placeholder="your.email@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    className="transition-all"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password">Password</Label>
-                  <Input
-                    id="signin-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="transition-all"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  className="w-full bg-primary hover:bg-primary/90 transition-all"
-                  disabled={loading}
-                >
-                  {loading ? "Signing in..." : "Sign In"}
-                </Button>
-              </form>
+              {isMfaRequired ? (
+                <form onSubmit={handleMfaVerify} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="mfa-code">Authentication Code</Label>
+                    <Input
+                      id="mfa-code"
+                      type="text"
+                      placeholder="Enter 6-digit code"
+                      value={mfaCode}
+                      onChange={(e) => setMfaCode(e.target.value)}
+                      maxLength={6}
+                      required
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Enter the code from your authenticator app
+                    </p>
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-primary hover:bg-primary/90 transition-all"
+                    disabled={loading}
+                  >
+                    {loading ? "Verifying..." : "Verify Code"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => {
+                      setIsMfaRequired(false);
+                      setMfaCode("");
+                    }}
+                  >
+                    Back to Sign In
+                  </Button>
+                </form>
+              ) : (
+                <form onSubmit={handleSignIn} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-email">Email</Label>
+                    <Input
+                      id="signin-email"
+                      type="email"
+                      placeholder="your.email@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      className="transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="signin-password">Password</Label>
+                    <Input
+                      id="signin-password"
+                      type="password"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="transition-all"
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-primary hover:bg-primary/90 transition-all"
+                    disabled={loading}
+                  >
+                    {loading ? "Signing in..." : "Sign In"}
+                  </Button>
+                </form>
+              )}
             </TabsContent>
 
             <TabsContent value="signup">

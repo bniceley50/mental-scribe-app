@@ -43,6 +43,9 @@ function allowCors(req: Request, res: Response) {
     hdrs.set("Vary", "Origin");
     hdrs.set("Access-Control-Allow-Methods", "POST, OPTIONS");
     hdrs.set("Access-Control-Allow-Headers", "authorization, content-type, x-disclosure-purpose");
+    hdrs.set("Content-Security-Policy", "default-src 'self'; script-src 'self'; object-src 'none';");
+    hdrs.set("X-Content-Type-Options", "nosniff");
+    hdrs.set("X-Frame-Options", "DENY");
   }
   return new Response(res.body, { status: res.status, headers: hdrs });
 }

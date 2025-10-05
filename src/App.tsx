@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import History from "./pages/History";
 import Settings from "./pages/Settings";
+import SecuritySettings from "./pages/SecuritySettings";
 import Clients from "./pages/Clients";
 import ClientProfile from "./pages/ClientProfile";
 import NotFound from "./pages/NotFound";
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/client/:id" element={<ClientProfile />} />
             <Route path="/history" element={<History />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/settings/security" element={<SecuritySettings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

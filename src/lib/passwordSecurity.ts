@@ -31,9 +31,9 @@ export async function isPasswordLeaked(password: string): Promise<boolean> {
     });
     
     if (!response.ok) {
-      // If API is down, fail open (allow password) rather than block users
-      console.warn('HIBP API unavailable, allowing password');
-      return false;
+      // SECURITY FIX: Fail closed - if API is down, require different password
+      console.error('HIBP API unavailable, failing closed for security');
+      return true; // Treat as leaked to prevent potentially compromised passwords
     }
     
     const text = await response.text();
@@ -45,8 +45,8 @@ export async function isPasswordLeaked(password: string): Promise<boolean> {
       return hashSuffix === suffix;
     });
   } catch (error) {
-    // Fail open on errors - don't block legitimate users due to technical issues
+    // SECURITY FIX: Fail closed on errors - better to block signup than allow leaked password
     console.error('Password leak check failed:', error);
-    return false;
+    return true; // Treat as leaked to force user to try different password
   }
 }

@@ -90,11 +90,15 @@ export const uploadFileToStorage = async (
 
     if (error) throw error;
 
-    const { data: { publicUrl } } = supabase.storage
+    // SECURITY FIX: Use signed URL instead of public URL for PHI documents
+    // This generates a time-limited URL that expires after 1 hour
+    const { data: signedData, error: signedError } = await supabase.storage
       .from("clinical-documents")
-      .getPublicUrl(fileName);
+      .createSignedUrl(fileName, 3600); // 1 hour expiry
 
-    return { url: publicUrl, path: data.path };
+    if (signedError) throw signedError;
+
+    return { url: signedData.signedUrl, path: data.path };
   } catch (error: any) {
     console.error("Error uploading file:", error);
     toast.error(error.message || "Failed to upload file");

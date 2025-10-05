@@ -9,20 +9,10 @@ const RATE_LIMIT_WINDOW = 60000; // 1 minute
 const MAX_REQUESTS_PER_WINDOW = 10;
 const userRequestCounts = new Map<string, { count: number; resetTime: number }>();
 
-// Allowed origins for CORS
-const allowedOrigins = [
-  "https://mental-scribe-app.lovable.app",
-  "http://localhost:5173",
-  "http://localhost:8080",
-];
-
-const getCorsHeaders = (origin: string | null) => {
-  const isAllowed = origin && allowedOrigins.includes(origin);
-  return {
-    "Access-Control-Allow-Origin": isAllowed ? origin : allowedOrigins[0],
-    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-    "Access-Control-Allow-Credentials": "true",
-  };
+// CORS headers for all requests
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 function checkRateLimit(userId: string): boolean {
@@ -166,9 +156,6 @@ Be thorough and err on the side of caution for safety.`,
 };
 
 serve(async (req) => {
-  const origin = req.headers.get("origin");
-  const corsHeaders = getCorsHeaders(origin);
-
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -323,9 +310,6 @@ serve(async (req) => {
     } else if (error.message?.includes("Authentication") || error.message?.includes("Unauthorized")) {
       userMessage = "Authentication error. Please sign in again.";
     }
-
-    const origin = req.headers.get("origin");
-    const corsHeaders = getCorsHeaders(origin);
     
     return new Response(
       JSON.stringify({ error: userMessage }),

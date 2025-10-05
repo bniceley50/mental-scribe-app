@@ -77,26 +77,7 @@ Present as a bulleted list with clear, concise points.`,
 
 Be thorough and professional.`,
 
-    medical_entities: `You are an expert clinical NLP system. Extract and categorize all medical entities from the clinical notes.
-
-Extract the following in a structured JSON format:
-{
-  "diagnoses": ["list of mentioned diagnoses, conditions, or suspected conditions"],
-  "medications": ["list of medications with dosages if mentioned"],
-  "symptoms": ["list of reported symptoms"],
-  "procedures": ["list of procedures, treatments, or interventions"],
-  "vitals": ["list of vital signs if mentioned"],
-  "risk_factors": ["list of identified risk factors"],
-  "mental_status": {
-    "mood": "description",
-    "affect": "description",
-    "thought_process": "description",
-    "orientation": "description"
-  },
-  "clinical_concerns": ["list of immediate clinical concerns"]
-}
-
-Be thorough and accurate. Only include entities explicitly mentioned in the notes.`,
+    medical_entities: `You are an expert clinical NLP system. Extract and categorize all medical entities from the clinical notes.\n\nExtract the following in a structured JSON format:\n{\n  "diagnoses": ["list of mentioned diagnoses, conditions, or suspected conditions"],\n  "medications": ["list of medications with dosages if mentioned"],\n  "symptoms": ["list of reported symptoms"],\n  "procedures": ["list of procedures, treatments, or interventions"],\n  "vitals": ["list of vital signs if mentioned"],\n  "risk_factors": ["list of identified risk factors"],\n  "mental_status": {\n    "mood": "description",\n    "affect": "description",\n    "thought_process": "description",\n    "orientation": "description"\n  },\n  "clinical_concerns": ["list of immediate clinical concerns"]\n}\n\nStrict output rules:\n- Return ONLY a single valid JSON object.\n- No markdown, no code fences, no extra commentary.\n- Use empty arrays when nothing is mentioned.\n- Use concise strings without trailing punctuation.`,
 
     clinical_summary: `You are a clinical AI assistant. Provide a comprehensive yet concise clinical summary.
 
@@ -267,6 +248,7 @@ serve(async (req) => {
         temperature: action === "medical_entities" ? 0.3 : 0.7,
         max_tokens: action === "clinical_summary" || action === "risk_assessment" ? 3000 : 2000,
         stream: true,
+        response_format: action === "medical_entities" ? { type: "json_object" } : undefined,
       }),
     });
 

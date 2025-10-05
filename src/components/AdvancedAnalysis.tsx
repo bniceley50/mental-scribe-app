@@ -138,10 +138,20 @@ export const AdvancedAnalysis = ({ noteContent, conversationId }: AdvancedAnalys
       // Store the result
       if (analysisType === "medical_entities") {
         try {
-          const entities = JSON.parse(fullResponse);
+          // Sanitize possible code fences or extra text before parsing
+          let jsonText = fullResponse.trim();
+          if (jsonText.startsWith("```")) {
+            jsonText = jsonText.replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
+          }
+          const firstBrace = jsonText.indexOf("{");
+          const lastBrace = jsonText.lastIndexOf("}");
+          if (firstBrace !== -1 && lastBrace !== -1) {
+            jsonText = jsonText.slice(firstBrace, lastBrace + 1);
+          }
+          const entities = JSON.parse(jsonText);
           setResults(prev => ({ ...prev, medical_entities: entities }));
         } catch (e) {
-          console.error("Failed to parse medical entities:", e);
+          console.error("Failed to parse medical entities:", e, fullResponse);
           toast({
             title: "Parse Error",
             description: "Unable to parse medical entities from response",

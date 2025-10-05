@@ -62,7 +62,11 @@ export const analyzeNotesStreaming = async ({
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `API error: ${response.status}`);
+      // Avoid exposing internal error details in production
+      const errorMessage = response.status >= 500 
+        ? "Service temporarily unavailable. Please try again." 
+        : (errorData.error || "Failed to process request");
+      throw new Error(errorMessage);
     }
 
     if (!response.body) {
@@ -106,7 +110,13 @@ export const analyzeNotesStreaming = async ({
 
     onComplete();
   } catch (error: any) {
+    // Log error internally but don't expose details to user in production
     console.error("Error analyzing notes:", error);
-    onError(error.message || "Failed to analyze notes");
+    const userMessage = error.message?.includes("authenticated") 
+      ? "Session expired. Please sign in again."
+      : error.message?.includes("too long")
+      ? error.message
+      : "Failed to analyze notes. Please try again.";
+    onError(userMessage);
   }
 };

@@ -28,6 +28,7 @@ import {
 } from "@/lib/fileUpload";
 import { analyzeNotesStreaming } from "@/lib/openai";
 import { exportConversationToPDF, exportConversationToText, copyConversationToClipboard } from "@/lib/exportUtils";
+import { supabase } from "@/integrations/supabase/client";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -99,7 +100,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     };
   }, [input, conversationId]);
 
-  // Load draft on mount
+  // Load draft on mount and cleanup on unmount
   useEffect(() => {
     if (!conversationId) {
       const draft = localStorage.getItem("clinicalai_draft");
@@ -107,6 +108,15 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         setInput(draft);
       }
     }
+
+    // Cleanup: Clear draft when component unmounts or user signs out
+    return () => {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) {
+          localStorage.removeItem("clinicalai_draft");
+        }
+      });
+    };
   }, [conversationId]);
 
   useEffect(() => {

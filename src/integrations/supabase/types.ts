@@ -532,11 +532,19 @@ export type Database = {
         Args: { _program_id: string }
         Returns: Database["public"]["Enums"]["data_classification"]
       }
+      has_active_part2_consent: {
+        Args: { _conversation_id: string; _user_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_clinical_staff: {
+        Args: { _program_id: string; _user_id: string }
         Returns: boolean
       }
       is_program_member: {

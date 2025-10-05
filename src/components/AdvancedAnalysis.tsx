@@ -61,33 +61,65 @@ export const AdvancedAnalysis = ({ noteContent, conversationId }: AdvancedAnalys
     setActiveAnalysis(analysisType);
 
     try {
-      const { data, error } = await supabase.functions.invoke("analyze-clinical-notes", {
-        body: {
-          notes: noteContent,
-          action: analysisType,
-          conversation_history: [],
-        },
-      });
+      // Get the user's session token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error("Not authenticated");
+      }
 
-      if (error) throw error;
+      // Use fetch directly for streaming responses
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-clinical-notes`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            notes: noteContent,
+            action: analysisType,
+            conversation_history: [],
+          }),
+        }
+      );
 
-      // Parse the response
-      const reader = data.getReader();
+      if (!response.ok) {
+        if (response.status === 429) {
+          throw new Error("Rate limit exceeded. Please try again in a moment.");
+        }
+        if (response.status === 402) {
+          throw new Error("AI service credits depleted. Please contact support.");
+        }
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Request failed: ${response.status}`);
+      }
+
+      if (!response.body) {
+        throw new Error("No response body");
+      }
+
+      // Parse the streaming response
+      const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let fullResponse = "";
+      let buffer = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        
-        const chunk = decoder.decode(value);
-        const lines = chunk.split("\n");
-        
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
         for (const line of lines) {
           if (line.startsWith("data: ")) {
             const jsonStr = line.slice(6);
-            if (jsonStr === "[DONE]") continue;
-            
+            if (jsonStr === "[DONE]") {
+              break;
+            }
+
             try {
               const parsed = JSON.parse(jsonStr);
               const content = parsed.choices?.[0]?.delta?.content;
@@ -95,7 +127,7 @@ export const AdvancedAnalysis = ({ noteContent, conversationId }: AdvancedAnalys
                 fullResponse += content;
               }
             } catch (e) {
-              console.error("Error parsing SSE:", e);
+              console.warn("Failed to parse SSE data:", e);
             }
           }
         }
@@ -104,13 +136,16 @@ export const AdvancedAnalysis = ({ noteContent, conversationId }: AdvancedAnalys
       // Store the result
       if (analysisType === "medical_entities") {
         try {
-          setResults(prev => ({ ...prev, medical_entities: JSON.parse(fullResponse) }));
-        } catch {
+          const entities = JSON.parse(fullResponse);
+          setResults(prev => ({ ...prev, medical_entities: entities }));
+        } catch (e) {
+          console.error("Failed to parse medical entities:", e);
           toast({
             title: "Parse Error",
-            description: "Unable to parse medical entities",
+            description: "Unable to parse medical entities from response",
             variant: "destructive",
           });
+          return;
         }
       } else {
         setResults(prev => ({ ...prev, [analysisType]: fullResponse }));
@@ -120,11 +155,11 @@ export const AdvancedAnalysis = ({ noteContent, conversationId }: AdvancedAnalys
         title: "Analysis Complete",
         description: `${analysisType.replace(/_/g, " ")} completed successfully`,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Analysis error:", error);
       toast({
         title: "Analysis Failed",
-        description: "Unable to complete analysis. Please try again.",
+        description: error.message || "Unable to complete analysis. Please try again.",
         variant: "destructive",
       });
     } finally {

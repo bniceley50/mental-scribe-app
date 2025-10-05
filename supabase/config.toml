@@ -5,3 +5,6 @@ verify_jwt = true
 
 [functions.disclose]
 verify_jwt = true
+
+[functions.secure-signup]
+verify_jwt = false

@@ -44,27 +44,28 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      // Check if password has been leaked in data breaches (HIBP k-Anonymity)
-      const leaked = await isPasswordLeaked(validation.data.password);
-      if (leaked) {
-        toast.error("This password has appeared in a data breach. For your safety, please choose a different password.");
-        setLoading(false);
-        return;
-      }
-
-      const { error } = await supabase.auth.signUp({
-        email: validation.data.email,
-        password: validation.data.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
+      // Call secure-signup edge function with server-side HIBP enforcement
+      const { data, error } = await supabase.functions.invoke('secure-signup', {
+        body: {
+          email: validation.data.email,
+          password: validation.data.password,
         },
       });
 
       if (error) throw error;
+      
+      if (data?.error) {
+        toast.error(data.error);
+        setLoading(false);
+        return;
+      }
 
-      toast.success("Account created! Please check your email to verify.");
+      toast.success(data.message || "Account created! You can now sign in.");
+      
+      // Clear password field for security
+      setPassword("");
     } catch (error: any) {
-      toast.error(error.message || "Failed to sign up");
+      toast.error(error.message || "Failed to create account");
     } finally {
       setLoading(false);
     }

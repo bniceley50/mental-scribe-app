@@ -286,6 +286,27 @@ export type Database = {
           },
         ]
       }
+      patient_identity_links: {
+        Row: {
+          created_at: string
+          external_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          external_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          external_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       programs: {
         Row: {
           created_at: string
@@ -503,6 +524,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_view_patient_consent: {
+        Args: { _subject_external_id: string; _user_id: string }
+        Returns: boolean
+      }
       derive_classification: {
         Args: { _program_id: string }
         Returns: Database["public"]["Enums"]["data_classification"]

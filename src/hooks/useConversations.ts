@@ -51,7 +51,8 @@ export const useConversations = () => {
 
   const createConversation = async (
     title: string, 
-    isPart2Protected: boolean = false
+    isPart2Protected: boolean = false,
+    clientId?: string
   ): Promise<string | null> => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -63,7 +64,8 @@ export const useConversations = () => {
           user_id: user.id, 
           title,
           is_part2_protected: isPart2Protected,
-          data_classification: isPart2Protected ? 'part2_protected' : 'standard_phi'
+          data_classification: isPart2Protected ? 'part2_protected' : 'standard_phi',
+          client_id: clientId && clientId !== 'none' ? clientId : null
         }])
         .select("id")
         .single();

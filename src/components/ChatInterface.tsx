@@ -48,6 +48,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Part2Badge } from "@/components/Part2Badge";
+import { ClientSelector } from "@/components/clients/ClientSelector";
 
 interface UploadedFile {
   id: string;
@@ -75,6 +76,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
   const [draftSaveTimeout, setDraftSaveTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isPart2Protected, setIsPart2Protected] = useState(false);
   const [showPart2Warning, setShowPart2Warning] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState<string>("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   
@@ -172,7 +174,11 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     // Create new conversation if none exists
     if (!currentConversationId) {
       const title = generateTitle(messageContent);
-      currentConversationId = await createConversation(title, isPart2Protected);
+      currentConversationId = await createConversation(
+        title, 
+        isPart2Protected,
+        selectedClientId
+      );
       
       if (!currentConversationId) {
         showToast.error("Failed to create conversation");
@@ -323,7 +329,11 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     // Create conversation if none exists
     if (!currentConversationId) {
       const title = `Document Analysis: ${file.name}`;
-      currentConversationId = await createConversation(title);
+      currentConversationId = await createConversation(
+        title, 
+        isPart2Protected,
+        selectedClientId
+      );
       
       if (!currentConversationId) {
         showToast.error("Failed to create conversation");
@@ -748,6 +758,14 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
                 </Badge>
               )}
             </div>
+          )}
+
+          {/* Client Selection */}
+          {!conversationId && (
+            <ClientSelector
+              value={selectedClientId}
+              onChange={setSelectedClientId}
+            />
           )}
 
           {/* Part 2 Classification Checkbox */}

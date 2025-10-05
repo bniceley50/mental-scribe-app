@@ -39,6 +39,7 @@ const Layout = ({ children, currentConversationId, onConversationSelect }: Layou
 
   const navItems = [
     { path: "/", icon: FileText, label: "New Analysis" },
+    { path: "/clients", icon: Brain, label: "Clients" },
     { path: "/history", icon: History, label: "History" },
     { path: "/settings", icon: Settings, label: "Settings" },
   ];

@@ -73,6 +73,95 @@ export type Database = {
           },
         ]
       }
+      clients: {
+        Row: {
+          created_at: string
+          data_classification: Database["public"]["Enums"]["data_classification"]
+          date_of_birth: string | null
+          email: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          emergency_contact_relationship: string | null
+          external_id: string | null
+          first_name: string
+          gender: string | null
+          id: string
+          insurance_id: string | null
+          insurance_provider: string | null
+          is_active: boolean
+          last_name: string
+          phone: string | null
+          preferred_name: string | null
+          primary_diagnosis: string | null
+          program_id: string | null
+          pronouns: string | null
+          secondary_diagnoses: string[] | null
+          treatment_goals: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data_classification?: Database["public"]["Enums"]["data_classification"]
+          date_of_birth?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          external_id?: string | null
+          first_name: string
+          gender?: string | null
+          id?: string
+          insurance_id?: string | null
+          insurance_provider?: string | null
+          is_active?: boolean
+          last_name: string
+          phone?: string | null
+          preferred_name?: string | null
+          primary_diagnosis?: string | null
+          program_id?: string | null
+          pronouns?: string | null
+          secondary_diagnoses?: string[] | null
+          treatment_goals?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data_classification?: Database["public"]["Enums"]["data_classification"]
+          date_of_birth?: string | null
+          email?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          emergency_contact_relationship?: string | null
+          external_id?: string | null
+          first_name?: string
+          gender?: string | null
+          id?: string
+          insurance_id?: string | null
+          insurance_provider?: string | null
+          is_active?: boolean
+          last_name?: string
+          phone?: string | null
+          preferred_name?: string | null
+          primary_diagnosis?: string | null
+          program_id?: string | null
+          pronouns?: string | null
+          secondary_diagnoses?: string[] | null
+          treatment_goals?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clients_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       compliance_reports: {
         Row: {
           created_at: string
@@ -105,6 +194,7 @@ export type Database = {
       }
       conversations: {
         Row: {
+          client_id: string | null
           created_at: string
           data_classification: Database["public"]["Enums"]["data_classification"]
           id: string
@@ -118,6 +208,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          client_id?: string | null
           created_at?: string
           data_classification?: Database["public"]["Enums"]["data_classification"]
           id?: string
@@ -131,6 +222,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          client_id?: string | null
           created_at?: string
           data_classification?: Database["public"]["Enums"]["data_classification"]
           id?: string
@@ -144,6 +236,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "conversations_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "conversations_program_id_fkey"
             columns: ["program_id"]
@@ -334,8 +433,82 @@ export type Database = {
         }
         Relationships: []
       }
+      recordings: {
+        Row: {
+          client_id: string | null
+          conversation_id: string | null
+          created_at: string
+          data_classification: Database["public"]["Enums"]["data_classification"]
+          duration_seconds: number | null
+          file_name: string
+          file_size: number | null
+          file_url: string
+          id: string
+          program_id: string | null
+          transcription_status: string | null
+          transcription_text: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          data_classification?: Database["public"]["Enums"]["data_classification"]
+          duration_seconds?: number | null
+          file_name: string
+          file_size?: number | null
+          file_url: string
+          id?: string
+          program_id?: string | null
+          transcription_status?: string | null
+          transcription_text?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          data_classification?: Database["public"]["Enums"]["data_classification"]
+          duration_seconds?: number | null
+          file_name?: string
+          file_size?: number | null
+          file_url?: string
+          id?: string
+          program_id?: string | null
+          transcription_status?: string | null
+          transcription_text?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recordings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recordings_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recordings_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       structured_notes: {
         Row: {
+          client_id: string | null
           client_perspective: string | null
           clinical_impression: string | null
           conversation_id: string
@@ -358,6 +531,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          client_id?: string | null
           client_perspective?: string | null
           clinical_impression?: string | null
           conversation_id: string
@@ -380,6 +554,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          client_id?: string | null
           client_perspective?: string | null
           clinical_impression?: string | null
           conversation_id?: string
@@ -403,6 +578,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "structured_notes_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "structured_notes_conversation_id_fkey"
             columns: ["conversation_id"]
             isOneToOne: false
@@ -420,6 +602,7 @@ export type Database = {
       }
       uploaded_files: {
         Row: {
+          client_id: string | null
           conversation_id: string
           created_at: string
           file_name: string
@@ -430,6 +613,7 @@ export type Database = {
           program_id: string | null
         }
         Insert: {
+          client_id?: string | null
           conversation_id: string
           created_at?: string
           file_name: string
@@ -440,6 +624,7 @@ export type Database = {
           program_id?: string | null
         }
         Update: {
+          client_id?: string | null
           conversation_id?: string
           created_at?: string
           file_name?: string
@@ -450,6 +635,13 @@ export type Database = {
           program_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "uploaded_files_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "uploaded_files_conversation_id_fkey"
             columns: ["conversation_id"]

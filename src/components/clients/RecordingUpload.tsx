@@ -77,10 +77,12 @@ export function RecordingUpload({
 
       setProgress(60);
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
+      // Generate signed URL for secure access (1 hour expiry)
+      const { data: signedData, error: signedError } = await supabase.storage
         .from("recordings")
-        .getPublicUrl(fileName);
+        .createSignedUrl(fileName, 3600);
+
+      if (signedError) throw signedError;
 
       setProgress(80);
 
@@ -96,13 +98,13 @@ export function RecordingUpload({
         audio.src = URL.createObjectURL(file);
       });
 
-      // Create recording record
+      // Create recording record with signed URL
       const { error: dbError } = await supabase.from("recordings").insert({
         user_id: user.id,
         client_id: clientId,
         conversation_id: conversationId || null,
         file_name: file.name,
-        file_url: publicUrl,
+        file_url: signedData.signedUrl,
         file_size: file.size,
         duration_seconds: duration || null,
         transcription_status: "pending",

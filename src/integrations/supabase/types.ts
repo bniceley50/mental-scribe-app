@@ -778,6 +778,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      hash_external_id: {
+        Args: { raw_id: string }
+        Returns: string
+      }
       is_clinical_staff: {
         Args: { _program_id: string; _user_id: string }
         Returns: boolean
@@ -785,6 +789,10 @@ export type Database = {
       is_program_member: {
         Args: { _program_id: string; _user_id: string }
         Returns: boolean
+      }
+      sanitize_audit_metadata: {
+        Args: { meta: Json }
+        Returns: Json
       }
     }
     Enums: {

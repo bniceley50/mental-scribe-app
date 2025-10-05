@@ -86,12 +86,13 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
 
   const [displayMessages, setDisplayMessages] = useState<Array<DBMessage & { isStreaming?: boolean }>>([]);
 
-  // Auto-save draft
+  // Auto-save draft to sessionStorage (cleared when tab closes)
+  // SECURITY: Using sessionStorage instead of localStorage to prevent PHI persistence
   useEffect(() => {
     if (input && !conversationId) {
       if (draftSaveTimeout) clearTimeout(draftSaveTimeout);
       const timeout = setTimeout(() => {
-        localStorage.setItem("clinicalai_draft", input);
+        sessionStorage.setItem("clinicalai_draft", input);
       }, 1000);
       setDraftSaveTimeout(timeout);
     }
@@ -101,9 +102,10 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
   }, [input, conversationId]);
 
   // Load draft on mount and cleanup on unmount
+  // SECURITY: Using sessionStorage to prevent PHI from persisting across sessions
   useEffect(() => {
     if (!conversationId) {
-      const draft = localStorage.getItem("clinicalai_draft");
+      const draft = sessionStorage.getItem("clinicalai_draft");
       if (draft) {
         setInput(draft);
       }
@@ -113,7 +115,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     return () => {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (!session) {
-          localStorage.removeItem("clinicalai_draft");
+          sessionStorage.removeItem("clinicalai_draft");
         }
       });
     };
@@ -440,12 +442,12 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
 
   const handleSelectExample = (example: string) => {
     setInput(example);
-    localStorage.removeItem("clinicalai_draft");
+    sessionStorage.removeItem("clinicalai_draft");
   };
 
   const handleSelectTemplate = (template: string) => {
     setInput(template);
-    localStorage.removeItem("clinicalai_draft");
+    sessionStorage.removeItem("clinicalai_draft");
   };
 
   const wordCount = input.trim().split(/\s+/).filter(Boolean).length;

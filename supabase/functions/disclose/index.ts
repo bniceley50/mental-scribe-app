@@ -22,21 +22,24 @@ type ResourceRow = {
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY")!;
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const ALLOWED_ORIGINS = (Deno.env.get("DISCLOSE_CORS_ORIGINS") ?? "").split(",").map(s => s.trim()).filter(Boolean);
+
+// SECURITY FIX: Explicit default origin, reject requests without origin
+const defaultOrigins = Deno.env.get("SUPABASE_URL") ?? "";
+const ALLOWED_ORIGINS = (Deno.env.get("DISCLOSE_CORS_ORIGINS") ?? defaultOrigins)
+  .split(",")
+  .map(s => s.trim())
+  .filter(Boolean);
 
 // Feature flags (keep you safe during rollout)
 const DISCLOSURE_GATE_ENABLED = (Deno.env.get("DISCLOSURE_GATE_ENABLED") ?? "true") === "true";
 
-// Soft per-user rate limit (demo-grade; consider Redis/Upstash in prod)
-const MAX_REQ_PER_MIN = Number(Deno.env.get("DISCLOSE_RPS") ?? "10");
-const rateWindow: Map<string, number[]> = new Map();
-
 function allowCors(req: Request, res: Response) {
   const origin = req.headers.get("Origin") ?? "";
-  const allow = !ALLOWED_ORIGINS.length || ALLOWED_ORIGINS.includes(origin);
+  // SECURITY FIX: Require origin header and match against allowed list
+  const allow = origin && ALLOWED_ORIGINS.includes(origin);
   const hdrs = new Headers(res.headers);
   if (allow) {
-    hdrs.set("Access-Control-Allow-Origin", origin || "*");
+    hdrs.set("Access-Control-Allow-Origin", origin);
     hdrs.set("Vary", "Origin");
     hdrs.set("Access-Control-Allow-Methods", "POST, OPTIONS");
     hdrs.set("Access-Control-Allow-Headers", "authorization, content-type, x-disclosure-purpose");
@@ -94,14 +97,22 @@ async function requireUser(req: Request) {
   return user;
 }
 
-function touchRateLimit(userId: string) {
-  const now = Date.now();
-  const arr = rateWindow.get(userId) ?? [];
-  const oneMinAgo = now - 60_000;
-  const pruned = arr.filter(ts => ts > oneMinAgo);
-  pruned.push(now);
-  rateWindow.set(userId, pruned);
-  return pruned.length <= MAX_REQ_PER_MIN;
+// SECURITY FIX: Use database-backed rate limiting instead of in-memory
+async function checkRateLimit(userId: string): Promise<boolean> {
+  const admin = getAdmin();
+  const { data, error } = await admin.rpc('check_rate_limit', {
+    _user_id: userId,
+    _endpoint: 'disclose',
+    _max_requests: 10,
+    _window_minutes: 1
+  });
+  
+  if (error) {
+    console.error('Rate limit check failed:', error);
+    return false; // Fail closed
+  }
+  
+  return data === true;
 }
 
 async function loadResources(req: Request, ids: DisclosurePayload) {
@@ -177,6 +188,7 @@ function isWithinWindow(row: ConsentRow, now = new Date()) {
   return true;
 }
 
+// SECURITY FIX: Sanitize audit metadata before writing
 async function writeAudit(
   admin: ReturnType<typeof getAdmin>,
   log: {
@@ -192,6 +204,11 @@ async function writeAudit(
     meta?: Record<string, unknown>;
   },
 ) {
+  // Sanitize metadata to remove sensitive keys
+  const sanitizedMeta = log.meta ? 
+    await admin.rpc('sanitize_audit_metadata', { meta: log.meta }).then(r => r.data || {}) :
+    {};
+
   const { error } = await admin.from("audit_logs").insert([{
     user_id: log.user_id,
     action: log.action,
@@ -203,7 +220,7 @@ async function writeAudit(
     purpose: log.purpose,
     ip_address: log.ip,
     user_agent: log.ua,
-    metadata: log.meta ?? {},
+    metadata: sanitizedMeta,
   }]);
   if (error) {
     // Sanitize: don't bubble details
@@ -224,7 +241,10 @@ serve(async (req) => {
 
     // Auth
     const user = await requireUser(req);
-    if (!touchRateLimit(user.id)) {
+    
+    // SECURITY FIX: Use database-backed rate limiting
+    const allowed = await checkRateLimit(user.id);
+    if (!allowed) {
       return allowCors(req, sanitizeErr(429, "Too many requests"));
     }
 

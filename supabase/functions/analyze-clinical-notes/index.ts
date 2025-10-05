@@ -2,7 +2,7 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
-const openAIApiKey = Deno.env.get("OPENAI_API_KEY");
+const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW = 60000; // 1 minute
@@ -175,8 +175,8 @@ serve(async (req) => {
   }
 
   try {
-    if (!openAIApiKey) {
-      throw new Error("OpenAI API key is not configured");
+    if (!LOVABLE_API_KEY) {
+      throw new Error("AI service not configured");
     }
 
     // Authenticate user
@@ -263,26 +263,41 @@ serve(async (req) => {
 
     console.log(`AI analysis request: action=${action}, user=${user.id}, notes_length=${notes?.length || 0}`);
 
-    // Call OpenAI API with streaming
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    // Call Lovable AI Gateway with streaming
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${openAIApiKey}`,
+        "Authorization": `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-4o",
+        model: "google/gemini-2.5-flash", // Free during promo period
         messages: messages,
-        temperature: action === "medical_entities" ? 0.3 : 0.7, // Lower temp for extraction tasks
-        max_completion_tokens: action === "clinical_summary" || action === "risk_assessment" ? 3000 : 2000,
+        temperature: action === "medical_entities" ? 0.3 : 0.7,
+        max_tokens: action === "clinical_summary" || action === "risk_assessment" ? 3000 : 2000,
         stream: true,
-        response_format: action === "medical_entities" ? { type: "json_object" } : undefined,
       }),
     });
 
     if (!response.ok) {
-      console.error(`OpenAI API error: status=${response.status}`);
-      throw new Error(`OpenAI API error: ${response.status}`);
+      const errorText = await response.text();
+      console.error(`AI Gateway error: status=${response.status}, body=${errorText}`);
+      
+      // Handle specific AI Gateway errors
+      if (response.status === 429) {
+        return new Response(
+          JSON.stringify({ error: "Rate limit exceeded. Please try again in a moment." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      if (response.status === 402) {
+        return new Response(
+          JSON.stringify({ error: "AI service credits depleted. Please contact support." }),
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      
+      throw new Error(`AI Gateway error: ${response.status}`);
     }
 
     // Return the stream directly to the client
@@ -297,13 +312,13 @@ serve(async (req) => {
 
   } catch (error: any) {
     // Log sanitized error info without exposing sensitive data
-    console.error(`Error in analyze-clinical-notes: type=${error.name || 'unknown'}`);
+    console.error(`Error in analyze-clinical-notes: type=${error.name || 'unknown'}, message=${error.message}`);
     
     // Sanitize error messages for security
     let userMessage = "An error occurred during analysis";
-    if (error.message?.includes("API key")) {
+    if (error.message?.includes("API key") || error.message?.includes("not configured")) {
       userMessage = "Service configuration error. Please contact support.";
-    } else if (error.message?.includes("OpenAI") || error.message?.includes("rate limit")) {
+    } else if (error.message?.includes("Gateway") || error.message?.includes("rate limit")) {
       userMessage = "AI service temporarily unavailable. Please try again.";
     } else if (error.message?.includes("Authentication") || error.message?.includes("Unauthorized")) {
       userMessage = "Authentication error. Please sign in again.";

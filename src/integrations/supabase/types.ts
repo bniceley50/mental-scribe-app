@@ -436,6 +436,47 @@ export type Database = {
           },
         ]
       }
+      patient_assignments: {
+        Row: {
+          assigned_at: string
+          assigned_by: string
+          client_id: string
+          created_at: string
+          id: string
+          revoked_at: string | null
+          staff_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string
+          assigned_by: string
+          client_id: string
+          created_at?: string
+          id?: string
+          revoked_at?: string | null
+          staff_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string
+          assigned_by?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          revoked_at?: string | null
+          staff_user_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "patient_assignments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       patient_identity_links: {
         Row: {
           created_at: string
@@ -915,6 +956,10 @@ export type Database = {
       }
       is_account_locked: {
         Args: { _identifier: string; _lockout_minutes?: number }
+        Returns: boolean
+      }
+      is_assigned_to_patient: {
+        Args: { _client_id: string; _user_id: string }
         Returns: boolean
       }
       is_clinical_staff: {

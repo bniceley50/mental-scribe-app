@@ -3,11 +3,8 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-
-// Rate limiting configuration
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
-const MAX_REQUESTS_PER_WINDOW = 10;
-const userRequestCounts = new Map<string, { count: number; resetTime: number }>();
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 // CORS headers for all requests
 const corsHeaders = {
@@ -15,21 +12,27 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function checkRateLimit(userId: string): boolean {
-  const now = Date.now();
-  const userLimit = userRequestCounts.get(userId);
-
-  if (!userLimit || now > userLimit.resetTime) {
-    userRequestCounts.set(userId, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
-    return true;
-  }
-
-  if (userLimit.count >= MAX_REQUESTS_PER_WINDOW) {
+/**
+ * SECURITY FIX: Persistent database-backed rate limiting
+ * Replaces in-memory rate limiting that doesn't work across instances
+ */
+async function checkRateLimit(userId: string): Promise<boolean> {
+  const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  
+  const { data, error } = await supabaseAdmin.rpc('check_rate_limit', {
+    _user_id: userId,
+    _endpoint: 'analyze-clinical-notes',
+    _max_requests: 10,
+    _window_minutes: 1
+  });
+  
+  if (error) {
+    console.error('Rate limit check failed:', error);
+    // Fail closed - deny request if rate limiting fails
     return false;
   }
-
-  userLimit.count++;
-  return true;
+  
+  return data === true;
 }
 
 interface AnalysisRequest {
@@ -147,7 +150,8 @@ serve(async (req) => {
       throw new Error("AI service not configured");
     }
 
-    // Authenticate user
+    // SECURITY FIX: Proper JWT verification using Supabase client
+    // This verifies signature, expiration, and issuer - not just decoding
     const authHeader = req.headers.get("authorization");
     if (!authHeader) {
       return new Response(
@@ -156,27 +160,27 @@ serve(async (req) => {
       );
     }
 
-    // Decode JWT directly (verify_jwt=true ensures it's valid)
-    let user: { id: string } | null = null;
-    try {
-      const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-      const payload = JSON.parse(atob(token.split(".")[1] || ""));
-      if (payload?.sub) {
-        user = { id: payload.sub };
+    const supabaseClient = createClient(
+      SUPABASE_URL,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      {
+        global: { headers: { Authorization: authHeader } }
       }
-    } catch (_) {
-      // fall through to unauthorized
-    }
+    );
 
-    if (!user) {
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    
+    if (authError || !user) {
+      console.error('Authentication failed:', authError?.message);
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Check rate limit
-    if (!checkRateLimit(user.id)) {
+    // SECURITY FIX: Database-backed rate limiting
+    const rateLimitOk = await checkRateLimit(user.id);
+    if (!rateLimitOk) {
       return new Response(
         JSON.stringify({ error: "Rate limit exceeded. Please try again later." }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -185,11 +189,8 @@ serve(async (req) => {
 
     const { notes, action, file_content, conversation_history }: AnalysisRequest = await req.json();
 
-    // Audit log using service role (bypasses RLS for audit_logs table)
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    // Audit log using service role
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
     
     const ipAddress = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
     const userAgent = req.headers.get("user-agent") || "unknown";

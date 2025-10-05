@@ -65,6 +65,37 @@ serve(async (req) => {
       });
     }
 
+    // SECURITY FIX: IP-based rate limiting for signup (prevents brute force)
+    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0].trim() 
+      || req.headers.get('cf-connecting-ip') 
+      || 'unknown';
+    
+    if (ipAddress === 'unknown') {
+      console.error('Could not determine IP address for rate limiting');
+      return new Response(JSON.stringify({ error: 'Request blocked for security' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    
+    const { data: rateLimitOk, error: rateLimitError } = await supabaseAdmin.rpc('check_signup_rate_limit', {
+      _ip_address: ipAddress,
+      _max_requests: 5,
+      _window_minutes: 60
+    });
+    
+    if (rateLimitError || !rateLimitOk) {
+      console.log(`Rate limit exceeded for IP: ${ipAddress}`);
+      return new Response(JSON.stringify({ 
+        error: 'Too many signup attempts. Please try again later.' 
+      }), {
+        status: 429,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     const { email, password } = await req.json();
 
     // Validate inputs
@@ -126,9 +157,9 @@ serve(async (req) => {
     }
 
     // Create user with service role (bypasses disabled signup)
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    // Note: supabaseAdmin already created above for rate limiting
 
-    const { data, error } = await supabase.auth.admin.createUser({
+    const { data, error } = await supabaseAdmin.auth.admin.createUser({
       email: email.toLowerCase().trim(),
       password,
       email_confirm: true, // Auto-confirm email

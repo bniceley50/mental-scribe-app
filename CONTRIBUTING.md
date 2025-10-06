@@ -240,6 +240,20 @@ Security and privacy are paramount in a healthcare application.
 - **Input Validation:** Use Zod schemas for all form inputs
 - **Secrets Management:** Never commit API keys or secrets to the repository
 - **RLS Policies:** Backend uses Row Level Security for data access control
+- **Password Security:** HIBP breach detection, password history prevention (last 5 passwords)
+- **MFA Support:** Multi-factor authentication available for high-security accounts
+- **Session Management:** 30-minute inactivity timeout, 12-hour absolute timeout recommended
+
+### Security Testing
+
+When adding security-sensitive features:
+- **Input Validation Tests:** Cover edge cases (empty, null, malicious input)
+- **Authentication Tests:** Verify proper error handling and lockout mechanisms
+- **File Upload Tests:** Check MIME type validation, size limits, and signed URL generation
+- **RLS Policy Tests:** Test with different user roles (admin, user, anonymous)
+- **Accessibility Tests:** Use `jest-axe` for ARIA compliance checking
+
+See [`docs/SECURITY_OPTIONAL_ENHANCEMENTS.md`](docs/SECURITY_OPTIONAL_ENHANCEMENTS.md) for latest security enhancements.
 
 ### Error Handling
 

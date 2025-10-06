@@ -436,6 +436,27 @@ export type Database = {
           },
         ]
       }
+      password_history: {
+        Row: {
+          created_at: string
+          id: string
+          password_hash: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          password_hash: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          password_hash?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       patient_assignments: {
         Row: {
           assigned_at: string
@@ -898,8 +919,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_password_to_history: {
+        Args: { _password_hash: string; _user_id: string }
+        Returns: undefined
+      }
       can_view_patient_consent: {
         Args: { _subject_external_id: string; _user_id: string }
+        Returns: boolean
+      }
+      check_password_history: {
+        Args: {
+          _history_limit?: number
+          _new_password_hash: string
+          _user_id: string
+        }
         Returns: boolean
       }
       check_rate_limit: {
@@ -916,6 +949,10 @@ export type Database = {
         Returns: undefined
       }
       cleanup_old_failed_logins: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      cleanup_old_password_history: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }

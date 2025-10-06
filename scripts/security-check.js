@@ -178,10 +178,11 @@ async function runAllChecks() {
   }
 }
 
-// Run if called directly
+// Direct execution for ES modules
 runAllChecks().catch(err => {
   error(`Unexpected error: ${err.message}`);
   process.exit(1);
 });
 
+// Named export for use in other scripts
 export { runAllChecks };

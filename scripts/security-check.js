@@ -9,7 +9,7 @@
  * Run: npm run security:check
  */
 
-const { createClient } = require('@supabase/supabase-js');
+import { createClient } from '@supabase/supabase-js';
 
 const REQUIRED_SECRETS = [
   'OPENAI_API_KEY',
@@ -179,11 +179,9 @@ async function runAllChecks() {
 }
 
 // Run if called directly
-if (require.main === module) {
-  runAllChecks().catch(err => {
-    error(`Unexpected error: ${err.message}`);
-    process.exit(1);
-  });
-}
+runAllChecks().catch(err => {
+  error(`Unexpected error: ${err.message}`);
+  process.exit(1);
+});
 
-module.exports = { runAllChecks };
+export { runAllChecks };

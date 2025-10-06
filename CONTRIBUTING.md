@@ -82,6 +82,51 @@ Automated tests are essential for reliability and confidence in code changes.
 - Mocks: Use provided utility mocks for API and file interactions
 - Follow existing test patterns in `__tests__` directories
 
+#### Test Categories & Coverage
+
+Mental Scribe has comprehensive test coverage across multiple categories:
+
+1. **Authentication Tests** (`src/pages/__tests__/Auth.test.tsx`)
+   - Email validation edge cases (whitespace, length limits, normalization)
+   - Password complexity requirements
+   - Account lockout after failed attempts
+   - MFA code validation
+   - Network error handling
+   - Accessibility (ARIA labels, screen reader support)
+
+2. **File Upload Tests** (`src/lib/__tests__/fileUpload.test.ts`)
+   - File size validation (10MB limit)
+   - PDF magic byte verification
+   - XSS prevention via content sanitization
+   - User-scoped file paths for security
+   - Signed URL generation (not public URLs)
+   - Storage quota handling
+   - Path traversal attack prevention
+
+3. **Consent Management Tests** (`src/components/__tests__/consent.test.tsx`)
+   - Part 2 consent creation and validation
+   - Expiration logic (null vs. future dates)
+   - Revocation immutability
+   - Disclosure purpose validation
+   - Audit trail verification
+
+4. **Accessibility Tests** (`src/components/__tests__/accessibility.test.tsx`)
+   - ARIA compliance for all interactive elements
+   - Keyboard navigation support
+   - Screen reader announcements
+   - Color contrast validation
+   - Touch target sizes (44x44px minimum)
+   - Focus management
+
+#### Best Practices for Writing Tests
+
+- **Edge Cases First**: Test boundary conditions (empty strings, max lengths, null values)
+- **Security-Focused**: Validate sanitization, authentication, and authorization
+- **Accessibility**: Include ARIA, keyboard, and screen reader tests for UI components
+- **Descriptive Names**: Use `it('should reject email exceeding 255 characters')` not `it('test email')`
+- **Arrange-Act-Assert**: Structure tests clearly with setup, execution, and verification
+- **Mock External Dependencies**: Use vi.mock() for Supabase, toast, and external libraries
+
 ---
 
 ## Code Standards

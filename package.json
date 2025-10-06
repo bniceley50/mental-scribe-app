@@ -55,6 +55,7 @@
     "dotenv": "^17.2.3",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
+    "jest-axe": "^10.0.0",
     "jsdom": "^27.0.0",
     "jspdf": "^3.0.3",
     "lucide-react": "^0.462.0",

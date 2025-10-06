@@ -446,5 +446,20 @@ Complete step-by-step guides for common workflows in the Mental Scribe applicati
 
 ---
 
+## Testing & Quality Assurance
+
+Mental Scribe includes comprehensive test infrastructure. See [`CONTRIBUTING.md`](../CONTRIBUTING.md) for detailed testing guidelines.
+
+### Test Coverage Areas
+
+- **Authentication**: Email validation, password security, MFA, account lockout
+- **File Upload**: Size limits, file type validation, XSS prevention, secure storage
+- **Consent Management**: Part 2 compliance, expiration logic, audit trails
+- **Accessibility**: ARIA compliance, keyboard navigation, screen reader support
+
+Run tests with `npm test` or `npm run test:coverage`.
+
+---
+
 *Last Updated: October 2025*  
 *Version: 1.0*

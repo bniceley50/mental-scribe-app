@@ -948,7 +948,9 @@ export type Database = {
           id: string
           ip_address: string | null
           last_activity_at: string
+          salt: string
           session_token: string
+          token_hash: string
           user_agent: string | null
           user_id: string
         }
@@ -958,7 +960,9 @@ export type Database = {
           id?: string
           ip_address?: string | null
           last_activity_at?: string
+          salt: string
           session_token: string
+          token_hash: string
           user_agent?: string | null
           user_id: string
         }
@@ -968,7 +972,9 @@ export type Database = {
           id?: string
           ip_address?: string | null
           last_activity_at?: string
+          salt?: string
           session_token?: string
+          token_hash?: string
           user_agent?: string | null
           user_id?: string
         }
@@ -976,7 +982,39 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      user_sessions_safe: {
+        Row: {
+          created_at: string | null
+          expires_at: string | null
+          id: string | null
+          ip_address: string | null
+          last_activity_at: string | null
+          status: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          ip_address?: string | null
+          last_activity_at?: string | null
+          status?: never
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string | null
+          id?: string | null
+          ip_address?: string | null
+          last_activity_at?: string | null
+          status?: never
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       add_password_to_history: {
@@ -1065,6 +1103,14 @@ export type Database = {
         Args: { code: string; salt: string }
         Returns: string
       }
+      hash_session_token: {
+        Args: { salt: string; token: string }
+        Returns: string
+      }
+      invalidate_user_sessions: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
       is_account_locked: {
         Args: { _identifier: string; _lockout_minutes?: number }
         Returns: boolean
@@ -1096,6 +1142,15 @@ export type Database = {
       update_session_activity: {
         Args: { _session_token: string }
         Returns: undefined
+      }
+      validate_session_token: {
+        Args: { _session_token: string; _user_id?: string }
+        Returns: {
+          expires_at: string
+          is_valid: boolean
+          session_id: string
+          user_id: string
+        }[]
       }
     }
     Enums: {

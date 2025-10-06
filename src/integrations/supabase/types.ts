@@ -1155,7 +1155,23 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      consent_status: "active" | "revoked" | "expired"
       data_classification: "standard_phi" | "part2_protected"
+      disclosure_purpose_type:
+        | "treatment"
+        | "payment"
+        | "legal"
+        | "research"
+        | "patient_request"
+        | "emergency"
+        | "other"
+      part2_consent_type:
+        | "treatment"
+        | "payment"
+        | "healthcare_operations"
+        | "research"
+        | "legal"
+        | "other"
       program_role: "treating_provider" | "care_team" | "program_admin"
     }
     CompositeTypes: {
@@ -1285,7 +1301,25 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      consent_status: ["active", "revoked", "expired"],
       data_classification: ["standard_phi", "part2_protected"],
+      disclosure_purpose_type: [
+        "treatment",
+        "payment",
+        "legal",
+        "research",
+        "patient_request",
+        "emergency",
+        "other",
+      ],
+      part2_consent_type: [
+        "treatment",
+        "payment",
+        "healthcare_operations",
+        "research",
+        "legal",
+        "other",
+      ],
       program_role: ["treating_provider", "care_team", "program_admin"],
     },
   },

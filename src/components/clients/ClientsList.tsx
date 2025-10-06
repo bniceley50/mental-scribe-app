@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { ClientDialog } from "./ClientDialog";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { logClientView } from "@/lib/clientAudit";
 
 interface ClientsListProps {
   searchQuery: string;
@@ -135,7 +136,13 @@ export function ClientsList({ searchQuery }: ClientsListProps) {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate(`/client/${client.id}`)}
+                onClick={() => {
+                  // Log the client view before navigating (HIPAA requirement)
+                  logClientView(client.id).catch(err => {
+                    console.error('Failed to log client view:', err);
+                  });
+                  navigate(`/client/${client.id}`);
+                }}
                 className="flex-1"
               >
                 <Eye className="h-4 w-4 mr-1" />

@@ -21,9 +21,10 @@ import {
   Shield,
 } from "lucide-react";
 import { format } from "date-fns";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ClientDialog } from "@/components/clients/ClientDialog";
 import { RecordingUpload } from "@/components/clients/RecordingUpload";
+import { logClientView } from "@/lib/clientAudit";
 
 export default function ClientProfile() {
   const { id } = useParams();
@@ -107,6 +108,16 @@ export default function ClientProfile() {
       return data;
     },
   });
+
+  // CRITICAL SECURITY: Log client profile view for HIPAA audit trail
+  useEffect(() => {
+    if (id && client) {
+      // Fire and forget - don't block UI rendering
+      logClientView(id).catch(err => {
+        console.error('Failed to log client view:', err);
+      });
+    }
+  }, [id, client]);
 
   if (isLoading) {
     return (

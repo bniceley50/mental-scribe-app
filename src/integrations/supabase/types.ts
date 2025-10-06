@@ -706,6 +706,36 @@ export type Database = {
           },
         ]
       }
+      security_fixes: {
+        Row: {
+          finding: string
+          fix_date: string
+          id: string
+          remediation: string
+          severity: string
+          verification_date: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          finding: string
+          fix_date?: string
+          id?: string
+          remediation: string
+          severity: string
+          verification_date?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          finding?: string
+          fix_date?: string
+          id?: string
+          remediation?: string
+          severity?: string
+          verification_date?: string | null
+          verified_by?: string | null
+        }
+        Relationships: []
+      }
       structured_notes: {
         Row: {
           client_id: string | null

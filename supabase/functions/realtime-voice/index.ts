@@ -9,6 +9,9 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': SUPABASE_URL,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Credentials': 'true',
+  'Content-Security-Policy': "default-src 'self'; script-src 'self'; object-src 'none'; connect-src 'self' wss://api.openai.com;",
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
 };
 
 serve(async (req) => {

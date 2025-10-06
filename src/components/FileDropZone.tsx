@@ -10,14 +10,14 @@ interface FileDropZoneProps {
 }
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+// MEDIUM PRIORITY FIX: Only advertise file types we actually support
+// DOC/DOCX parsing requires additional libraries - removed until implemented
 const ACCEPTED_FILE_TYPES = [
   "application/pdf",
   "text/plain",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
-const ACCEPTED_EXTENSIONS = [".pdf", ".txt", ".doc", ".docx"];
+const ACCEPTED_EXTENSIONS = [".pdf", ".txt"];
 
 export const FileDropZone = ({ onFileSelect, disabled }: FileDropZoneProps) => {
   const [isDragging, setIsDragging] = useState(false);
@@ -33,7 +33,7 @@ export const FileDropZone = ({ onFileSelect, disabled }: FileDropZoneProps) => {
     const isValidType = ACCEPTED_FILE_TYPES.includes(file.type) || ACCEPTED_EXTENSIONS.includes(fileExtension);
 
     if (!isValidType) {
-      toast.error("Invalid file type. Please upload PDF, TXT, DOC, or DOCX files");
+      toast.error("Invalid file type. Please upload PDF or TXT files only");
       return false;
     }
 

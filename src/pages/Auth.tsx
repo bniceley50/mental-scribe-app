@@ -138,6 +138,13 @@ const Auth = () => {
 
   const handleMfaVerify = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate MFA code format
+    if (!mfaCode || mfaCode.length !== 6 || !/^\d{6}$/.test(mfaCode)) {
+      toast.error("Please enter a valid 6-digit authentication code");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -146,7 +153,7 @@ const Auth = () => {
       const factorId = data?.all?.[0]?.id;
       
       if (!factorId) {
-        toast.error("MFA setup required");
+        toast.error("Multi-factor authentication is not set up for this account. Please contact support.");
         setLoading(false);
         return;
       }
@@ -156,17 +163,29 @@ const Auth = () => {
         code: mfaCode
       });
 
-      if (error) throw error;
+      if (error) {
+        // Provide user-friendly error messages
+        if (error.message.includes("expired")) {
+          toast.error("Authentication code has expired. Please try again with a new code.");
+        } else if (error.message.includes("invalid")) {
+          toast.error("Invalid authentication code. Please check your authenticator app and try again.");
+        } else {
+          toast.error(error.message || "Failed to verify authentication code");
+        }
+        setLoading(false);
+        return;
+      }
 
       // Clear failed login attempts on successful MFA
       await supabase.rpc('clear_failed_logins', {
         _identifier: email
       });
 
-      toast.success("Successfully verified!");
+      toast.success("Authentication successful! Welcome back.");
       navigate("/");
     } catch (error: any) {
-      toast.error(error.message || "Failed to verify authentication code");
+      console.error("MFA verification error:", error);
+      toast.error("An unexpected error occurred. Please try again or contact support.");
     } finally {
       setLoading(false);
     }
@@ -197,26 +216,46 @@ const Auth = () => {
               {isMfaRequired ? (
                 <form onSubmit={handleMfaVerify} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="mfa-code">Authentication Code</Label>
+                    <Label htmlFor="mfa-code">
+                      Authentication Code
+                      <span className="sr-only"> (6 digits from your authenticator app)</span>
+                    </Label>
                     <Input
                       id="mfa-code"
                       type="text"
-                      placeholder="Enter 6-digit code"
+                      inputMode="numeric"
+                      pattern="\d{6}"
+                      placeholder="000000"
                       value={mfaCode}
-                      onChange={(e) => setMfaCode(e.target.value)}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, "");
+                        setMfaCode(value.slice(0, 6));
+                      }}
                       maxLength={6}
                       required
+                      autoComplete="one-time-code"
+                      autoFocus
+                      aria-describedby="mfa-code-description"
+                      className="text-center text-lg tracking-widest"
                     />
-                    <p className="text-sm text-muted-foreground">
-                      Enter the code from your authenticator app
+                    <p id="mfa-code-description" className="text-sm text-muted-foreground">
+                      Enter the 6-digit code from your authenticator app (e.g., Google Authenticator, Authy)
                     </p>
                   </div>
                   <Button
                     type="submit"
                     className="w-full bg-primary hover:bg-primary/90 transition-all"
-                    disabled={loading}
+                    disabled={loading || mfaCode.length !== 6}
+                    aria-label={loading ? "Verifying authentication code" : "Verify authentication code"}
                   >
-                    {loading ? "Verifying..." : "Verify Code"}
+                    {loading ? (
+                      <>
+                        <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" aria-hidden="true" />
+                        Verifying...
+                      </>
+                    ) : (
+                      "Verify Code"
+                    )}
                   </Button>
                   <Button
                     type="button"
@@ -226,6 +265,8 @@ const Auth = () => {
                       setIsMfaRequired(false);
                       setMfaCode("");
                     }}
+                    disabled={loading}
+                    aria-label="Go back to sign in"
                   >
                     Back to Sign In
                   </Button>

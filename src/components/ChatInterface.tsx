@@ -228,7 +228,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     let aiResponse = "";
     const streamingMessageId = `streaming-${Date.now()}`;
     
-    // Add a temporary streaming message to display
+    // Add a temporary streaming message with progress indicator
     setDisplayMessages((prev) => [
       ...prev,
       {
@@ -239,6 +239,12 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         isStreaming: true,
       },
     ]);
+
+    // Show streaming toast
+    showToast.loading("Generating response...", {
+      id: "streaming-toast",
+      description: "AI is analyzing your notes"
+    });
 
     try {
       await analyzeNotesStreaming({
@@ -256,6 +262,9 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
           );
         },
         onComplete: async () => {
+          // Dismiss streaming toast
+          showToast.dismiss("streaming-toast");
+          
           // Save complete AI response to database
           await addMessage("assistant", aiResponse);
           
@@ -266,16 +275,37 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
           
           setLoading(false);
           setAbortController(null);
-          showToast.success("Analysis complete!");
+          showToast.success("Analysis complete!", {
+            description: `Generated ${aiResponse.length} characters`
+          });
         },
         onError: (error) => {
           console.error("Streaming error:", error);
           
+          // Dismiss streaming toast
+          showToast.dismiss("streaming-toast");
+          
           // Check if it was user-initiated abort
           if (controller.signal.aborted) {
-            showToast.info("Generation stopped");
+            showToast.info("Response generation stopped by user");
           } else {
-            showToast.error(error);
+            // Provide user-friendly error messages
+            let errorMessage = "Failed to generate response. Please try again.";
+            
+            if (error.includes("rate limit") || error.includes("429")) {
+              errorMessage = "Too many requests. Please wait a moment and try again.";
+            } else if (error.includes("network") || error.includes("fetch")) {
+              errorMessage = "Network connection issue. Please check your internet and try again.";
+            } else if (error.includes("timeout")) {
+              errorMessage = "Request timed out. Please try again with a shorter input.";
+            } else if (error.includes("402") || error.includes("payment")) {
+              errorMessage = "AI service temporarily unavailable. Please contact support.";
+            }
+            
+            showToast.error(errorMessage, {
+              description: "If this persists, please contact support.",
+              duration: 5000
+            });
           }
           
           // Remove the temporary streaming message

@@ -5,6 +5,7 @@ import ChatInterface from "@/components/ChatInterface";
 import { WelcomeGuide } from "@/components/WelcomeGuide";
 import { WelcomeBanner } from "@/components/WelcomeBanner";
 import { OnboardingTooltip } from "@/components/OnboardingTooltip";
+import { OnboardingTour } from "@/components/OnboardingTour";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -73,6 +74,7 @@ const Index = () => {
 
   return (
     <>
+      <OnboardingTour />
       <OnboardingTooltip />
       <WelcomeGuide />
       <Layout 

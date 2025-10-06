@@ -73,6 +73,36 @@ export type Database = {
           },
         ]
       }
+      client_access_logs: {
+        Row: {
+          access_method: string
+          access_type: string
+          accessed_by: string
+          client_id: string
+          created_at: string
+          id: string
+          program_id: string | null
+        }
+        Insert: {
+          access_method: string
+          access_type: string
+          accessed_by: string
+          client_id: string
+          created_at?: string
+          id?: string
+          program_id?: string | null
+        }
+        Update: {
+          access_method?: string
+          access_type?: string
+          accessed_by?: string
+          client_id?: string
+          created_at?: string
+          id?: string
+          program_id?: string | null
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           created_at: string
@@ -972,6 +1002,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: string
       }
+      get_suspicious_access_patterns: {
+        Args: { _access_threshold?: number; _hours_lookback?: number }
+        Returns: {
+          access_count: number
+          access_methods: Json
+          access_types: Json
+          accessed_by: string
+          unique_clients: number
+        }[]
+      }
       has_active_part2_consent: {
         Args: { _conversation_id: string; _user_id: string }
         Returns: boolean
@@ -1010,6 +1050,10 @@ export type Database = {
       is_program_member: {
         Args: { _program_id: string; _user_id: string }
         Returns: boolean
+      }
+      log_client_view: {
+        Args: { _access_method?: string; _client_id: string }
+        Returns: undefined
       }
       record_failed_login: {
         Args: { _email: string; _ip_address: string; _user_id: string }

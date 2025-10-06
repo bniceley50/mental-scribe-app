@@ -1,6 +1,12 @@
 # Mental Scribe - Clinical Note Assistant
 
+[![Test Coverage](https://img.shields.io/badge/coverage-70%25-yellow)](docs/TEST_COVERAGE_SETUP.md)
+[![Security](https://img.shields.io/badge/security-HIPAA%20compliant-green.svg)](SECURITY.md)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)](CHANGELOG.md)
+
 A HIPAA-aware clinical documentation assistant powered by AI to help mental health professionals create structured clinical notes.
+
+📐 **[Architecture](docs/ARCHITECTURE.md)** | 📚 **[API Reference](docs/API_REFERENCE.md)** | 🧪 **[Testing Guide](docs/TEST_COVERAGE_SETUP.md)**
 
 ## Project Info
 

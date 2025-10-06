@@ -21,6 +21,28 @@ export const useMessages = (conversationId: string | null) => {
 
     setLoading(true);
     try {
+      // SECURITY FIX: Get conversation details first to check if it has a client_id
+      const { data: conversation, error: convoError } = await supabase
+        .from("conversations")
+        .select("client_id")
+        .eq("id", conversationId)
+        .single();
+
+      if (convoError) throw convoError;
+
+      // SECURITY FIX: Log PHI access if conversation is linked to a client
+      if (conversation?.client_id) {
+        try {
+          await supabase.rpc('log_client_view', {
+            _client_id: conversation.client_id,
+            _access_method: 'message_view'
+          });
+        } catch (logError) {
+          console.error('Failed to log client view:', logError);
+          // Don't block message loading on logging failure
+        }
+      }
+
       const { data, error } = await supabase
         .from("messages")
         .select("*")

@@ -22,11 +22,29 @@ export const useConversations = () => {
     try {
       const { data, error, count } = await supabase
         .from("conversations")
-        .select("id, title, created_at, updated_at, is_part2_protected, data_classification, part2_consent_status", { count: "exact" })
+        .select("id, title, created_at, updated_at, is_part2_protected, data_classification, part2_consent_status, client_id", { count: "exact" })
         .order("updated_at", { ascending: false })
         .range(offset, offset + limit - 1);
 
       if (error) throw error;
+      
+      // SECURITY FIX: Log PHI access for each conversation viewed
+      if (data && data.length > 0) {
+        // Log access for conversations with client_id (PHI)
+        for (const convo of data) {
+          if (convo.client_id) {
+            try {
+              await supabase.rpc('log_client_view', {
+                _client_id: convo.client_id,
+                _access_method: 'conversation_list'
+              });
+            } catch (logError) {
+              // Don't block UI on logging failure, but log error
+              console.error('Failed to log client view:', logError);
+            }
+          }
+        }
+      }
       
       if (offset === 0) {
         setConversations(data || []);

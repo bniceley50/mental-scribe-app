@@ -163,6 +163,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // SECURITY FIX: Create service role client for audit writes
+  const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
   try {
     if (!LOVABLE_API_KEY) {
       throw new Error("AI service not configured");
@@ -207,9 +210,7 @@ serve(async (req) => {
 
     const { notes, action, file_content, conversation_history, edit_instruction, original_content }: AnalysisRequest = await req.json();
 
-    // Audit log using service role
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-    
+    // SECURITY FIX: Audit log using service role (already created at top of serve())
     const ipAddress = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "unknown";
     const userAgent = req.headers.get("user-agent") || "unknown";
     
@@ -223,7 +224,12 @@ serve(async (req) => {
     });
     
     if (auditError) {
-      console.error('Audit log failed:', auditError.message);
+      console.error('CRITICAL: Audit log failed:', auditError);
+      // SECURITY: Fail request if audit fails - we need a complete trail
+      return new Response(
+        JSON.stringify({ error: "Unable to process request. Please try again." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Build messages array

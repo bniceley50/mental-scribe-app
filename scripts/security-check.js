@@ -10,6 +10,10 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
+import dotenv from 'dotenv';
+
+// Load environment variables from .env file
+dotenv.config();
 
 const REQUIRED_SECRETS = [
   'OPENAI_API_KEY',

@@ -8,9 +8,37 @@ const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
+/**
+ * SECURITY: Custom storage adapter using sessionStorage
+ * 
+ * WHY sessionStorage instead of localStorage:
+ * - Auth tokens in sessionStorage are automatically cleared when the browser tab closes
+ * - Reduces attack surface by limiting token lifetime to the active session
+ * - Prevents token persistence across browser restarts
+ * - Aligns with security best practice for healthcare applications handling PHI
+ * 
+ * TRADE-OFF:
+ * - Users must re-authenticate when opening a new tab/window
+ * - This is acceptable for a clinical application where security > convenience
+ * 
+ * NOTE: This does NOT affect the standard Supabase auth flow, tokens are still 
+ * refreshed automatically during the active session. Only the storage mechanism changes.
+ */
+const sessionStorageAdapter = {
+  getItem: (key: string) => {
+    return sessionStorage.getItem(key);
+  },
+  setItem: (key: string, value: string) => {
+    sessionStorage.setItem(key, value);
+  },
+  removeItem: (key: string) => {
+    sessionStorage.removeItem(key);
+  },
+};
+
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
-    storage: localStorage,
+    storage: sessionStorageAdapter,
     persistSession: true,
     autoRefreshToken: true,
   }

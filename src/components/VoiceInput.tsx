@@ -47,10 +47,10 @@ export const VoiceInput = ({ onResult, disabled }: VoiceInputProps) => {
       // Configuration
       recognitionRef.current.lang = "en-US";
       recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = false; // Only get final results to reduce updates
+      recognitionRef.current.interimResults = false; // Only final results to avoid flicker
       recognitionRef.current.maxAlternatives = 1;
 
-      // Handle results - batch them to reduce re-renders
+      // Handle results - send ONLY the new finalized chunk
       recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
         let finalTranscript = "";
 
@@ -60,10 +60,8 @@ export const VoiceInput = ({ onResult, disabled }: VoiceInputProps) => {
           }
         }
 
-        // Accumulate text and send it all at once
         if (finalTranscript) {
-          accumulatedTextRef.current += finalTranscript;
-          onResult(accumulatedTextRef.current.trim());
+          onResult(finalTranscript.trim());
         }
       };
 

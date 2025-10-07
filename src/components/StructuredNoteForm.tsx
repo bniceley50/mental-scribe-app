@@ -290,9 +290,10 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
             </div>
             <VoiceInput
               onResult={(text) => {
-                const currentValue = formData.client_perspective;
-                const newValue = currentValue ? `${currentValue} ${text}` : text;
-                updateField("client_perspective", newValue);
+                setFormData(prev => ({
+                  ...prev,
+                  client_perspective: prev.client_perspective ? `${prev.client_perspective} ${text}` : text,
+                }));
               }}
             />
           </div>
@@ -342,9 +343,10 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
             </div>
             <VoiceInput
               onResult={(text) => {
-                const currentValue = formData.current_status;
-                const newValue = currentValue ? `${currentValue} ${text}` : text;
-                updateField("current_status", newValue);
+                setFormData(prev => ({
+                  ...prev,
+                  current_status: prev.current_status ? `${prev.current_status} ${text}` : text,
+                }));
               }}
             />
           </div>
@@ -391,9 +393,10 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
             </div>
             <VoiceInput
               onResult={(text) => {
-                const currentValue = formData.response_to_interventions;
-                const newValue = currentValue ? `${currentValue} ${text}` : text;
-                updateField("response_to_interventions", newValue);
+                setFormData(prev => ({
+                  ...prev,
+                  response_to_interventions: prev.response_to_interventions ? `${prev.response_to_interventions} ${text}` : text,
+                }));
               }}
             />
           </div>
@@ -442,6 +445,7 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
                 size="sm"
                 onClick={() => analyzeField("new_issues_details", "New Issues Details")}
                 disabled={analyzingField === "new_issues_details"}
+                className="shrink-0"
               >
                 {analyzingField === "new_issues_details" ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -461,9 +465,10 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
               />
               <VoiceInput
                 onResult={(text) => {
-                  const currentValue = formData.new_issues_details;
-                  const newValue = currentValue ? `${currentValue} ${text}` : text;
-                  updateField("new_issues_details", newValue);
+                  setFormData(prev => ({
+                    ...prev,
+                    new_issues_details: prev.new_issues_details ? `${prev.new_issues_details} ${text}` : text,
+                  }));
                 }}
               />
             </div>
@@ -508,9 +513,10 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
             />
             <VoiceInput
               onResult={(text) => {
-                const currentValue = formData.goals_progress;
-                const newValue = currentValue ? `${currentValue} ${text}` : text;
-                updateField("goals_progress", newValue);
+                setFormData(prev => ({
+                  ...prev,
+                  goals_progress: prev.goals_progress ? `${prev.goals_progress} ${text}` : text,
+                }));
               }}
             />
           </div>
@@ -552,9 +558,10 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
             />
             <VoiceInput
               onResult={(text) => {
-                const currentValue = formData.safety_assessment;
-                const newValue = currentValue ? `${currentValue} ${text}` : text;
-                updateField("safety_assessment", newValue);
+                setFormData(prev => ({
+                  ...prev,
+                  safety_assessment: prev.safety_assessment ? `${prev.safety_assessment} ${text}` : text,
+                }));
               }}
             />
           </div>
@@ -595,9 +602,10 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
             />
             <VoiceInput
               onResult={(text) => {
-                const currentValue = formData.clinical_impression;
-                const newValue = currentValue ? `${currentValue} ${text}` : text;
-                updateField("clinical_impression", newValue);
+                setFormData(prev => ({
+                  ...prev,
+                  clinical_impression: prev.clinical_impression ? `${prev.clinical_impression} ${text}` : text,
+                }));
               }}
             />
           </div>
@@ -638,9 +646,10 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
             />
             <VoiceInput
               onResult={(text) => {
-                const currentValue = formData.treatment_plan;
-                const newValue = currentValue ? `${currentValue} ${text}` : text;
-                updateField("treatment_plan", newValue);
+                setFormData(prev => ({
+                  ...prev,
+                  treatment_plan: prev.treatment_plan ? `${prev.treatment_plan} ${text}` : text,
+                }));
               }}
             />
           </div>
@@ -681,9 +690,10 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
             />
             <VoiceInput
               onResult={(text) => {
-                const currentValue = formData.next_steps;
-                const newValue = currentValue ? `${currentValue} ${text}` : text;
-                updateField("next_steps", newValue);
+                setFormData(prev => ({
+                  ...prev,
+                  next_steps: prev.next_steps ? `${prev.next_steps} ${text}` : text,
+                }));
               }}
             />
           </div>

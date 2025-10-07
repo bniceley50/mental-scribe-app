@@ -93,8 +93,13 @@ export function ClientDialog({ open, onOpenChange, mode, client }: ClientDialogP
 
   const onSubmit = async (values: ClientFormValues) => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError || !user) {
+        console.error("Auth error:", authError);
+        toast.error("You must be logged in to create a client. Please refresh and log in again.");
+        return;
+      }
 
       const cleanedValues: any = {
         user_id: user.id,

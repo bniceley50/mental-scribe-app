@@ -19,6 +19,7 @@ export const VoiceInput = ({ onResult, disabled }: VoiceInputProps) => {
   const [recording, setRecording] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
   const recognitionRef = useRef<any>(null);
+  const accumulatedTextRef = useRef<string>("");
 
   useEffect(() => {
     // Check browser support on mount
@@ -40,29 +41,29 @@ export const VoiceInput = ({ onResult, disabled }: VoiceInputProps) => {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
       
+      // Reset accumulated text
+      accumulatedTextRef.current = "";
+      
       // Configuration
       recognitionRef.current.lang = "en-US";
-      recognitionRef.current.continuous = true; // Keep listening
-      recognitionRef.current.interimResults = true; // Get partial results
+      recognitionRef.current.continuous = true;
+      recognitionRef.current.interimResults = false; // Only get final results to reduce updates
       recognitionRef.current.maxAlternatives = 1;
 
-      // Handle results
+      // Handle results - batch them to reduce re-renders
       recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
-        let interimTranscript = "";
         let finalTranscript = "";
 
         for (let i = event.resultIndex; i < event.results.length; i++) {
-          const transcript = event.results[i][0].transcript;
           if (event.results[i].isFinal) {
-            finalTranscript += transcript + " ";
-          } else {
-            interimTranscript += transcript;
+            finalTranscript += event.results[i][0].transcript + " ";
           }
         }
 
-        // Send final results to parent
+        // Accumulate text and send it all at once
         if (finalTranscript) {
-          onResult(finalTranscript.trim());
+          accumulatedTextRef.current += finalTranscript;
+          onResult(accumulatedTextRef.current.trim());
         }
       };
 

@@ -289,7 +289,11 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
               />
             </div>
             <VoiceInput
-              onResult={(text) => updateField("client_perspective", formData.client_perspective + " " + text)}
+              onResult={(text) => {
+                const currentValue = formData.client_perspective;
+                const newValue = currentValue ? `${currentValue} ${text}` : text;
+                updateField("client_perspective", newValue);
+              }}
             />
           </div>
           <div className="flex justify-between items-center">
@@ -337,7 +341,11 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
               />
             </div>
             <VoiceInput
-              onResult={(text) => updateField("current_status", formData.current_status + " " + text)}
+              onResult={(text) => {
+                const currentValue = formData.current_status;
+                const newValue = currentValue ? `${currentValue} ${text}` : text;
+                updateField("current_status", newValue);
+              }}
             />
           </div>
           <div className="flex justify-end">
@@ -382,7 +390,11 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
               />
             </div>
             <VoiceInput
-              onResult={(text) => updateField("response_to_interventions", formData.response_to_interventions + " " + text)}
+              onResult={(text) => {
+                const currentValue = formData.response_to_interventions;
+                const newValue = currentValue ? `${currentValue} ${text}` : text;
+                updateField("response_to_interventions", newValue);
+              }}
             />
           </div>
           <div className="flex justify-end">
@@ -448,7 +460,11 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
                 maxLength={MAX_CHARS}
               />
               <VoiceInput
-                onResult={(text) => updateField("new_issues_details", formData.new_issues_details + " " + text)}
+                onResult={(text) => {
+                  const currentValue = formData.new_issues_details;
+                  const newValue = currentValue ? `${currentValue} ${text}` : text;
+                  updateField("new_issues_details", newValue);
+                }}
               />
             </div>
             <div className="flex justify-end">
@@ -491,7 +507,11 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
               maxLength={MAX_CHARS}
             />
             <VoiceInput
-              onResult={(text) => updateField("goals_progress", formData.goals_progress + " " + text)}
+              onResult={(text) => {
+                const currentValue = formData.goals_progress;
+                const newValue = currentValue ? `${currentValue} ${text}` : text;
+                updateField("goals_progress", newValue);
+              }}
             />
           </div>
           <div className="flex justify-end">
@@ -531,7 +551,11 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
               maxLength={MAX_CHARS}
             />
             <VoiceInput
-              onResult={(text) => updateField("safety_assessment", formData.safety_assessment + " " + text)}
+              onResult={(text) => {
+                const currentValue = formData.safety_assessment;
+                const newValue = currentValue ? `${currentValue} ${text}` : text;
+                updateField("safety_assessment", newValue);
+              }}
             />
           </div>
           <div className="flex justify-end">
@@ -570,7 +594,11 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
               maxLength={MAX_CHARS}
             />
             <VoiceInput
-              onResult={(text) => updateField("clinical_impression", formData.clinical_impression + " " + text)}
+              onResult={(text) => {
+                const currentValue = formData.clinical_impression;
+                const newValue = currentValue ? `${currentValue} ${text}` : text;
+                updateField("clinical_impression", newValue);
+              }}
             />
           </div>
           <div className="flex justify-end">
@@ -609,7 +637,11 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
               maxLength={MAX_CHARS}
             />
             <VoiceInput
-              onResult={(text) => updateField("treatment_plan", formData.treatment_plan + " " + text)}
+              onResult={(text) => {
+                const currentValue = formData.treatment_plan;
+                const newValue = currentValue ? `${currentValue} ${text}` : text;
+                updateField("treatment_plan", newValue);
+              }}
             />
           </div>
           <div className="flex justify-end">
@@ -648,7 +680,11 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
               maxLength={MAX_CHARS}
             />
             <VoiceInput
-              onResult={(text) => updateField("next_steps", formData.next_steps + " " + text)}
+              onResult={(text) => {
+                const currentValue = formData.next_steps;
+                const newValue = currentValue ? `${currentValue} ${text}` : text;
+                updateField("next_steps", newValue);
+              }}
             />
           </div>
           <div className="flex justify-end">

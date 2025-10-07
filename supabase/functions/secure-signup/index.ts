@@ -68,17 +68,28 @@ serve(async (req) => {
       });
     }
 
-    // SECURITY FIX: IP-based rate limiting for signup (prevents brute force)
-    const ipAddress = req.headers.get('x-forwarded-for')?.split(',')[0].trim() 
-      || req.headers.get('cf-connecting-ip') 
-      || 'unknown';
-    
-    if (ipAddress === 'unknown') {
-      console.error('Could not determine IP address for rate limiting');
-      return new Response(JSON.stringify({ error: 'Request blocked for security' }), {
-        status: 403,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+    // Robust IP detection with multiple header fallbacks
+    const forwarded = req.headers.get('x-forwarded-for') || '';
+    const ipCandidates = [
+      forwarded.split(',')[0]?.trim(),
+      req.headers.get('cf-connecting-ip') || '',
+      req.headers.get('x-real-ip') || '',
+      req.headers.get('fly-client-ip') || '',
+      req.headers.get('true-client-ip') || '',
+      req.headers.get('x-client-ip') || ''
+    ].filter(Boolean);
+
+    let ipAddress = ipCandidates.find(ip => ip && ip !== 'unknown') || '';
+
+    // Normalize IPv6/IPv4-mapped addresses (e.g., ::ffff:1.2.3.4)
+    if (ipAddress.startsWith('::ffff:')) {
+      ipAddress = ipAddress.replace('::ffff:', '');
+    }
+
+    // If still not available, fallback to a shared placeholder but DO NOT block
+    if (!ipAddress) {
+      console.warn('Could not determine IP address precisely; using placeholder for rate limiting');
+      ipAddress = '0.0.0.0';
     }
 
     const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);

@@ -12,7 +12,9 @@ import {
   FileText, 
   CheckCircle2, 
   Clock,
-  AlertCircle
+  AlertCircle,
+  Sparkles,
+  Loader2
 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -43,6 +45,7 @@ const MAX_CHARS = 4000;
 export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFormProps) => {
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [analyzingField, setAnalyzingField] = useState<string | null>(null);
   const [formData, setFormData] = useState<StructuredNote>({
     client_perspective: "",
     current_status: "",
@@ -170,6 +173,44 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
     return `${text.length}/${MAX_CHARS}`;
   };
 
+  const analyzeField = async (fieldName: keyof StructuredNote, fieldLabel: string) => {
+    setAnalyzingField(fieldName as string);
+    
+    try {
+      // Get conversation messages for context
+      const { data: messages } = await supabase
+        .from("messages")
+        .select("content, role")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: true });
+
+      const conversationContext = messages?.map(m => `${m.role}: ${m.content}`).join("\n") || "";
+
+      const { data, error } = await supabase.functions.invoke("analyze-field", {
+        body: {
+          fieldName,
+          fieldLabel,
+          currentValue: formData[fieldName],
+          conversationContext: conversationContext.slice(0, 8000), // Limit context size
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.suggestion) {
+        updateField(fieldName, data.suggestion);
+        toast.success(`${fieldLabel} analyzed successfully`, {
+          icon: <Sparkles className="h-4 w-4" />,
+        });
+      }
+    } catch (error) {
+      console.error("Error analyzing field:", error);
+      toast.error("Failed to analyze field");
+    } finally {
+      setAnalyzingField(null);
+    }
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -218,9 +259,24 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
 
         {/* Client Perspective */}
         <div className="space-y-2">
-          <Label htmlFor="client-perspective" className="font-semibold">
-            Document client's perspective (client's own words) on current problems, issues, needs, and progress
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="client-perspective" className="font-semibold">
+              Document client's perspective (client's own words) on current problems, issues, needs, and progress
+            </Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => analyzeField("client_perspective", "Client's Perspective")}
+              disabled={analyzingField === "client_perspective"}
+            >
+              {analyzingField === "client_perspective" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
           <div className="flex gap-2">
             <Textarea
               id="client-perspective"
@@ -246,9 +302,24 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
 
         {/* Current Status */}
         <div className="space-y-2">
-          <Label htmlFor="current-status" className="font-semibold">
-            Document client's current status, assessed needs, and interventions used during this session
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="current-status" className="font-semibold">
+              Document client's current status, assessed needs, and interventions used during this session
+            </Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => analyzeField("current_status", "Current Status")}
+              disabled={analyzingField === "current_status"}
+            >
+              {analyzingField === "current_status" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
           <p className="text-sm text-muted-foreground">
             Present the provision of services provided to the client in an understandable manner.
           </p>
@@ -274,9 +345,24 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
 
         {/* Response to Interventions */}
         <div className="space-y-2">
-          <Label htmlFor="response-interventions" className="font-semibold">
-            Describe the client's response to interventions
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="response-interventions" className="font-semibold">
+              Describe the client's response to interventions
+            </Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => analyzeField("response_to_interventions", "Response to Interventions")}
+              disabled={analyzingField === "response_to_interventions"}
+            >
+              {analyzingField === "response_to_interventions" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
           <p className="text-sm text-muted-foreground">
             Include what steps need to be taken and/or completed by the next scheduled session.
           </p>
@@ -328,9 +414,24 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
 
         {formData.new_issues_presented && (
           <div className="space-y-2">
-            <Label htmlFor="new-issues-details" className="font-semibold">
-              Provide details (be specific)
-            </Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="new-issues-details" className="font-semibold">
+                Provide details (be specific)
+              </Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => analyzeField("new_issues_details", "New Issues Details")}
+                disabled={analyzingField === "new_issues_details"}
+              >
+                {analyzingField === "new_issues_details" ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
             <div className="flex gap-2">
               <Textarea
                 id="new-issues-details"
@@ -356,9 +457,24 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
 
         {/* Additional Fields */}
         <div className="space-y-2">
-          <Label htmlFor="goals-progress" className="font-semibold">
-            Progress Toward Treatment Goals
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="goals-progress" className="font-semibold">
+              Progress Toward Treatment Goals
+            </Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => analyzeField("goals_progress", "Goals Progress")}
+              disabled={analyzingField === "goals_progress"}
+            >
+              {analyzingField === "goals_progress" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
           <div className="flex gap-2">
             <Textarea
               id="goals-progress"
@@ -380,10 +496,25 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="safety-assessment" className="font-semibold flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-destructive" />
-            Safety Assessment
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="safety-assessment" className="font-semibold flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-destructive" />
+              Safety Assessment
+            </Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => analyzeField("safety_assessment", "Safety Assessment")}
+              disabled={analyzingField === "safety_assessment"}
+            >
+              {analyzingField === "safety_assessment" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
           <div className="flex gap-2">
             <Textarea
               id="safety-assessment"
@@ -405,9 +536,24 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="clinical-impression" className="font-semibold">
-            Clinical Impression
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="clinical-impression" className="font-semibold">
+              Clinical Impression
+            </Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => analyzeField("clinical_impression", "Clinical Impression")}
+              disabled={analyzingField === "clinical_impression"}
+            >
+              {analyzingField === "clinical_impression" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
           <div className="flex gap-2">
             <Textarea
               id="clinical-impression"
@@ -429,9 +575,24 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="treatment-plan" className="font-semibold">
-            Treatment Plan Updates
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="treatment-plan" className="font-semibold">
+              Treatment Plan Updates
+            </Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => analyzeField("treatment_plan", "Treatment Plan")}
+              disabled={analyzingField === "treatment_plan"}
+            >
+              {analyzingField === "treatment_plan" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
           <div className="flex gap-2">
             <Textarea
               id="treatment-plan"
@@ -453,9 +614,24 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="next-steps" className="font-semibold">
-            Next Steps / Follow-up
-          </Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="next-steps" className="font-semibold">
+              Next Steps / Follow-up
+            </Label>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => analyzeField("next_steps", "Next Steps")}
+              disabled={analyzingField === "next_steps"}
+            >
+              {analyzingField === "next_steps" ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
           <div className="flex gap-2">
             <Textarea
               id="next-steps"

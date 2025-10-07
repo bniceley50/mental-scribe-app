@@ -101,13 +101,22 @@ serve(async (req) => {
     });
     
     if (rateLimitError || !rateLimitOk) {
-      console.log(`Rate limit exceeded for IP: ${ipAddress}`);
-      return new Response(JSON.stringify({ 
-        error: 'Too many signup attempts. Please try again later.' 
-      }), {
-        status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      const origin = req.headers.get('origin') || '';
+      const hostname = origin.replace(/^https?:\/\//, '').split('/')[0];
+      const isTrustedOrigin = /(?:\.lovableproject\.com|^lovableproject\.com$|mental-scribe-app\.com)$/i.test(hostname || '');
+
+      if (!isTrustedOrigin) {
+        console.log(`Rate limit exceeded for IP: ${ipAddress} (untrusted origin: ${origin})`);
+        return new Response(JSON.stringify({ 
+          error: 'Too many signup attempts. Please try again later.' 
+        }), {
+          status: 429,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+      }
+
+      // Soft-bypass for trusted preview/production origins to unblock real users
+      console.warn(`Soft-bypassing signup rate limit for trusted origin (${origin}), IP: ${ipAddress}`);
     }
 
     const { email, password } = await req.json();

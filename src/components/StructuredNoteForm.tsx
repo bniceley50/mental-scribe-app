@@ -46,6 +46,7 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
   const [saving, setSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [analyzingField, setAnalyzingField] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
   const [formData, setFormData] = useState<StructuredNote>({
     client_perspective: "",
     current_status: "",
@@ -60,16 +61,22 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
     is_telehealth: false,
   });
 
-  // Auto-save functionality
+  // Auto-save functionality with recording guard
   useEffect(() => {
+    if (isRecording) {
+      console.log("StructuredNoteForm: Skipping auto-save while recording");
+      return;
+    }
+
     const autoSaveTimer = setTimeout(() => {
       if (conversationId && Object.values(formData).some(v => v !== "" && v !== false)) {
+        console.log("StructuredNoteForm: Auto-save triggered");
         handleSave(true);
       }
-    }, 30000); // Auto-save every 30 seconds
+    }, 30000);
 
     return () => clearTimeout(autoSaveTimer);
-  }, [formData, conversationId]);
+  }, [formData, conversationId, isRecording]);
 
   // Load existing note if available
   useEffect(() => {
@@ -167,6 +174,16 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
 
   const updateField = (field: keyof StructuredNote, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleStartRecording = () => {
+    setIsRecording(true);
+    console.log("StructuredNoteForm: Recording started");
+  };
+
+  const handleStopRecording = () => {
+    setIsRecording(false);
+    console.log("StructuredNoteForm: Recording stopped");
   };
 
   const getCharCount = (text: string) => {
@@ -290,11 +307,14 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
             </div>
             <VoiceInput
               onResult={(text) => {
+                console.log("StructuredNoteForm: Voice delta for client_perspective:", text);
                 setFormData(prev => ({
                   ...prev,
                   client_perspective: prev.client_perspective ? `${prev.client_perspective} ${text}` : text,
                 }));
               }}
+              onStartRecording={handleStartRecording}
+              onStopRecording={handleStopRecording}
             />
           </div>
           <div className="flex justify-between items-center">
@@ -348,6 +368,8 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
                   current_status: prev.current_status ? `${prev.current_status} ${text}` : text,
                 }));
               }}
+              onStartRecording={handleStartRecording}
+              onStopRecording={handleStopRecording}
             />
           </div>
           <div className="flex justify-end">
@@ -398,6 +420,8 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
                   response_to_interventions: prev.response_to_interventions ? `${prev.response_to_interventions} ${text}` : text,
                 }));
               }}
+              onStartRecording={handleStartRecording}
+              onStopRecording={handleStopRecording}
             />
           </div>
           <div className="flex justify-end">
@@ -470,6 +494,8 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
                     new_issues_details: prev.new_issues_details ? `${prev.new_issues_details} ${text}` : text,
                   }));
                 }}
+                onStartRecording={handleStartRecording}
+                onStopRecording={handleStopRecording}
               />
             </div>
             <div className="flex justify-end">
@@ -518,6 +544,8 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
                   goals_progress: prev.goals_progress ? `${prev.goals_progress} ${text}` : text,
                 }));
               }}
+              onStartRecording={handleStartRecording}
+              onStopRecording={handleStopRecording}
             />
           </div>
           <div className="flex justify-end">
@@ -563,6 +591,8 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
                   safety_assessment: prev.safety_assessment ? `${prev.safety_assessment} ${text}` : text,
                 }));
               }}
+              onStartRecording={handleStartRecording}
+              onStopRecording={handleStopRecording}
             />
           </div>
           <div className="flex justify-end">
@@ -607,6 +637,8 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
                   clinical_impression: prev.clinical_impression ? `${prev.clinical_impression} ${text}` : text,
                 }));
               }}
+              onStartRecording={handleStartRecording}
+              onStopRecording={handleStopRecording}
             />
           </div>
           <div className="flex justify-end">
@@ -651,6 +683,8 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
                   treatment_plan: prev.treatment_plan ? `${prev.treatment_plan} ${text}` : text,
                 }));
               }}
+              onStartRecording={handleStartRecording}
+              onStopRecording={handleStopRecording}
             />
           </div>
           <div className="flex justify-end">
@@ -695,6 +729,8 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
                   next_steps: prev.next_steps ? `${prev.next_steps} ${text}` : text,
                 }));
               }}
+              onStartRecording={handleStartRecording}
+              onStopRecording={handleStopRecording}
             />
           </div>
           <div className="flex justify-end">

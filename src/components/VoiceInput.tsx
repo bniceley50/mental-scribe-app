@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Mic, MicOff, Loader2 } from "lucide-react";
+import { Mic, MicOff } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -13,9 +13,11 @@ interface SpeechRecognitionEvent extends Event {
 interface VoiceInputProps {
   onResult: (text: string) => void;
   disabled?: boolean;
+  onStartRecording?: () => void;
+  onStopRecording?: () => void;
 }
 
-export const VoiceInput = ({ onResult, disabled }: VoiceInputProps) => {
+export const VoiceInput = ({ onResult, disabled, onStartRecording, onStopRecording }: VoiceInputProps) => {
   const [recording, setRecording] = useState(false);
   const [isSupported, setIsSupported] = useState(true);
   const recognitionRef = useRef<any>(null);
@@ -41,16 +43,16 @@ export const VoiceInput = ({ onResult, disabled }: VoiceInputProps) => {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
       recognitionRef.current = new SpeechRecognition();
       
-      // Reset accumulated text
+      // Reset accumulated text for new session
       accumulatedTextRef.current = "";
       
       // Configuration
       recognitionRef.current.lang = "en-US";
       recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = false; // Only final results to avoid flicker
+      recognitionRef.current.interimResults = false; // Only final results
       recognitionRef.current.maxAlternatives = 1;
 
-      // Handle results - send ONLY the new finalized chunk
+      // Handle results - emit ONLY the delta (new text)
       recognitionRef.current.onresult = (event: SpeechRecognitionEvent) => {
         let finalTranscript = "";
 
@@ -60,8 +62,19 @@ export const VoiceInput = ({ onResult, disabled }: VoiceInputProps) => {
           }
         }
 
+        // Emit only the new delta since last emission
         if (finalTranscript) {
-          onResult(finalTranscript.trim());
+          const trimmedTranscript = finalTranscript.trim();
+          if (trimmedTranscript.length > accumulatedTextRef.current.length) {
+            const newDelta = trimmedTranscript.substring(accumulatedTextRef.current.length).trim();
+            console.log("VoiceInput: Emitting delta:", {
+              newDelta,
+              finalLength: trimmedTranscript.length,
+              prevLength: accumulatedTextRef.current.length,
+            });
+            onResult(newDelta);
+            accumulatedTextRef.current = trimmedTranscript;
+          }
         }
       };
 
@@ -69,6 +82,8 @@ export const VoiceInput = ({ onResult, disabled }: VoiceInputProps) => {
       recognitionRef.current.onerror = (event: any) => {
         console.error("Speech recognition error:", event.error);
         setRecording(false);
+        accumulatedTextRef.current = "";
+        onStopRecording?.();
         
         if (event.error === "no-speech") {
           toast.error("No speech detected", {
@@ -88,11 +103,14 @@ export const VoiceInput = ({ onResult, disabled }: VoiceInputProps) => {
       // Handle end
       recognitionRef.current.onend = () => {
         setRecording(false);
+        accumulatedTextRef.current = "";
+        onStopRecording?.();
       };
 
       // Start recognition
       recognitionRef.current.start();
       setRecording(true);
+      onStartRecording?.();
       
       toast.success("Listening...", {
         description: "Speak your clinical notes",
@@ -102,14 +120,15 @@ export const VoiceInput = ({ onResult, disabled }: VoiceInputProps) => {
       console.error("Error starting speech recognition:", error);
       toast.error("Failed to start voice input");
       setRecording(false);
+      accumulatedTextRef.current = "";
+      onStopRecording?.();
     }
   };
 
   const handleStop = () => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
-      setRecording(false);
-      toast.info("Stopped listening");
+      // onend will handle cleanup
     }
   };
 

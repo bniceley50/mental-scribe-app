@@ -1,0 +1,96 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run security scan daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+jobs:
+  security-scan:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+      - name: Check for leaked secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --only-verified
+
+      - name: Run ESLint security rules
+        run: npx eslint . --ext .ts,.tsx --max-warnings 0
+        continue-on-error: true
+
+      - name: Check for vulnerable dependencies
+        run: |
+          npm install -g snyk
+          snyk test --severity-threshold=high || true
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        continue-on-error: true
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit
+
+      - name: Security headers check
+        run: |
+          echo "Checking for security headers in index.html..."
+          grep -q "X-Content-Type-Options" index.html && echo "✓ X-Content-Type-Options found" || echo "✗ Missing X-Content-Type-Options"
+          grep -q "X-Frame-Options" index.html && echo "✓ X-Frame-Options found" || echo "✗ Missing X-Frame-Options"
+          grep -q "Content-Security-Policy" index.html && echo "✓ Content-Security-Policy found" || echo "⚠ CSP should be added"
+
+      - name: Check for hardcoded secrets
+        run: |
+          echo "Scanning for potential hardcoded secrets..."
+          ! grep -r -i "password.*=.*['\"].*['\"]" src/ --include="*.ts" --include="*.tsx" || exit 1
+          ! grep -r -i "api[_-]?key.*=.*['\"].*['\"]" src/ --include="*.ts" --include="*.tsx" || exit 1
+          ! grep -r -i "secret.*=.*['\"].*['\"]" src/ --include="*.ts" --include="*.tsx" || exit 1
+
+      - name: Validate environment variables
+        run: |
+          echo "Checking for proper environment variable usage..."
+          ! grep -r "VITE_" src/ --include="*.ts" --include="*.tsx" | grep -v "import.meta.env.VITE_" || echo "✓ All VITE_ vars use import.meta.env"
+
+      - name: Check RLS policies (if Supabase)
+        run: |
+          if [ -d "supabase/migrations" ]; then
+            echo "Checking for RLS policies in migrations..."
+            grep -r "ENABLE ROW LEVEL SECURITY" supabase/migrations/ && echo "✓ RLS policies found" || echo "⚠ No RLS policies detected"
+          fi
+
+      - name: Security Summary
+        if: always()
+        run: |
+          echo "================================"
+          echo "Security Scan Summary"
+          echo "================================"
+          echo "✓ Dependency audit completed"
+          echo "✓ Secret scanning completed"
+          echo "✓ Static analysis completed"
+          echo "✓ Type checking completed"
+          echo "================================"

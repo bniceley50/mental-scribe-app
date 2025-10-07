@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import History from "./pages/History";
 import Settings from "./pages/Settings";
 import SecuritySettings from "./pages/SecuritySettings";
+import SecurityMonitoring from "./pages/SecurityMonitoring";
 import Clients from "./pages/Clients";
 import ClientProfile from "./pages/ClientProfile";
 import NotFound from "./pages/NotFound";
@@ -31,6 +32,7 @@ const App = () => (
             <Route path="/history" element={<History />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/settings/security" element={<SecuritySettings />} />
+            <Route path="/security/monitoring" element={<SecurityMonitoring />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

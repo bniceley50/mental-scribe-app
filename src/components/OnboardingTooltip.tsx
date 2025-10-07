@@ -87,6 +87,18 @@ export const OnboardingTooltip = () => {
 
   useEffect(() => {
     if (isActive && currentStepData) {
+      const handleKey = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') {
+          skipOnboarding();
+        } else if (e.key === 'ArrowRight') {
+          nextStep();
+        } else if (e.key === 'ArrowLeft') {
+          previousStep();
+        }
+      };
+
+      window.addEventListener('keydown', handleKey);
+
       const target = document.querySelector(currentStepData.target) as HTMLElement;
       targetRef.current = target;
 
@@ -102,6 +114,7 @@ export const OnboardingTooltip = () => {
       }
 
       return () => {
+        window.removeEventListener('keydown', handleKey);
         if (targetRef.current) {
           targetRef.current.classList.remove("onboarding-highlight");
         }

@@ -14,15 +14,10 @@ const Index = () => {
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
   const { hasCompletedOnboarding, startOnboarding } = useOnboarding();
 
-  // Start onboarding for first-time users after a brief delay
+  // Do NOT auto-start onboarding; user can trigger from WelcomeBanner
   useEffect(() => {
-    if (!hasCompletedOnboarding) {
-      const timer = setTimeout(() => {
-        startOnboarding();
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [hasCompletedOnboarding, startOnboarding]);
+    // intentionally left blank to avoid unexpected overlays blocking UI
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {

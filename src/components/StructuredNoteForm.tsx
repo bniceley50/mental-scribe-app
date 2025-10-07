@@ -6,6 +6,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { VoiceInput } from "@/components/VoiceInput";
 import { 
   Save, 
   FileText, 
@@ -220,14 +221,19 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
           <Label htmlFor="client-perspective" className="font-semibold">
             Document client's perspective (client's own words) on current problems, issues, needs, and progress
           </Label>
-          <Textarea
-            id="client-perspective"
-            placeholder="Enter client's perspective..."
-            value={formData.client_perspective}
-            onChange={(e) => updateField("client_perspective", e.target.value)}
-            className="min-h-[120px] resize-y bg-secondary/50"
-            maxLength={MAX_CHARS}
-          />
+          <div className="flex gap-2">
+            <Textarea
+              id="client-perspective"
+              placeholder="Enter client's perspective..."
+              value={formData.client_perspective}
+              onChange={(e) => updateField("client_perspective", e.target.value)}
+              className="min-h-[120px] resize-y bg-secondary/50"
+              maxLength={MAX_CHARS}
+            />
+            <VoiceInput
+              onResult={(text) => updateField("client_perspective", formData.client_perspective + " " + text)}
+            />
+          </div>
           <div className="flex justify-between items-center">
             <p className="text-xs text-muted-foreground">
               Max. {MAX_CHARS} characters
@@ -246,14 +252,19 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
           <p className="text-sm text-muted-foreground">
             Present the provision of services provided to the client in an understandable manner.
           </p>
-          <Textarea
-            id="current-status"
-            placeholder="Enter current status and interventions..."
-            value={formData.current_status}
-            onChange={(e) => updateField("current_status", e.target.value)}
-            className="min-h-[120px] resize-y bg-secondary/50"
-            maxLength={MAX_CHARS}
-          />
+          <div className="flex gap-2">
+            <Textarea
+              id="current-status"
+              placeholder="Enter current status and interventions..."
+              value={formData.current_status}
+              onChange={(e) => updateField("current_status", e.target.value)}
+              className="min-h-[120px] resize-y bg-secondary/50"
+              maxLength={MAX_CHARS}
+            />
+            <VoiceInput
+              onResult={(text) => updateField("current_status", formData.current_status + " " + text)}
+            />
+          </div>
           <div className="flex justify-end">
             <p className="text-xs text-muted-foreground">
               {getCharCount(formData.current_status)}
@@ -269,14 +280,19 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
           <p className="text-sm text-muted-foreground">
             Include what steps need to be taken and/or completed by the next scheduled session.
           </p>
-          <Textarea
-            id="response-interventions"
-            placeholder="Describe client's response..."
-            value={formData.response_to_interventions}
-            onChange={(e) => updateField("response_to_interventions", e.target.value)}
-            className="min-h-[120px] resize-y bg-secondary/50"
-            maxLength={MAX_CHARS}
-          />
+          <div className="flex gap-2">
+            <Textarea
+              id="response-interventions"
+              placeholder="Describe client's response..."
+              value={formData.response_to_interventions}
+              onChange={(e) => updateField("response_to_interventions", e.target.value)}
+              className="min-h-[120px] resize-y bg-secondary/50"
+              maxLength={MAX_CHARS}
+            />
+            <VoiceInput
+              onResult={(text) => updateField("response_to_interventions", formData.response_to_interventions + " " + text)}
+            />
+          </div>
           <div className="flex justify-end">
             <p className="text-xs text-muted-foreground">
               {getCharCount(formData.response_to_interventions)}
@@ -315,14 +331,19 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
             <Label htmlFor="new-issues-details" className="font-semibold">
               Provide details (be specific)
             </Label>
-            <Textarea
-              id="new-issues-details"
-              placeholder="Describe new issues or changes..."
-              value={formData.new_issues_details}
-              onChange={(e) => updateField("new_issues_details", e.target.value)}
-              className="min-h-[120px] resize-y bg-secondary/50"
-              maxLength={MAX_CHARS}
-            />
+            <div className="flex gap-2">
+              <Textarea
+                id="new-issues-details"
+                placeholder="Describe new issues or changes..."
+                value={formData.new_issues_details}
+                onChange={(e) => updateField("new_issues_details", e.target.value)}
+                className="min-h-[120px] resize-y bg-secondary/50"
+                maxLength={MAX_CHARS}
+              />
+              <VoiceInput
+                onResult={(text) => updateField("new_issues_details", formData.new_issues_details + " " + text)}
+              />
+            </div>
             <div className="flex justify-end">
               <p className="text-xs text-muted-foreground">
                 {getCharCount(formData.new_issues_details)}
@@ -338,14 +359,19 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
           <Label htmlFor="goals-progress" className="font-semibold">
             Progress Toward Treatment Goals
           </Label>
-          <Textarea
-            id="goals-progress"
-            placeholder="Document progress toward established treatment goals..."
-            value={formData.goals_progress}
-            onChange={(e) => updateField("goals_progress", e.target.value)}
-            className="min-h-[100px] resize-y bg-secondary/50"
-            maxLength={MAX_CHARS}
-          />
+          <div className="flex gap-2">
+            <Textarea
+              id="goals-progress"
+              placeholder="Document progress toward established treatment goals..."
+              value={formData.goals_progress}
+              onChange={(e) => updateField("goals_progress", e.target.value)}
+              className="min-h-[100px] resize-y bg-secondary/50"
+              maxLength={MAX_CHARS}
+            />
+            <VoiceInput
+              onResult={(text) => updateField("goals_progress", formData.goals_progress + " " + text)}
+            />
+          </div>
           <div className="flex justify-end">
             <p className="text-xs text-muted-foreground">
               {getCharCount(formData.goals_progress)}
@@ -358,14 +384,19 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
             <AlertCircle className="h-4 w-4 text-destructive" />
             Safety Assessment
           </Label>
-          <Textarea
-            id="safety-assessment"
-            placeholder="Document safety concerns, risk factors, and protective factors..."
-            value={formData.safety_assessment}
-            onChange={(e) => updateField("safety_assessment", e.target.value)}
-            className="min-h-[100px] resize-y bg-secondary/50"
-            maxLength={MAX_CHARS}
-          />
+          <div className="flex gap-2">
+            <Textarea
+              id="safety-assessment"
+              placeholder="Document safety concerns, risk factors, and protective factors..."
+              value={formData.safety_assessment}
+              onChange={(e) => updateField("safety_assessment", e.target.value)}
+              className="min-h-[100px] resize-y bg-secondary/50"
+              maxLength={MAX_CHARS}
+            />
+            <VoiceInput
+              onResult={(text) => updateField("safety_assessment", formData.safety_assessment + " " + text)}
+            />
+          </div>
           <div className="flex justify-end">
             <p className="text-xs text-muted-foreground">
               {getCharCount(formData.safety_assessment)}
@@ -377,14 +408,19 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
           <Label htmlFor="clinical-impression" className="font-semibold">
             Clinical Impression
           </Label>
-          <Textarea
-            id="clinical-impression"
-            placeholder="Provide clinical assessment and diagnostic impressions..."
-            value={formData.clinical_impression}
-            onChange={(e) => updateField("clinical_impression", e.target.value)}
-            className="min-h-[100px] resize-y bg-secondary/50"
-            maxLength={MAX_CHARS}
-          />
+          <div className="flex gap-2">
+            <Textarea
+              id="clinical-impression"
+              placeholder="Provide clinical assessment and diagnostic impressions..."
+              value={formData.clinical_impression}
+              onChange={(e) => updateField("clinical_impression", e.target.value)}
+              className="min-h-[100px] resize-y bg-secondary/50"
+              maxLength={MAX_CHARS}
+            />
+            <VoiceInput
+              onResult={(text) => updateField("clinical_impression", formData.clinical_impression + " " + text)}
+            />
+          </div>
           <div className="flex justify-end">
             <p className="text-xs text-muted-foreground">
               {getCharCount(formData.clinical_impression)}
@@ -396,14 +432,19 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
           <Label htmlFor="treatment-plan" className="font-semibold">
             Treatment Plan Updates
           </Label>
-          <Textarea
-            id="treatment-plan"
-            placeholder="Document any updates or modifications to the treatment plan..."
-            value={formData.treatment_plan}
-            onChange={(e) => updateField("treatment_plan", e.target.value)}
-            className="min-h-[100px] resize-y bg-secondary/50"
-            maxLength={MAX_CHARS}
-          />
+          <div className="flex gap-2">
+            <Textarea
+              id="treatment-plan"
+              placeholder="Document any updates or modifications to the treatment plan..."
+              value={formData.treatment_plan}
+              onChange={(e) => updateField("treatment_plan", e.target.value)}
+              className="min-h-[100px] resize-y bg-secondary/50"
+              maxLength={MAX_CHARS}
+            />
+            <VoiceInput
+              onResult={(text) => updateField("treatment_plan", formData.treatment_plan + " " + text)}
+            />
+          </div>
           <div className="flex justify-end">
             <p className="text-xs text-muted-foreground">
               {getCharCount(formData.treatment_plan)}
@@ -415,14 +456,19 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
           <Label htmlFor="next-steps" className="font-semibold">
             Next Steps / Follow-up
           </Label>
-          <Textarea
-            id="next-steps"
-            placeholder="Document homework, action items, and follow-up plans..."
-            value={formData.next_steps}
-            onChange={(e) => updateField("next_steps", e.target.value)}
-            className="min-h-[100px] resize-y bg-secondary/50"
-            maxLength={MAX_CHARS}
-          />
+          <div className="flex gap-2">
+            <Textarea
+              id="next-steps"
+              placeholder="Document homework, action items, and follow-up plans..."
+              value={formData.next_steps}
+              onChange={(e) => updateField("next_steps", e.target.value)}
+              className="min-h-[100px] resize-y bg-secondary/50"
+              maxLength={MAX_CHARS}
+            />
+            <VoiceInput
+              onResult={(text) => updateField("next_steps", formData.next_steps + " " + text)}
+            />
+          </div>
           <div className="flex justify-end">
             <p className="text-xs text-muted-foreground">
               {getCharCount(formData.next_steps)}

@@ -12,24 +12,37 @@ import { supabase } from "@/integrations/supabase/client";
 const Index = () => {
   const navigate = useNavigate();
   const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [sessionLoaded, setSessionLoaded] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
   const { hasCompletedOnboarding, startOnboarding } = useOnboarding();
 
-  // Do NOT auto-start onboarding; user can trigger from WelcomeBanner
   useEffect(() => {
-    // intentionally left blank to avoid unexpected overlays blocking UI
-  }, []);
-
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!session) {
-        navigate("/auth");
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setHasSession(true);
+      } else {
+        setHasSession(false);
+        if (window.location.pathname !== '/auth') {
+          navigate("/auth");
+        }
       }
-    });
+      setSessionLoaded(true);
+    };
+
+    checkSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session) {
+      if (session) {
+        setHasSession(true);
+        if (window.location.pathname === '/auth') {
+          navigate("/");
+        }
+      } else {
+        setHasSession(false);
         navigate("/auth");
       }
+      setSessionLoaded(true);
     });
 
     return () => subscription.unsubscribe();
@@ -66,6 +79,21 @@ const Index = () => {
       });
     };
   }, [navigate]);
+
+  if (!sessionLoaded) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="inline-block w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+          <p className="text-muted-foreground">Loading session...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hasSession) {
+    return null;
+  }
 
   return (
     <>

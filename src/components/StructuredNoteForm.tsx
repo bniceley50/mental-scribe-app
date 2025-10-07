@@ -60,8 +60,6 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
     is_telehealth: false,
   });
 
-  console.log('StructuredNoteForm rendering - analyzingField:', analyzingField);
-
   // Auto-save functionality
   useEffect(() => {
     const autoSaveTimer = setTimeout(() => {

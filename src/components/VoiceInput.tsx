@@ -20,8 +20,6 @@ export const VoiceInput = ({ onResult, disabled }: VoiceInputProps) => {
   const [isSupported, setIsSupported] = useState(true);
   const recognitionRef = useRef<any>(null);
 
-  console.log('VoiceInput rendering - isSupported:', isSupported, 'disabled:', disabled);
-
   useEffect(() => {
     // Check browser support on mount
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;

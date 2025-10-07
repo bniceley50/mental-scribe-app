@@ -259,8 +259,8 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
 
         {/* Client Perspective */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="client-perspective" className="font-semibold">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Label htmlFor="client-perspective" className="font-semibold flex-1">
               Document client's perspective (client's own words) on current problems, issues, needs, and progress
             </Label>
             <Button
@@ -277,15 +277,17 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
               )}
             </Button>
           </div>
-          <div className="flex gap-2">
-            <Textarea
-              id="client-perspective"
-              placeholder="Enter client's perspective..."
-              value={formData.client_perspective}
-              onChange={(e) => updateField("client_perspective", e.target.value)}
-              className="min-h-[120px] resize-y bg-secondary/50"
-              maxLength={MAX_CHARS}
-            />
+          <div className="flex items-start gap-2">
+            <div className="flex-1">
+              <Textarea
+                id="client-perspective"
+                placeholder="Enter client's perspective..."
+                value={formData.client_perspective}
+                onChange={(e) => updateField("client_perspective", e.target.value)}
+                className="min-h-[120px] resize-y bg-secondary/50"
+                maxLength={MAX_CHARS}
+              />
+            </div>
             <VoiceInput
               onResult={(text) => updateField("client_perspective", formData.client_perspective + " " + text)}
             />
@@ -302,8 +304,8 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
 
         {/* Current Status */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="current-status" className="font-semibold">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Label htmlFor="current-status" className="font-semibold flex-1">
               Document client's current status, assessed needs, and interventions used during this session
             </Label>
             <Button
@@ -323,15 +325,17 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
           <p className="text-sm text-muted-foreground">
             Present the provision of services provided to the client in an understandable manner.
           </p>
-          <div className="flex gap-2">
-            <Textarea
-              id="current-status"
-              placeholder="Enter current status and interventions..."
-              value={formData.current_status}
-              onChange={(e) => updateField("current_status", e.target.value)}
-              className="min-h-[120px] resize-y bg-secondary/50"
-              maxLength={MAX_CHARS}
-            />
+          <div className="flex items-start gap-2">
+            <div className="flex-1">
+              <Textarea
+                id="current-status"
+                placeholder="Enter current status and interventions..."
+                value={formData.current_status}
+                onChange={(e) => updateField("current_status", e.target.value)}
+                className="min-h-[120px] resize-y bg-secondary/50"
+                maxLength={MAX_CHARS}
+              />
+            </div>
             <VoiceInput
               onResult={(text) => updateField("current_status", formData.current_status + " " + text)}
             />
@@ -345,8 +349,8 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
 
         {/* Response to Interventions */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="response-interventions" className="font-semibold">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Label htmlFor="response-interventions" className="font-semibold flex-1">
               Describe the client's response to interventions
             </Label>
             <Button
@@ -366,15 +370,17 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
           <p className="text-sm text-muted-foreground">
             Include what steps need to be taken and/or completed by the next scheduled session.
           </p>
-          <div className="flex gap-2">
-            <Textarea
-              id="response-interventions"
-              placeholder="Describe client's response..."
-              value={formData.response_to_interventions}
-              onChange={(e) => updateField("response_to_interventions", e.target.value)}
-              className="min-h-[120px] resize-y bg-secondary/50"
-              maxLength={MAX_CHARS}
-            />
+          <div className="flex items-start gap-2">
+            <div className="flex-1">
+              <Textarea
+                id="response-interventions"
+                placeholder="Describe client's response..."
+                value={formData.response_to_interventions}
+                onChange={(e) => updateField("response_to_interventions", e.target.value)}
+                className="min-h-[120px] resize-y bg-secondary/50"
+                maxLength={MAX_CHARS}
+              />
+            </div>
             <VoiceInput
               onResult={(text) => updateField("response_to_interventions", formData.response_to_interventions + " " + text)}
             />
@@ -414,8 +420,8 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
 
         {formData.new_issues_presented && (
           <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label htmlFor="new-issues-details" className="font-semibold">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Label htmlFor="new-issues-details" className="font-semibold flex-1">
                 Provide details (be specific)
               </Label>
               <Button
@@ -457,8 +463,8 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
 
         {/* Additional Fields */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="goals-progress" className="font-semibold">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <Label htmlFor="goals-progress" className="font-semibold flex-1">
               Progress Toward Treatment Goals
             </Label>
             <Button

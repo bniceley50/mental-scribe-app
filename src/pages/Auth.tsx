@@ -68,7 +68,12 @@ const Auth = () => {
       // Clear password field for security
       setPassword("");
     } catch (error: any) {
-      toast.error(error.message || "Failed to create account");
+      const msg = typeof error?.message === 'string' ? error.message : '';
+      if (msg.includes('non-2xx') || msg.includes('429')) {
+        toast.error("Too many signup attempts from your network. Please wait ~15 minutes and try again.");
+      } else {
+        toast.error(msg || "Failed to create account");
+      }
     } finally {
       setLoading(false);
     }

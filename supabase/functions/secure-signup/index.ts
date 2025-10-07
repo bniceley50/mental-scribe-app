@@ -85,8 +85,8 @@ serve(async (req) => {
     
     const { data: rateLimitOk, error: rateLimitError } = await supabaseAdmin.rpc('check_signup_rate_limit', {
       _ip_address: ipAddress,
-      _max_requests: 5,
-      _window_minutes: 60
+      _max_requests: 10,
+      _window_minutes: 15
     });
     
     if (rateLimitError || !rateLimitOk) {

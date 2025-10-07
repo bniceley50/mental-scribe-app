@@ -608,27 +608,30 @@ export type Database = {
           created_at: string
           endpoint: string
           id: string
+          ip_address: string | null
           request_count: number
           updated_at: string
-          user_id: string
+          user_id: string | null
           window_start: string
         }
         Insert: {
           created_at?: string
           endpoint: string
           id?: string
+          ip_address?: string | null
           request_count?: number
           updated_at?: string
-          user_id: string
+          user_id?: string | null
           window_start?: string
         }
         Update: {
           created_at?: string
           endpoint?: string
           id?: string
+          ip_address?: string | null
           request_count?: number
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
           window_start?: string
         }
         Relationships: []
@@ -1038,6 +1041,14 @@ export type Database = {
           _endpoint: string
           _max_requests?: number
           _user_id: string
+          _window_minutes?: number
+        }
+        Returns: boolean
+      }
+      check_signup_rate_limit: {
+        Args: {
+          _ip_address: string
+          _max_requests?: number
           _window_minutes?: number
         }
         Returns: boolean

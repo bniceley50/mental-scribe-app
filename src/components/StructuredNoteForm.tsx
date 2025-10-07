@@ -215,9 +215,15 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
       if (error) throw error;
 
       if (data?.suggestion) {
-        updateField(fieldName, data.suggestion);
+        setFormData(prev => ({
+          ...prev,
+          [fieldName]: ((prev[fieldName] as unknown as string) && typeof prev[fieldName] === 'string')
+            ? `${prev[fieldName] as unknown as string} ${data.suggestion}`
+            : (data.suggestion as string),
+        }));
         toast.success(`${fieldLabel} analyzed successfully`, {
           icon: <Sparkles className="h-4 w-4" />,
+          description: "AI suggestion appended. Your existing text was not replaced.",
         });
       }
     } catch (error) {

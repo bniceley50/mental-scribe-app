@@ -31,14 +31,14 @@ describe('Client Audit Logging', () => {
       });
     });
 
-    it('should log client view with custom access method', async () => {
+    it('should log client view with server-side access method detection', async () => {
       vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null });
 
-      await logClientView(mockClientId, 'clinical_staff');
+      await logClientView(mockClientId);
 
       expect(supabase.rpc).toHaveBeenCalledWith('log_client_view', {
         _client_id: mockClientId,
-        _access_method: 'clinical_staff'
+        _access_method: 'ui_view' // Server determines actual method
       });
     });
 
@@ -61,23 +61,19 @@ describe('Client Audit Logging', () => {
       expect(supabase.rpc).toHaveBeenCalled();
     });
 
-    it('should support all valid access methods', async () => {
-      const accessMethods: Array<'direct_owner' | 'admin' | 'clinical_staff' | 'unknown'> = [
-        'direct_owner',
-        'admin',
-        'clinical_staff',
-        'unknown'
+    it('should handle multiple clients efficiently', async () => {
+      const clientIds = [
+        '123e4567-e89b-12d3-a456-426614174001',
+        '123e4567-e89b-12d3-a456-426614174002',
+        '123e4567-e89b-12d3-a456-426614174003'
       ];
 
-      for (const method of accessMethods) {
-        vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null });
-        await logClientView(mockClientId, method);
-        
-        expect(supabase.rpc).toHaveBeenCalledWith('log_client_view', {
-          _client_id: mockClientId,
-          _access_method: method
-        });
-      }
+      vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null });
+
+      // Log multiple clients
+      await Promise.all(clientIds.map(id => logClientView(id)));
+      
+      expect(supabase.rpc).toHaveBeenCalledTimes(3);
     });
 
     it('should handle network errors', async () => {
@@ -108,12 +104,12 @@ describe('Client Audit Logging', () => {
       const clientId = '123e4567-e89b-12d3-a456-426614174000';
       
       vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null });
-      await logClientView(clientId, 'admin');
+      await logClientView(clientId);
 
       // Verify RPC was called correctly
       expect(supabase.rpc).toHaveBeenCalledWith('log_client_view', {
         _client_id: clientId,
-        _access_method: 'admin'
+        _access_method: 'ui_view'
       });
     });
 
@@ -131,12 +127,12 @@ describe('Client Audit Logging', () => {
       const clientId = '123e4567-e89b-12d3-a456-426614174000';
       
       vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null });
-      await logClientView(clientId, 'clinical_staff');
+      await logClientView(clientId);
 
       // User context (auth.uid()) is captured server-side
       expect(supabase.rpc).toHaveBeenCalledWith('log_client_view', {
         _client_id: clientId,
-        _access_method: 'clinical_staff'
+        _access_method: 'ui_view'
       });
     });
   });
@@ -170,12 +166,12 @@ describe('Client Audit Logging', () => {
       const clientId = '123e4567-e89b-12d3-a456-426614174000';
       vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null });
 
-      await logClientView(clientId, 'clinical_staff');
+      await logClientView(clientId);
 
       // Verify we're capturing the required data
       expect(supabase.rpc).toHaveBeenCalledWith('log_client_view', {
         _client_id: clientId, // WHAT
-        _access_method: 'clinical_staff' // HOW
+        _access_method: 'ui_view' // HOW (server determines actual method)
         // WHO: auth.uid() captured server-side
         // WHEN: timestamp added server-side
         // WHERE: program_id captured server-side
@@ -187,7 +183,7 @@ describe('Client Audit Logging', () => {
       const clientId = '123e4567-e89b-12d3-a456-426614174000';
       vi.mocked(supabase.rpc).mockResolvedValue({ data: null, error: null });
 
-      await logClientView(clientId, 'admin');
+      await logClientView(clientId);
 
       expect(supabase.rpc).toHaveBeenCalled();
     });

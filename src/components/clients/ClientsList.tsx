@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import { ClientDialog } from "./ClientDialog";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { logClientView } from "@/lib/clientAudit";
+import { logClientView, batchLogClientViews } from "@/lib/clientAudit";
 
 interface ClientsListProps {
   searchQuery: string;
@@ -64,6 +64,18 @@ export function ClientsList({ searchQuery }: ClientsListProps) {
       client.primary_diagnosis?.toLowerCase().includes(query)
     );
   });
+
+  // HIPAA REQUIREMENT: Log batch audit when client list is displayed
+  // This addresses the finding from security reviews about missing list view auditing
+  useEffect(() => {
+    if (filteredClients && filteredClients.length > 0) {
+      const clientIds = filteredClients.map(c => c.id);
+      batchLogClientViews(clientIds).catch(err => {
+        console.error('Failed to log batch client views:', err);
+        // Don't block UI on audit logging failures
+      });
+    }
+  }, [filteredClients]);
 
   if (isLoading) {
     return (

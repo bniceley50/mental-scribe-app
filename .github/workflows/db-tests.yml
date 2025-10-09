@@ -1,0 +1,34 @@
+name: Database Tests (pgTAP)
+
+on:
+  push:
+    branches: [ hardening/audit-logs-immutability ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      
+      - name: Start Supabase local instance
+        run: supabase start
+      
+      - name: Load complete schema
+        run: |
+          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres < COMPLETE_SCHEMA_EXPORT.sql
+      
+      - name: Run pgTAP tests
+        run: |
+          supabase test db --db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres
+      
+      - name: Stop Supabase
+        if: always()
+        run: supabase stop

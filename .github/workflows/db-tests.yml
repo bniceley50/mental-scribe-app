@@ -1,34 +1,56 @@
-name: Database Tests (pgTAP)
-
+name: db-tests
 on:
   push:
     branches: [ hardening/audit-logs-immutability ]
   pull_request:
 
 jobs:
-  test:
+  pgtap:
     runs-on: ubuntu-latest
-    
+
+    services:
+      postgres:
+        image: pgexperts/pg_tap:latest
+        ports: ['5432:5432']
+        env:
+          POSTGRES_PASSWORD: postgres
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-      
-      - name: Start Supabase local instance
-        run: supabase start
-      
-      - name: Load complete schema
+      - uses: actions/checkout@v4
+      - name: Install psql client
         run: |
-          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres < COMPLETE_SCHEMA_EXPORT.sql
-      
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+      - name: Wait for DB
+        run: |
+          for i in {1..60}; do
+            pg_isready -h localhost -p 5432 -U postgres && break
+            sleep 2
+          done
+      - name: Bootstrap schema and apply migration
+        env:
+          PGPASSWORD: postgres
+        run: |
+          set -euo pipefail
+          createdb -h localhost -U postgres testdb
+          psql -h localhost -U postgres -d testdb -v ON_ERROR_STOP=1 -c 'CREATE EXTENSION IF NOT EXISTS pgtap;'
+          test -f COMPLETE_SCHEMA_EXPORT.sql
+          echo "[db-tests] Loading COMPLETE_SCHEMA_EXPORT.sql"
+          psql -h localhost -U postgres -d testdb -v ON_ERROR_STOP=1 -f COMPLETE_SCHEMA_EXPORT.sql
+          echo "[db-tests] Applying immutability migration"
+          psql -h localhost -U postgres -d testdb -v ON_ERROR_STOP=1 -f supabase/migrations/20251008T190500_audit_logs_immutable.sql
       - name: Run pgTAP tests
+        env:
+          PGPASSWORD: postgres
         run: |
-          supabase test db --db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres
-      
-      - name: Stop Supabase
-        if: always()
-        run: supabase stop
+          set -euo pipefail
+          psql -h localhost -U postgres -d testdb -v ON_ERROR_STOP=1 -f supabase/tests/pgtap/audit_immutability.sql | tee pgtap.out
+          if grep -q "not ok" pgtap.out; then
+            echo "::error::pgTAP reported failures"
+            exit 1
+          fi

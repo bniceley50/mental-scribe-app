@@ -2,33 +2,62 @@ name: Database Tests (pgTAP)
 
 on:
   push:
-    branches: [ hardening/audit-logs-immutability ]
+    branches: [ copilot/enforce-audit-logs-immutability ]
   pull_request:
 
 jobs:
   test:
     runs-on: ubuntu-latest
     
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
-      - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
-        with:
-          version: latest
-      
-      - name: Start Supabase local instance
-        run: supabase start
-      
+      - name: Install pgTAP extension
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-15-pgtap
+          
+      - name: Bootstrap test database with pgTAP
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d postgres -c "CREATE EXTENSION IF NOT EXISTS pgtap;"
+          
+      - name: Verify COMPLETE_SCHEMA_EXPORT.sql exists
+        run: |
+          if [ ! -f COMPLETE_SCHEMA_EXPORT.sql ]; then
+            echo "ERROR: COMPLETE_SCHEMA_EXPORT.sql not found in repository root"
+            exit 1
+          fi
+          echo "COMPLETE_SCHEMA_EXPORT.sql found"
+          
       - name: Load complete schema
         run: |
-          psql postgresql://postgres:postgres@127.0.0.1:54322/postgres < COMPLETE_SCHEMA_EXPORT.sql
+          PGPASSWORD=postgres psql -h localhost -U postgres -d postgres < COMPLETE_SCHEMA_EXPORT.sql
+          
+      - name: Apply audit logs immutability migration
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d postgres < supabase/migrations/20251008T190500_audit_logs_immutable.sql
       
       - name: Run pgTAP tests
         run: |
-          supabase test db --db-url postgresql://postgres:postgres@127.0.0.1:54322/postgres
-      
-      - name: Stop Supabase
+          PGPASSWORD=postgres pg_prove -h localhost -U postgres -d postgres supabase/tests/pgtap/*.sql
+          
+      - name: Display test summary
         if: always()
-        run: supabase stop
+        run: |
+          echo "=== pgTAP Test Results ==="
+          echo "Check above for detailed results"

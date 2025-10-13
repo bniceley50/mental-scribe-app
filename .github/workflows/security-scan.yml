@@ -10,6 +10,11 @@ on:
     - cron: '0 2 * * *'
   workflow_dispatch:
 
+# Cancel previous runs when a new push is made to the same branch
+concurrency:
+  group: security-scan-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   security-scan:
     name: Security Vulnerability Scan
@@ -46,13 +51,19 @@ jobs:
         run: npx eslint . --ext .ts,.tsx --max-warnings 0
         continue-on-error: true
 
-      - name: Check for vulnerable dependencies
+      - name: Check for vulnerable dependencies (if Snyk token available)
+        if: ${{ secrets.SNYK_TOKEN != '' }}
         run: |
           npm install -g snyk
           snyk test --severity-threshold=high || true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         continue-on-error: true
+
+      - name: Skip Snyk scan (no token)
+        if: ${{ secrets.SNYK_TOKEN == '' }}
+        run: |
+          echo "::notice::Skipping Snyk scan - SNYK_TOKEN not configured"
 
       - name: TypeScript type check
         run: npx tsc --noEmit
@@ -64,12 +75,24 @@ jobs:
           grep -q "X-Frame-Options" index.html && echo "✓ X-Frame-Options found" || echo "✗ Missing X-Frame-Options"
           grep -q "Content-Security-Policy" index.html && echo "✓ Content-Security-Policy found" || echo "⚠ CSP should be added"
 
-      - name: Check for hardcoded secrets
+      - name: Check for hardcoded secrets in production code
         run: |
-          echo "Scanning for potential hardcoded secrets..."
-          ! grep -r -i "password.*=.*['\"].*['\"]" src/ --include="*.ts" --include="*.tsx" || exit 1
-          ! grep -r -i "api[_-]?key.*=.*['\"].*['\"]" src/ --include="*.ts" --include="*.tsx" || exit 1
-          ! grep -r -i "secret.*=.*['\"].*['\"]" src/ --include="*.ts" --include="*.tsx" || exit 1
+          set -euo pipefail
+          echo "Scanning production code for potential hardcoded secrets..."
+          # Only scan src/ and supabase/functions/ directories, exclude test files
+          if grep -r -i "password.*=.*['\"].*['\"]" src/ supabase/functions/ --include="*.ts" --include="*.tsx" --exclude-dir="__tests__" --exclude="*.test.ts" --exclude="*.test.tsx" 2>/dev/null; then
+            echo "::error::Found hardcoded password in production code"
+            exit 1
+          fi
+          if grep -r -i "api[_-]?key.*=.*['\"].*['\"]" src/ supabase/functions/ --include="*.ts" --include="*.tsx" --exclude-dir="__tests__" --exclude="*.test.ts" --exclude="*.test.tsx" 2>/dev/null; then
+            echo "::error::Found hardcoded API key in production code"
+            exit 1
+          fi
+          if grep -r -i "secret.*=.*['\"].*['\"]" src/ supabase/functions/ --include="*.ts" --include="*.tsx" --exclude-dir="__tests__" --exclude="*.test.ts" --exclude="*.test.tsx" 2>/dev/null; then
+            echo "::error::Found hardcoded secret in production code"
+            exit 1
+          fi
+          echo "✓ No hardcoded secrets found in production code"
 
       - name: Validate environment variables
         run: |

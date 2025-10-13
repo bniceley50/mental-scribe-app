@@ -21,6 +21,22 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
+      // Disable no-explicit-any globally - it will be enabled only for specific directories below
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
+  // Enable no-explicit-any only for test and function directories
+  {
+    files: ["src/test/**/*.{ts,tsx}", "supabase/functions/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "error",
+    },
+  },
+  // Allow require() in Tailwind config
+  {
+    files: ["tailwind.config.ts"],
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
 );

@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { redactPHI } from '../utils/redactPHI.ts';
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -247,9 +248,13 @@ serve(async (req) => {
 
     // Handle edit_content action differently
     if (action === "edit_content" && original_content && edit_instruction) {
+      // SECURITY: Redact PHI before sending to external LLM
+      const redactedOriginalContent = redactPHI(original_content);
+      const redactedEditInstruction = redactPHI(edit_instruction);
+      
       messages.push({
         role: "user",
-        content: `Original content:\n\n${original_content}\n\n---\n\nEdit instruction: ${edit_instruction}`,
+        content: `Original content:\n\n${redactedOriginalContent}\n\n---\n\nEdit instruction: ${redactedEditInstruction}`,
       });
     } else {
       if (!notes && !file_content) {
@@ -258,11 +263,14 @@ serve(async (req) => {
 
       // Combine notes and file content if both exist
       const fullNotes = [notes, file_content].filter(Boolean).join("\n\n");
+      
+      // SECURITY: Redact PHI before sending to external LLM
+      const redactedNotes = redactPHI(fullNotes);
 
       // Add current notes
       messages.push({
         role: "user",
-        content: `Session Notes:\n\n${fullNotes}`,
+        content: `Session Notes:\n\n${redactedNotes}`,
       });
     }
 

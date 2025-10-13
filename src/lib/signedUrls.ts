@@ -1,17 +1,18 @@
 /**
  * Signed URL utilities for secure file access
  * SECURITY: Always use signed URLs for PHI documents, never public URLs
+ * COMPLIANCE: TTL set to 60 seconds for maximum security on PHI documents
  */
 
 import { supabase } from "@/integrations/supabase/client";
 
-const SIGNED_URL_EXPIRY = 3600; // 1 hour in seconds
+const SIGNED_URL_EXPIRY = 60; // 60 seconds for PHI security compliance
 
 /**
  * Generate a signed URL for a file in storage
  * @param bucket - Storage bucket name
  * @param path - File path within the bucket
- * @param expiresIn - Expiry time in seconds (default: 1 hour)
+ * @param expiresIn - Expiry time in seconds (default: 60 seconds for PHI compliance)
  * @returns Signed URL or null if failed
  */
 export const generateSignedUrl = async (

@@ -16,8 +16,8 @@ describe('Signed URL Security', () => {
   });
 
   describe('generateSignedUrl', () => {
-    it('should generate signed URL with default expiry (1 hour)', async () => {
-      const mockSignedUrl = 'https://example.com/signed-url?token=abc123&exp=3600';
+    it('should generate signed URL with default expiry (60 seconds for PHI compliance)', async () => {
+      const mockSignedUrl = 'https://example.com/signed-url?token=abc123&exp=60';
       const mockCreateSignedUrl = vi.fn().mockResolvedValue({
         data: { signedUrl: mockSignedUrl },
         error: null
@@ -31,7 +31,7 @@ describe('Signed URL Security', () => {
 
       expect(result).toBe(mockSignedUrl);
       expect(supabase.storage.from).toHaveBeenCalledWith('clinical-documents');
-      expect(mockCreateSignedUrl).toHaveBeenCalledWith('test/file.pdf', 3600);
+      expect(mockCreateSignedUrl).toHaveBeenCalledWith('test/file.pdf', 60);
     });
 
     it('should generate signed URL with custom expiry', async () => {
@@ -116,7 +116,7 @@ describe('Signed URL Security', () => {
 
       for (const path of paths) {
         await generateSignedUrl('clinical-documents', path);
-        expect(mockCreateSignedUrl).toHaveBeenCalledWith(path, 3600);
+        expect(mockCreateSignedUrl).toHaveBeenCalledWith(path, 60);
       }
     });
   });
@@ -286,8 +286,9 @@ describe('Signed URL Security', () => {
         createSignedUrl: mockCreateSignedUrl
       } as any);
 
-      // Part 2 data should use shorter expiry for additional security
-      const shortExpiry = 900; // 15 minutes
+      // Part 2 data now uses even shorter expiry (default 60s is already compliant)
+      // Can use custom shorter expiry for additional security
+      const shortExpiry = 30; // 30 seconds
       await generateSignedUrl('clinical-documents', 'part2-data.pdf', shortExpiry);
       
       expect(mockCreateSignedUrl).toHaveBeenCalledWith(

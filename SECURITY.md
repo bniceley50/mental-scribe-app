@@ -51,7 +51,8 @@ Instead, please report security issues privately by:
 
 ### Data Protection
 - ✅ Row-Level Security (RLS) on all database tables
-- ✅ Signed URLs for file access (1-hour expiry)
+- ✅ Signed URLs for file access (60-second expiry for PHI compliance)
+- ✅ PHI redaction before external LLM/vendor calls
 - ✅ Data classification (standard PHI vs Part 2 protected)
 - ✅ Encryption at rest and in transit
 - ✅ sessionStorage for drafts (cleared on tab close)
@@ -91,6 +92,15 @@ Instead, please report security issues privately by:
 
 ## Security Updates
 
+### 2025-10-13: Security Compliance Patch
+- **PHI Redaction**: Implemented PHI redaction utility to mask SSN, phone, email, DOB, and MRN before external LLM calls
+- **Signed URL TTL**: Reduced signed URL expiry from 3600s to 60s for PHI documents
+- **Secrets Management**: Removed .env from version control; added .env.example template
+- **Key Rotation**: If you had previously committed .env with exposed keys, please rotate the following:
+  - `VITE_SUPABASE_PUBLISHABLE_KEY` (regenerate in Supabase dashboard)
+  - Any other keys that may have been exposed in version control
+  - Update all deployed instances with new keys
+
 We regularly update our security measures and dependencies. Stay informed about security updates through project communications.
 
 ## Compliance
@@ -121,5 +131,5 @@ For security concerns, please contact your security team or project maintainers.
 
 ---
 
-**Last Updated**: 2025-10-05
-**Version**: 1.1.0
+**Last Updated**: 2025-10-13
+**Version**: 1.2.0

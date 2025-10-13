@@ -1,5 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { redactPHI } from "../utils/redactPHI.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -45,9 +46,13 @@ Guidelines:
 Field: ${fieldLabel}
 Task: ${fieldPrompts[fieldName] || 'Generate appropriate clinical documentation for this field'}`;
 
+    // SECURITY: Redact PHI before sending to external LLM
+    const redactedCurrentValue = currentValue ? redactPHI(currentValue) : '';
+    const redactedContext = redactPHI(conversationContext);
+
     const userPrompt = currentValue 
-      ? `Current content:\n${currentValue}\n\nConversation context:\n${conversationContext}\n\nPlease enhance and expand this content with clinical details based on the conversation.`
-      : `Conversation context:\n${conversationContext}\n\nPlease generate clinical documentation for the "${fieldLabel}" field based on this conversation.`;
+      ? `Current content:\n${redactedCurrentValue}\n\nConversation context:\n${redactedContext}\n\nPlease enhance and expand this content with clinical details based on the conversation.`
+      : `Conversation context:\n${redactedContext}\n\nPlease generate clinical documentation for the "${fieldLabel}" field based on this conversation.`;
 
     console.log('Analyzing field:', fieldName);
 

@@ -53,9 +53,9 @@ describe('PHI Redaction Utility', () => {
 
     it('should redact Medical Record Numbers', () => {
       const tests = [
-        { input: 'MRN: ABC123456', prefix: true },
-        { input: 'MRN ABC123456', prefix: false },
-        { input: 'mrn: XYZ789', prefix: false },
+        { input: 'MRN: ABC123456' },
+        { input: 'MRN ABC123456' },
+        { input: 'mrn: XYZ789' },
       ];
 
       tests.forEach(({ input }) => {

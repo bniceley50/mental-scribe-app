@@ -5,7 +5,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-const SIGNED_URL_EXPIRY = 3600; // 1 hour in seconds
+const SIGNED_URL_EXPIRY = 60; // 60 seconds for PHI documents (HIPAA compliance)
 
 /**
  * Generate a signed URL for a file in storage

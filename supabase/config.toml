@@ -9,5 +9,8 @@ verify_jwt = true
 [functions.secure-signup]
 verify_jwt = false
 
+[functions.secure-password-reset]
+verify_jwt = false
+
 [functions.realtime-voice]
 verify_jwt = false

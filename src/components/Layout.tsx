@@ -21,6 +21,8 @@ const Layout = ({ children, currentConversationId, onConversationSelect }: Layou
   const isActive = (path: string) => location.pathname === path;
 
   const handleLogout = async () => {
+    try { sessionStorage.clear(); } catch { /* noop: best-effort cleanup */ }
+    try { localStorage.clear(); } catch { /* noop: best-effort cleanup */ }
     const { error } = await supabase.auth.signOut();
     if (error) {
       showToast.error("Failed to log out");

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,6 @@ import { Brain } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
-import { isPasswordLeaked } from "@/lib/passwordSecurity";
 
 const authSchema = z.object({
   email: z.string()
@@ -32,7 +31,99 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [mfaCode, setMfaCode] = useState("");
   const [isMfaRequired, setIsMfaRequired] = useState(false);
+  const [showResetRequest, setShowResetRequest] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetMessage, setResetMessage] = useState<string | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSubmitting, setResetSubmitting] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [isResetStage, setIsResetStage] = useState(false);
+  const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const stageParam = params.get("stage") === "reset";
+    const hash = location.hash || "";
+    const hashIndicatesRecovery = hash.includes("type=recovery") || hash.includes("access_token");
+    setIsResetStage(stageParam || hashIndicatesRecovery);
+  }, [location.search, location.hash]);
+
+  const strongPassword = (pw: string) =>
+    typeof pw === "string" &&
+    pw.length >= 12 &&
+    /[A-Z]/.test(pw) &&
+    /[a-z]/.test(pw) &&
+    /[0-9]/.test(pw) &&
+    /[^A-Za-z0-9]/.test(pw);
+
+  const handleResetRequest = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetSubmitting(true);
+    setResetError(null);
+    setResetMessage(null);
+    try {
+      const redirectTo = `${window.location.origin}/auth?stage=reset`;
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), { redirectTo });
+      if (error) {
+        throw error;
+      }
+      setResetMessage("Password reset link sent. Check your email to continue.");
+      toast.success("Password reset email sent.");
+      setTimeout(() => {
+        setShowResetRequest(false);
+        setResetEmail("");
+      }, 2000);
+    } catch (error: any) {
+      const message = typeof error?.message === "string" ? error.message : "Failed to send reset email";
+      setResetError(message);
+      toast.error(message);
+    } finally {
+      setResetSubmitting(false);
+    }
+  };
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setResetSubmitting(true);
+    setResetError(null);
+    setResetMessage(null);
+
+    if (!strongPassword(newPassword)) {
+      setResetSubmitting(false);
+      setResetError("Weak password (min 12 chars with upper, lower, number, special).");
+      return;
+    }
+
+    try {
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      if (!token) {
+        throw new Error("Missing session. Open the reset link from your email.");
+      }
+      const response = await fetch("/functions/v1/password-reset", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ newPassword }),
+      });
+      const json = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(json?.error || "Password reset failed");
+      }
+      setResetMessage("Password updated. Please sign in with your new password.");
+      toast.success("Password updated. Please sign in with your new password.");
+      setNewPassword("");
+      navigate("/auth", { replace: true });
+    } catch (error: any) {
+      const message = typeof error?.message === "string" ? error.message : "Password reset failed";
+      setResetError(message);
+      toast.error(message);
+    } finally {
+      setResetSubmitting(false);
+    }
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -196,6 +287,62 @@ const Auth = () => {
     }
   };
 
+  if (isResetStage) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary/30 to-background p-4">
+        <Card className="w-full max-w-md shadow-lg border-border/50">
+          <CardHeader className="space-y-4 text-center">
+            <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md">
+              <Brain className="w-10 h-10 text-white" />
+            </div>
+            <div>
+              <CardTitle className="text-2xl">Reset Your Password</CardTitle>
+              <CardDescription className="mt-2">
+                Choose a strong password with upper, lower, number, and special characters.
+              </CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handlePasswordReset} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New Password</Label>
+                <Input
+                  id="new-password"
+                  type="password"
+                  minLength={12}
+                  placeholder="New strong password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full bg-primary hover:bg-primary/90 transition-all"
+                disabled={resetSubmitting}
+              >
+                {resetSubmitting ? "Updating..." : "Update Password"}
+              </Button>
+              {resetError && <p className="text-sm text-destructive">{resetError}</p>}
+              {resetMessage && <p className="text-sm text-emerald-600">{resetMessage}</p>}
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  setIsResetStage(false);
+                  navigate("/auth", { replace: true });
+                }}
+              >
+                Back to Sign In
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary/30 to-background p-4">
       <Card className="w-full max-w-md shadow-lg border-border/50">
@@ -276,6 +423,42 @@ const Auth = () => {
                     Back to Sign In
                   </Button>
                 </form>
+              ) : showResetRequest ? (
+                <form onSubmit={handleResetRequest} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-email">Email</Label>
+                    <Input
+                      id="reset-email"
+                      type="email"
+                      placeholder="your.email@example.com"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <Button
+                    type="submit"
+                    className="w-full bg-primary hover:bg-primary/90 transition-all"
+                    disabled={resetSubmitting}
+                  >
+                    {resetSubmitting ? "Sending link..." : "Send reset link"}
+                  </Button>
+                  {resetError && <p className="text-sm text-destructive">{resetError}</p>}
+                  {resetMessage && <p className="text-sm text-emerald-600">{resetMessage}</p>}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => {
+                      setShowResetRequest(false);
+                      setResetEmail("");
+                      setResetError(null);
+                      setResetMessage(null);
+                    }}
+                  >
+                    Back to sign in
+                  </Button>
+                </form>
               ) : (
                 <form onSubmit={handleSignIn} className="space-y-4">
                   <div className="space-y-2">
@@ -308,6 +491,18 @@ const Auth = () => {
                     disabled={loading}
                   >
                     {loading ? "Signing in..." : "Sign In"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="w-full mt-2"
+                    onClick={() => {
+                      setShowResetRequest(true);
+                      setResetError(null);
+                      setResetMessage(null);
+                    }}
+                  >
+                    Forgot your password?
                   </Button>
                 </form>
               )}

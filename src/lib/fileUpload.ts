@@ -3,10 +3,8 @@ import { toast } from "sonner";
 import * as pdfjsLib from "pdfjs-dist";
 import DOMPurify from "dompurify";
 
-// Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
-// Security constants
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const PDF_MAGIC_BYTES = [0x25, 0x50, 0x44, 0x46]; // %PDF
 
@@ -47,23 +45,19 @@ export const extractTextFromPDF = async (file: File): Promise<string> => {
 };
 
 export const extractTextFromFile = async (file: File): Promise<string> => {
-  // Validate file size
   if (file.size > MAX_FILE_SIZE) {
     throw new Error(`File size exceeds maximum allowed size of 10MB`);
   }
 
   if (file.type === "application/pdf") {
-    // Verify PDF magic bytes
     const isValidPDF = await verifyPDFMagicBytes(file);
     if (!isValidPDF) {
       throw new Error("Invalid PDF file format");
     }
     const rawText = await extractTextFromPDF(file);
-    // Sanitize extracted text to prevent XSS
     return DOMPurify.sanitize(rawText, { ALLOWED_TAGS: [] });
   } else if (file.type === "text/plain" || file.name.endsWith(".txt")) {
     const rawText = await file.text();
-    // Sanitize extracted text to prevent XSS
     return DOMPurify.sanitize(rawText, { ALLOWED_TAGS: [] });
   } else {
     throw new Error("Unsupported file type");
@@ -78,27 +72,34 @@ export const uploadFileToStorage = async (
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) throw new Error("User not authenticated");
 
+    if (!["application/pdf", "text/plain"].includes(file.type)) {
+      throw new Error("Only PDF and text files are allowed");
+    }
+
     const fileExt = file.name.split(".").pop();
     const fileName = `${user.id}/${conversationId}/${Date.now()}.${fileExt}`;
 
-    const { data, error } = await supabase.storage
-      .from("clinical-documents")
-      .upload(fileName, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("path", fileName);
 
-    if (error) throw error;
+    const res = await fetch("/functions/v1/storage-upload-guard", {
+      method: "POST",
+      body: fd,
+    });
 
-    // SECURITY FIX: Use signed URL instead of public URL for PHI documents
-    // This generates a time-limited URL that expires after 1 hour
+    const payload = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(typeof payload?.error === "string" ? payload.error : await res.text());
+    }
+
     const { data: signedData, error: signedError } = await supabase.storage
       .from("clinical-documents")
-      .createSignedUrl(fileName, 3600); // 1 hour expiry
+      .createSignedUrl(fileName, 3600);
 
     if (signedError) throw signedError;
 
-    return { url: signedData.signedUrl, path: data.path };
+    return { url: signedData.signedUrl, path: fileName };
   } catch (error: any) {
     console.error("Error uploading file:", error);
     toast.error(error.message || "Failed to upload file");
@@ -157,14 +158,12 @@ export const getConversationFiles = async (
 
 export const deleteFile = async (fileId: string, filePath: string): Promise<boolean> => {
   try {
-    // Delete from storage
     const { error: storageError } = await supabase.storage
       .from("clinical-documents")
       .remove([filePath]);
 
     if (storageError) throw storageError;
 
-    // Delete from database
     const { error: dbError } = await supabase
       .from("uploaded_files")
       .delete()

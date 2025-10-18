@@ -135,54 +135,47 @@ $proofText = @"
 
 ## Git Status
 
-``````
 $gitStat
-``````
 
-## Expected Files Check (exit $phase_files)
+## Phase Results
+- file-assert: $phase_files
+- npm ci: $phase_ci
+- npm run build: $phase_build
+- npm run sec:prove: $phase_prove
 
-**Missing files:**
-$missingBlock
-
-## Phases
-
-- npm ci: exit $phase_ci
-- npm run build: exit $phase_build  
-- npm run sec:prove: exit $phase_prove
-
-## Security Summary
-
+## security/summary.json
 $summaryBlock
 
-**Score:** $score/$max  
-**Passed:** $passedDisp  
-**Failed:** $failedDisp
+## Control Summary
+| Metric | Value |
+| --- | --- |
+| Score | ${score:-"-"} / ${max:-"-"} |
+| Passed | $passedDisp |
+| Failed | $failedDisp |
 
-## CSP Evaluator (last 30 lines)
+## Dist JWT Token Count
+$jwtCount
 
+## Missing Expected Files
+$missingBlock
+
+## CSP Evaluator Tail
 $cspBlock
-
-## Secrets in Dist
-
-JWT-like tokens detected: $jwtCount
-
-## Artifacts
-
-Generated $(Get-Date):
-
-``````
-$(if(Test-Path $artifactManifest){ Get-Content $artifactManifest | Out-String } else { "No manifest" })
-``````
 "@
 
-Set-Content -Path $proofMd -Value $proofText -Encoding UTF8
-Write-Ok "Generated $proofMd"
+Set-Content -Path $proofMd -Value $proofText
 
-# --- Final exit code
-$totalExitCode = $phase_files + $phase_ci + $phase_build + $phase_prove
-if($totalExitCode -eq 0){
-  Write-Ok "All phases succeeded. Security proof complete."
+# acceptance: all phases ok AND summary exists AND (score==max)
+$exit = 0
+if ($phase_ci -ne 0 -or $phase_build -ne 0 -or $phase_prove -ne 0) { $exit = 1 }
+if (-not $summaryExists) { $exit = 1 }
+if ($summaryExists -and $score -ne $max) { $exit = 1 }
+
+if ($exit -eq 0) {
+  Write-Ok "=== PROOF OK: complete ==="
+  Add-Content -Path $proofMd -Value "`n=== PROOF OK: complete ===`n"
 } else {
-  Write-Err "Some phases failed (total exit code: $totalExitCode)"
+  Write-Err "=== PROOF NOT COMPLETE ==="
 }
-exit $totalExitCode
+
+exit $exit

@@ -1,19 +1,61 @@
 # PROOF
 
-- Timestamp: 2025-10-18T19:27:50Z
+- Timestamp: 2025-10-18T22:14:09Z
 - Node: v20.19.1
 - npm:  10.8.2
-- Git HEAD: 698d3a0c96d0b0128cb1345e8b63006e6cf8a5d5
+- Git HEAD: e2ac1f218941671545cc9682a30937a1c56cd16b
 
 ## Git Status
 
-```
-## chore/ci-hardening...origin/chore/ci-hardening  M package-lock.json  M package.json ?? playwright.config.ts ?? proof/ ?? scripts/run-all-proof.mjs ?? scripts/security-score.mjs ?? security/ ?? verify-security.ps1
+## chore/ci-hardening...origin/chore/ci-hardening  M package-lock.json  M package.json  M proof/PROOF.md  M proof/artifact-manifest.txt  M security/summary.json  M verify-security.ps1 ?? security/artifacts/ ?? test-results/ ?? test/
+
+## Phase Results
+- file-assert: 1
+- npm ci: 0
+- npm run build: 0
+- npm run sec:prove: 1
+
+## security/summary.json
+```json
+{
+  "score": 1,
+  "max": 3,
+  "passed": [
+    "e2e_smoke"
+  ],
+  "failed": [
+    "csp_strict",
+    "no_secrets_in_dist"
+  ],
+  "details": {
+    "csp_strict": {
+      "passed": false,
+      "reason": "high-severity CSP issues present or CSP missing"
+    },
+    "no_secrets_in_dist": {
+      "passed": false,
+      "reason": "14335 potential JWT-like tokens found in dist"
+    },
+    "e2e_smoke": {
+      "passed": true,
+      "reason": "no failed tests reported"
+    }
+  }
+}
+
 ```
 
-## Expected Files Check (exit 1)
+## Control Summary
+| Metric | Value |
+| --- | --- |
+| Score |  /  |
+| Passed | e2e_smoke |
+| Failed | csp_strict, no_secrets_in_dist |
 
-**Missing files:**
+## Dist JWT Token Count
+47
+
+## Missing Expected Files
 .github/workflows/security-gates.yml
 scripts/prebuild-check.mjs
 test/e2e/cors.spec.ts
@@ -26,34 +68,7 @@ test/k6/ratelimit-smoke.js
 src/lib/authLogout.ts
 src/lib/trusted-types.ts
 
-## Phases
-
-- npm ci: exit 0
-- npm run build: exit 1  
-- npm run sec:prove: exit 1
-
-## Security Summary
-
-Not found
-
-**Score:** /  
-**Passed:** -  
-**Failed:** -
-
-## CSP Evaluator (last 30 lines)
-
-No csp-evaluator.txt
-
-## Secrets in Dist
-
-JWT-like tokens detected: 0
-
-## Artifacts
-
-Generated 10/18/2025 15:27:51:
-
-```
-
-a1af028b963b2c4b7cf955785e86ee026174bc01ab2386e94e7564543f2996b5  705  security/scorecard.schema.json
-
+## CSP Evaluator Tail
+``` 
+No CSP meta tag found in dist/index.html
 ```

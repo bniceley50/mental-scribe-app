@@ -1,25 +1,25 @@
 {
-  "score": 2,
+  "score": 1,
   "max": 3,
   "passed": [
+    "e2e_smoke"
+  ],
+  "failed": [
     "csp_strict",
     "no_secrets_in_dist"
   ],
-  "failed": [
-    "e2e_smoke"
-  ],
   "details": {
     "csp_strict": {
-      "passed": true,
-      "reason": "no high-severity CSP issues found"
+      "passed": false,
+      "reason": "high-severity CSP issues present or CSP missing"
     },
     "no_secrets_in_dist": {
-      "passed": true,
-      "reason": "0 matches"
+      "passed": false,
+      "reason": "14335 potential JWT-like tokens found in dist"
     },
     "e2e_smoke": {
-      "passed": false,
-      "reason": "playwright.json not found"
+      "passed": true,
+      "reason": "no failed tests reported"
     }
   }
 }

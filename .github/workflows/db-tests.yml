@@ -10,7 +10,7 @@ jobs:
 
     services:
       postgres:
-        image: pgexperts/pg_tap:latest
+        image: postgres:16
         ports: ['5432:5432']
         env:
           POSTGRES_PASSWORD: postgres
@@ -32,6 +32,10 @@ jobs:
             pg_isready -h localhost -p 5432 -U postgres && break
             sleep 2
           done
+      - name: Install pgTAP extension
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-16-pgtap
       - name: Bootstrap schema and apply migration
         env:
           PGPASSWORD: postgres

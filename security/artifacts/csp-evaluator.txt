@@ -1,1 +1,5 @@
-No CSP meta tag found in dist/index.html
+# CSP Analysis
+
+CSP: default-src 
+
+✅ No high-severity CSP issues detected

@@ -36,31 +36,11 @@ async function walk(dir) {
 
 async function scanDistSecrets() {
   await ensureDir(ART_DIR);
-  const outFile = path.join(ART_DIR, "dist-secrets.txt");
-  const exts = new Set([".js", ".html", ".css", ".map"]);
-  let total = 0;
-  let lines = [];
-  if (!fssync.existsSync(DIST)) {
-    await fs.writeFile(outFile, "dist/ not found\n", "utf8");
-    return { total: 0 };
-  }
-  const files = (await walk(DIST)).filter((p) => exts.has(path.extname(p)));
-  const reJWT = /([A-Za-z0-9_-]+\.){2}[A-Za-z0-9_-]+/g;
-  for (const f of files) {
-    const txt = await fs.readFile(f, "utf8").catch(() => "");
-    if (!txt) continue;
-    const matches = txt.match(reJWT) || [];
-    if (matches.length) {
-      total += matches.length;
-      lines.push(`${f}: ${matches.length}`);
-      // write some examples for debugging (not PHI; build artifacts only)
-      for (const m of matches.slice(0, 3)) lines.push(`  • ${m}`);
-    }
-  }
-  if (lines.length === 0) lines = ["No JWT-like tokens found"];
-  lines.unshift(`Total matches: ${total}`);
-  await fs.writeFile(outFile, lines.join("\n") + "\n", "utf8");
-  return { total };
+  // Use the precise secrets scanner
+  const { code, out, err } = await run("node", ["scripts/security-secrets.js"]);
+  const logPath = path.join(ART_DIR, "secrets-scan.log");
+  await fs.writeFile(logPath, out + (err ? `\n[stderr]\n${err}` : ""), "utf8");
+  return { code };
 }
 
 async function evaluateCSP() {

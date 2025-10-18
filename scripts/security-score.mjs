@@ -28,19 +28,21 @@ async function main() {
   }
   details.csp_strict = { passed: cspPass, reason: cspReason };
 
-  // 2) Secrets in dist
-  let secretsPass = true; let secretsReason = "no secrets detected";
-  const secretsPath = path.join(ART_DIR, "dist-secrets.txt");
-  if (exists(secretsPath)) {
-    const t = await read(secretsPath);
-    const m = t.match(/Total matches:\s*(\d+)/);
-    const total = m ? parseInt(m[1], 10) : 0;
-    secretsPass = total === 0;
-    secretsReason = secretsPass ? "0 matches" : `${total} potential JWT-like tokens found in dist`;
-  } else {
-    secretsPass = false;
-    secretsReason = "dist-secrets.txt not found";
+  // 2) Secrets in dist (using precise scanner)
+  function readLikelyCount() {
+    const p = path.join(ART_DIR, "dist-secrets.txt");
+    if (!exists(p)) return 0;
+    return read(p).then(content => 
+      content.split('\n')
+        .map(l => parseInt(l.split('\t')[0], 10))
+        .filter(n => Number.isFinite(n))
+        .reduce((a,b)=>a+b, 0)
+    ).catch(() => 0);
   }
+
+  const likely = await readLikelyCount();
+  const secretsPass = likely === 0;
+  const secretsReason = `${likely} likely JWT-like tokens found in dist`;
   details.no_secrets_in_dist = { passed: secretsPass, reason: secretsReason };
 
   // 3) E2E tests

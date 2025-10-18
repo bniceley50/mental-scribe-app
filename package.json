@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview --port 4173",
-    "sec:clean": "node -e \"try{fs=require('fs');fs.rmSync('security/artifacts',{recursive:true,force:true});fs.rmSync('security/summary.json',{force:true})}catch(e){}\"",
+    "sec:clean": "node -e \"try{fs=require('fs');fs.rmSync('security/artifacts',{recursive:true,force:true});fs.rmSync('security/summary.json',{force:true});fs.mkdirSync('security/artifacts',{recursive:true})}catch(e){}\"",
     "sec:prove": "npm run build && node scripts/run-all-proof.mjs all && node scripts/security-score.mjs",
     "test:e2e": "playwright test"
   },
@@ -104,6 +104,6 @@
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
-    "vite": "^5.4.19"
+    "vite": "^5.4.20"
   }
 }

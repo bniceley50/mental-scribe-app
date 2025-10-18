@@ -1,21 +1,21 @@
 {
-  "score": 1,
+  "score": 2,
   "max": 3,
   "passed": [
+    "csp_strict",
     "e2e_smoke"
   ],
   "failed": [
-    "csp_strict",
     "no_secrets_in_dist"
   ],
   "details": {
     "csp_strict": {
-      "passed": false,
-      "reason": "high-severity CSP issues present or CSP missing"
+      "passed": true,
+      "reason": "no high-severity CSP issues found"
     },
     "no_secrets_in_dist": {
       "passed": false,
-      "reason": "14335 potential JWT-like tokens found in dist"
+      "reason": "2 likely JWT-like tokens found in dist"
     },
     "e2e_smoke": {
       "passed": true,

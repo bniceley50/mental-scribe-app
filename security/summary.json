@@ -1,0 +1,25 @@
+{
+  "score": 2,
+  "max": 3,
+  "passed": [
+    "csp_strict",
+    "no_secrets_in_dist"
+  ],
+  "failed": [
+    "e2e_smoke"
+  ],
+  "details": {
+    "csp_strict": {
+      "passed": true,
+      "reason": "no high-severity CSP issues found"
+    },
+    "no_secrets_in_dist": {
+      "passed": true,
+      "reason": "0 matches"
+    },
+    "e2e_smoke": {
+      "passed": false,
+      "reason": "playwright.json not found"
+    }
+  }
+}

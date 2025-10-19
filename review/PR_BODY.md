@@ -1,49 +1,104 @@
 # Security Hardening: 3/3 Controls Passing + Comprehensive Review
 
-## 🎯 Summary
-This PR delivers comprehensive security hardening with verifiable proof of all controls passing.
+## ✅ Executive Summary
 
-## 📊 Security Proof Status
-- **Score**: 3/3 (100%)
-- **Passed Controls**:
-  - ✅ CSP Strict: No high-severity CSP issues found
-  - ✅ No Secrets in Dist: 0 JWT-like tokens in production bundle
-  - ✅ E2E Smoke: All Playwright tests passing
+| Metric | Status | Notes |
+|--------|--------|-------|
+| Security Proof | **PASS (3/3)** | `csp_strict`, `no_secrets_in_dist`, `e2e_smoke` |
+| TypeScript | **Clean** | 0 errors |
+| ESLint | **Clean** | 0 issues (A grade) |
+| Build | **Success** | exit 0 |
+| Bundle Size | **Optimized** | ~0.08 MB total |
+| Source Maps | **None in production** | ✓ OK |
+| E2E Tests | **Passing** | Playwright smoke ✓ OK |
 
-## 📦 Code Quality Metrics
-- **TypeScript**: ✅ Clean (0 errors)
-- **ESLint**: ✅ 0 issues
-- **Build**: ✅ Successful (exit code 0)
-- **Bundle Size**: ✅ 0.08 MB (optimized)
-- **Source Maps**: ✅ None in production
+**Verdict: SHIP** — all security controls pass with verifiable evidence, clean code quality metrics, and optimized bundle.
 
-## 📁 Review Artifacts
-- [`review/REVIEW.md`](review/REVIEW.md) — Comprehensive code review with executive summary
-- [`review/findings.json`](review/findings.json) — Machine-readable findings (0 blockers)
-- [`security/summary.json`](security/summary.json) — Security proof score
-- [`proof/PROOF.md`](proof/PROOF.md) — Complete audit trail with environment details
-- [`review/artifacts/`](review/artifacts/) — All analysis outputs (build, lint, bundle sizes)
+---
 
-## 🚀 What's Included
-1. ✅ **Security proof pipeline** with automated validation
-2. ✅ **Comprehensive review artifacts** for audit trail
-3. ✅ **Build & bundle analysis** with performance metrics
-4. ✅ **Static analysis** (TypeScript, ESLint) - all passing
-5. ✅ **.env.example** for better developer onboarding
-6. ✅ **CI/CD workflow** for continuous security validation
+## 🔎 What Changed (Highlights)
 
-## ✅ Overall Verdict
-**SHIP** — All security controls passing with comprehensive evidence and clean code quality metrics.
+- ✅ Implemented security proof pipeline with **3/3 passing gates**
+- ✅ Ensured **no JWT-like tokens or secrets** in production bundle
+- ✅ Enforced **strict CSP**; verified via evaluator output
+- ✅ Wired **CI-ready scripts** for repeatable local/CI proof runs
+- ✅ Optimized build output; confirmed **no `.map` files** shipped
+- ✅ Fixed exit code handling: `sec:prove` returns **exit 0** on full pass
 
-## 🔍 How to Verify
+---
+
+## 📁 Evidence & Artifacts
+
+All proof artifacts committed to `chore/ci-hardening`:
+
+- [`security/summary.json`](security/summary.json) — proof score & results
+- [`security/artifacts/playwright.json`](security/artifacts/playwright.json) — E2E output (JSON)
+- [`security/artifacts/csp-evaluator.txt`](security/artifacts/csp-evaluator.txt) — CSP analysis tail
+- [`proof/PROOF.md`](proof/PROOF.md) — environment, commit, logs, manifest
+- [`review/artifacts/`](review/artifacts/) — build logs, bundle analysis, static checks
+- [`review/REVIEWER_BLURB.md`](review/REVIEWER_BLURB.md) — Complete reviewer checklist
+
+---
+
+## � How to Re-Verify Locally
+
 ```bash
-# Clone and verify locally
-git checkout chore/ci-hardening
+# fresh deps
 npm ci
+
+# run the proof end-to-end
+npm run sec:clean
 npm run sec:prove
 
-# Check the score
-cat security/summary.json
+# sanity: build and inspect bundle
+npm run build
+node -e "const fs=require('fs');console.log('dist exists:',fs.existsSync('dist'))"
 ```
 
-Expected output: `"score": 3, "max": 3`
+Expected: `sec:prove` exits with code **0** on 3/3 pass.
+
+---
+
+## 🔐 Security Controls (detail)
+
+1. **CSP Strict**: No high-severity issues reported in evaluator tail
+2. **No Secrets in Dist**: 0 JWT-like tokens detected in `dist/*` (legit URLs/asset hashes ignored)
+3. **E2E Smoke**: Playwright smoke tests pass; JSON output attached
+
+---
+
+## ✅ Reviewer Checklist
+
+- [ ] Review `security/summary.json` (score & pass list)
+- [ ] Glance `proof/PROOF.md` (context + manifest)
+- [ ] Confirm `csp-evaluator.txt` tail shows no high-severity items
+- [ ] Verify no `*.map` files in `dist/`
+- [ ] (Optional) Run verification commands above locally
+
+---
+
+## � Merge & Release
+
+```bash
+# Merge in GitHub UI (recommended) OR use automated script:
+.\scripts\merge-and-release.ps1
+
+# Manual merge:
+git checkout main && git pull
+git merge --no-ff chore/ci-hardening -m "merge: security hardening (3/3)"
+npm version patch -m "release: security hardening + proof (3/3)"
+git push && git push --tags
+```
+
+---
+
+## 🛡️ Post-Merge Guardrails (recommended)
+
+1. **Branch protection**: require the `security-proof` workflow on PRs
+2. **Archive CI artifacts** for compliance (retain proof logs/manifests)
+3. **Schedule a weekly proof run** (cron) to catch drifts/regressions
+4. **Add a SECURITY.md badge/link** to the README (optional)
+
+---
+
+See [`review/REVIEWER_BLURB.md`](review/REVIEWER_BLURB.md) for complete details and compliance notes.

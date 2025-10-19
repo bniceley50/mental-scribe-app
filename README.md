@@ -248,4 +248,18 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/c
 - **Encrypted Storage**: Session data encrypted at rest
 - **HIPAA-Aware Design**: Built with healthcare privacy in mind
 
+### Security Hardening Proof
+
+This repository includes a comprehensive security proof pipeline demonstrating compliance with security controls:
+
+📊 **Current Status**: [3/3 Security Controls Passing](security/summary.json)
+
+- ✅ CSP Strict: No high-severity CSP issues
+- ✅ No Secrets in Dist: 0 JWT-like tokens in production bundle  
+- ✅ E2E Smoke: All end-to-end tests passing
+
+📁 **Evidence**: See [`proof/PROOF.md`](proof/PROOF.md) and [`security/artifacts/`](security/artifacts/) for detailed audit trails.
+
+🔄 **Re-run Locally**: `npm ci && npm run sec:clean && npm run sec:prove`
+
 ⚠️ **Important**: This tool is for clinical documentation assistance only. Always review AI-generated content for accuracy and compliance with your organization's policies.

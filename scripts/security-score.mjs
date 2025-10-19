@@ -77,8 +77,11 @@ async function main() {
   await fs.mkdir(path.dirname(SUMMARY), { recursive: true });
   await fs.writeFile(SUMMARY, JSON.stringify(out, null, 2) + "\n", "utf8");
   console.log(JSON.stringify(out, null, 2));
+  
+  // Exit cleanly on pass, fail with code 1 if any controls failed
+  process.exit(failed.length ? 1 : 0);
 }
 main().catch((e) => {
   console.error(e);
-  process.exitCode = 1;
+  process.exit(1);
 });

@@ -1,5 +1,55 @@
-# CSP Analysis
+[dotenv@17.2.3] injecting env (3) from .env -- tip: 🔄 add secrets lifecycle management: https://dotenvx.com/ops
+╔════════════════════════════════════════════╗
+║  Mental Scribe - Security Setup Check     ║
+╚════════════════════════════════════════════╝
 
-CSP: default-src 
+=== Environment Variables Check ===
+[32m✓[0m VITE_SUPABASE_URL is set
+[32m✓[0m VITE_SUPABASE_PUBLISHABLE_KEY is set
 
-✅ No high-severity CSP issues detected
+=== Lovable Cloud Secrets Check ===
+[34mℹ[0m Note: This script cannot directly read Lovable Cloud secrets.
+[34mℹ[0m Secrets are only accessible in Edge Functions.
+[33m⚠[0m Verify secrets manually in Lovable Cloud dashboard:
+  1. Open project settings
+  2. Navigate to "Secrets" tab
+  3. Ensure the following secrets are set:
+
+     - OPENAI_API_KEY
+     - HMAC_SECRET_KEY
+
+
+[33m⚠[0m To test HMAC_SECRET_KEY, try creating a client with external_id.
+[33m⚠[0m If the key is missing, you will see: "SECURITY ERROR: HMAC_SECRET_KEY not configured"
+
+=== Row Level Security Check ===
+[32m✓[0m clients: Anonymous access blocked (empty) ✓
+[32m✓[0m conversations: Anonymous access blocked (empty) ✓
+[32m✓[0m messages: Anonymous access blocked (empty) ✓
+[32m✓[0m structured_notes: Anonymous access blocked (empty) ✓
+
+=== Audit Trigger Check ===
+[34mℹ[0m Audit triggers ensure all PHI modifications are logged.
+[33m⚠[0m Verify via SQL query in Lovable Cloud:
+
+  SELECT 
+    c.relname AS table_name,
+    COUNT(t.tgname) AS trigger_count,
+    array_agg(t.tgname) AS triggers
+  FROM pg_trigger t
+  JOIN pg_class c ON t.tgrelid = c.oid
+  WHERE c.relnamespace = (SELECT oid FROM pg_namespace WHERE nspname = 'public')
+    AND c.relname IN ('messages', 'uploaded_files', 'structured_notes', 'recordings', 'part2_consents')
+    AND t.tgname LIKE 'audit_%'
+    AND NOT t.tgisinternal
+  GROUP BY c.relname
+  ORDER BY c.relname;
+  
+[34mℹ[0m Expected: At least 1 audit trigger per table
+
+=== Summary ===
+[32m✓[0m All automated checks passed!
+[33m⚠[0m Manual verification still required for secrets and triggers.
+
+✅ Security setup appears correct. Ready for development.
+

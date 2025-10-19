@@ -1,13 +1,13 @@
 # PROOF
 
-- Timestamp: 2025-10-19T16:36:08Z
+- Timestamp: 2025-10-19T18:39:51Z
 - Node: v20.19.1
 - npm:  10.8.2
-- Git HEAD: dfcc703812ca2d1a07b62f074d4e79207fad2998
+- Git HEAD: 20e1abccca7792b697d90e72900c93fe9aea965c
 
 ## Git Status
 
-## chore/ci-hardening...origin/chore/ci-hardening  M proof/artifact-manifest.txt  D security/artifacts/playwright.json  D security/summary.json  M test-results/.last-run.json ?? .eslintcache ?? review/diff-stat.txt ?? review/recent-commits.txt ?? scripts/make-review.mjs
+## chore/ci-hardening...origin/chore/ci-hardening  M security/artifacts/csp-evaluator.txt  M security/artifacts/dist-secrets.txt  D security/artifacts/playwright.json  D security/summary.json  M test-results/.last-run.json ?? .eslintcache ?? review/artifacts/build-exit.txt ?? review/artifacts/sec-prove-exit.txt
 
 ## Phase Results
 - file-assert: 1

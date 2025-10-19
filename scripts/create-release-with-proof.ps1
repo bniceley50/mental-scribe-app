@@ -106,10 +106,24 @@ try {
     exit 1
 }
 
+# Create evidence archive
+Write-Host "`n📦 Creating evidence archive..." -ForegroundColor Yellow
+
+$timestamp = (Get-Date).ToString('yyyyMMdd-HHmm')
+$evidenceZip = "release-evidence-$timestamp.zip"
+
+try {
+    Compress-Archive -Path proof, security, review -DestinationPath $evidenceZip -Force
+    Write-Host "   ✅ Created: $evidenceZip" -ForegroundColor Green
+} catch {
+    Write-Host "   ⚠️  Failed to create archive: $_" -ForegroundColor Yellow
+}
+
 # Attach proof artifacts
 Write-Host "`n📎 Attaching proof artifacts..." -ForegroundColor Yellow
 
 $artifacts = @(
+    $evidenceZip,
     "proof/PROOF.md",
     "security/summary.json",
     "security/artifacts/playwright.json",
@@ -135,6 +149,11 @@ foreach ($artifact in $artifacts) {
 
 # Cleanup
 Remove-Item release-notes.tmp -ErrorAction SilentlyContinue
+if (Test-Path $evidenceZip) {
+    Write-Host "`n🗑️  Cleaning up local archive: $evidenceZip" -ForegroundColor Yellow
+    # Keep it for now, user might want it
+    Write-Host "   Archive kept locally for reference" -ForegroundColor Gray
+}
 
 Write-Host "`n═══════════════════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host "✅ RELEASE COMPLETE!" -ForegroundColor Green

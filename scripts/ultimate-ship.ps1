@@ -46,8 +46,20 @@ if (-not $SkipVerification) {
         exit 1
     }
     
-    Write-Host "   Running security proof..." -ForegroundColor Gray
-    npm run sec:prove 2>&1 | Out-Null
+    Write-Host "   Running security proof components..." -ForegroundColor Gray
+    # Run components directly (orchestrator has Windows spawn issues)
+    node scripts/security-check.js 2>&1 | Out-Null
+    node scripts/security-secrets.js 2>&1 | Out-Null
+    
+    # Start server for E2E
+    Start-Process pwsh -ArgumentList "-NoProfile", "-Command", "cd '$PWD'; npx serve -s dist -l 7997" -WindowStyle Hidden
+    Start-Sleep -Seconds 3
+    
+    # Run E2E tests
+    npx playwright test 2>&1 | Out-Null
+    
+    # Calculate final score
+    node scripts/security-score.mjs 2>&1 | Out-Null
     $secExitCode = $LASTEXITCODE
     
     $summary = Get-Content security/summary.json | ConvertFrom-Json

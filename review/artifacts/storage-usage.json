@@ -1,0 +1,137 @@
+[
+  {
+    "file": "src\\pages\\Settings.tsx",
+    "line": 32,
+    "text": "// Load preferences from localStorage"
+  },
+  {
+    "file": "src\\pages\\Settings.tsx",
+    "line": 34,
+    "text": "const savedPreferences = localStorage.getItem(\"clinicalai_preferences\");"
+  },
+  {
+    "file": "src\\pages\\Settings.tsx",
+    "line": 41,
+    "text": "localStorage.setItem(\"clinicalai_preferences\", JSON.stringify(preferences));"
+  },
+  {
+    "file": "src\\pages\\Settings.tsx",
+    "line": 55,
+    "text": "localStorage.setItem(\"clinicalai_preferences\", JSON.stringify(defaultPreferences));"
+  },
+  {
+    "file": "src\\integrations\\supabase\\client.ts",
+    "line": 12,
+    "text": "* SECURITY: Custom storage adapter using sessionStorage"
+  },
+  {
+    "file": "src\\integrations\\supabase\\client.ts",
+    "line": 14,
+    "text": "* WHY sessionStorage instead of localStorage:"
+  },
+  {
+    "file": "src\\integrations\\supabase\\client.ts",
+    "line": 15,
+    "text": "* - Auth tokens in sessionStorage are automatically cleared when the browser tab closes"
+  },
+  {
+    "file": "src\\integrations\\supabase\\client.ts",
+    "line": 27,
+    "text": "const sessionStorageAdapter = {"
+  },
+  {
+    "file": "src\\integrations\\supabase\\client.ts",
+    "line": 29,
+    "text": "return sessionStorage.getItem(key);"
+  },
+  {
+    "file": "src\\integrations\\supabase\\client.ts",
+    "line": 32,
+    "text": "sessionStorage.setItem(key, value);"
+  },
+  {
+    "file": "src\\integrations\\supabase\\client.ts",
+    "line": 35,
+    "text": "sessionStorage.removeItem(key);"
+  },
+  {
+    "file": "src\\integrations\\supabase\\client.ts",
+    "line": 41,
+    "text": "storage: sessionStorageAdapter,"
+  },
+  {
+    "file": "src\\components\\WelcomeGuide.tsx",
+    "line": 21,
+    "text": "const hasSeenGuide = localStorage.getItem(\"clinicalai_has_seen_guide\");"
+  },
+  {
+    "file": "src\\components\\WelcomeGuide.tsx",
+    "line": 29,
+    "text": "localStorage.setItem(\"clinicalai_has_seen_guide\", \"true\");"
+  },
+  {
+    "file": "src\\components\\OnboardingTour.tsx",
+    "line": 52,
+    "text": "const hasSeenTour = sessionStorage.getItem(\"clinicalai_tour_completed\");"
+  },
+  {
+    "file": "src\\components\\OnboardingTour.tsx",
+    "line": 75,
+    "text": "sessionStorage.setItem(\"clinicalai_tour_completed\", \"true\");"
+  },
+  {
+    "file": "src\\components\\OnboardingTour.tsx",
+    "line": 81,
+    "text": "sessionStorage.setItem(\"clinicalai_tour_completed\", \"true\");"
+  },
+  {
+    "file": "src\\components\\Layout.tsx",
+    "line": 24,
+    "text": "try { sessionStorage.clear(); } catch { /* noop: best-effort cleanup */ }"
+  },
+  {
+    "file": "src\\components\\Layout.tsx",
+    "line": 25,
+    "text": "try { localStorage.clear(); } catch { /* noop: best-effort cleanup */ }"
+  },
+  {
+    "file": "src\\components\\ChatInterface.tsx",
+    "line": 92,
+    "text": "// Auto-save draft to sessionStorage (cleared when tab closes)"
+  },
+  {
+    "file": "src\\components\\ChatInterface.tsx",
+    "line": 93,
+    "text": "// SECURITY: Using sessionStorage instead of localStorage to prevent PHI persistence"
+  },
+  {
+    "file": "src\\components\\ChatInterface.tsx",
+    "line": 98,
+    "text": "sessionStorage.setItem(\"clinicalai_draft\", input);"
+  },
+  {
+    "file": "src\\components\\ChatInterface.tsx",
+    "line": 108,
+    "text": "// SECURITY: Using sessionStorage to prevent PHI from persisting across sessions"
+  },
+  {
+    "file": "src\\components\\ChatInterface.tsx",
+    "line": 111,
+    "text": "const draft = sessionStorage.getItem(\"clinicalai_draft\");"
+  },
+  {
+    "file": "src\\components\\ChatInterface.tsx",
+    "line": 121,
+    "text": "sessionStorage.removeItem(\"clinicalai_draft\");"
+  },
+  {
+    "file": "src\\components\\ChatInterface.tsx",
+    "line": 551,
+    "text": "sessionStorage.removeItem(\"clinicalai_draft\");"
+  },
+  {
+    "file": "src\\components\\ChatInterface.tsx",
+    "line": 556,
+    "text": "sessionStorage.removeItem(\"clinicalai_draft\");"
+  }
+]

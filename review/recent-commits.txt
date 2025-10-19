@@ -1,0 +1,25 @@
+* 5b7fb95 (HEAD -> chore/ci-hardening, origin/chore/ci-hardening) docs: link to security proof artifacts
+* 3492209 (tag: proof-20251018-2133) sec: e2e evidence; 3/3 proof
+* 5310466 sec: remove test tokens from bundle; exclude tests from import graph; re-run proof (2/3 → targeting 3/3)
+* 6abbcae sec: improve build security & evidence collection
+* fddd8bd build: disable production source maps to prevent secrets exposure
+* 12cf3e5 sec: resume local proof run + evidence (summary, artifacts, PROOF.md)
+* 838e297 sec: proof pass 1/3 — build+e2e works, CSP missing, dist has source map tokens
+* e2ac1f2 sec: add proof scripts + run evidence (summary & artifacts)
+* 698d3a0 sec: close P1/P2 (reset via edge, attempt logging, storage clear, CSP lock, PHI gating, upload guard)
+* 8cf1dbe (main) Refactor: Update db-tests workflow
+* 0a3a4f1 Add audit log immutability workflow
+* 65e9300 Apply RLS to user_sessions_safe
+* ede6c50 Fix: Secure audit logs and user sessions
+* c94c774 Refactor client audit logging
+* 21b5700 Fix: Apply restrictive RLS policies to sensitive tables
+* c27430c Fix: Resolve disappearing text and auto-generated content issues
+* 78286d1 Fix dictation text disappearing
+* 91930f9 Fix dictation text disappearing
+* 022f103 Fix slow dictation and scrolling
+* 6064580 Fix navigation race condition
+* 0e0708e Fix: Ensure buttons are visible
+* 500e9f5 Fix: Ensure buttons are visible
+* 1e1ba26 Add analyze notes feature
+* 0fa512a Add voice input to template fields
+* 0932c16 Fix RLS policy for conversations

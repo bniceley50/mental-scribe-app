@@ -1,0 +1,50 @@
+{
+  "total": 84078,
+  "files": [
+    {
+      "file": "assets\\index-nb4StnzW.css",
+      "size": 69537,
+      "sizeKB": 67.91
+    },
+    {
+      "file": "favicon.ico",
+      "size": 7645,
+      "sizeKB": 7.47
+    },
+    {
+      "file": "placeholder.svg",
+      "size": 3253,
+      "sizeKB": 3.18
+    },
+    {
+      "file": "index.html",
+      "size": 2769,
+      "sizeKB": 2.7
+    },
+    {
+      "file": "assets\\index-B5PjhNxf.js",
+      "size": 711,
+      "sizeKB": 0.69
+    },
+    {
+      "file": "robots.txt",
+      "size": 160,
+      "sizeKB": 0.16
+    },
+    {
+      "file": "assets\\react-vendor-l0sNRNKZ.js",
+      "size": 1,
+      "sizeKB": 0
+    },
+    {
+      "file": "assets\\supabase-l0sNRNKZ.js",
+      "size": 1,
+      "sizeKB": 0
+    },
+    {
+      "file": "assets\\ui-vendor-l0sNRNKZ.js",
+      "size": 1,
+      "sizeKB": 0
+    }
+  ]
+}

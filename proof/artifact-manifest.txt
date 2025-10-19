@@ -1,0 +1,5 @@
+
+a1af028b963b2c4b7cf955785e86ee026174bc01ab2386e94e7564543f2996b5  705  security/scorecard.schema.json
+4b704cdf5323148de95dcf94f614aa147789460dc546222e9a65fd2dd5034e56  76  security/artifacts/csp-evaluator.txt
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  0  security/artifacts/dist-secrets.txt
+434397900ee28345e4445cafe454cce6445fc740e39e0e1cdeb77b04f3ba2ed2  27  security/artifacts/secrets-scan.log

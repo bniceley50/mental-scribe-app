@@ -22,8 +22,8 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    // Enable source maps for better error tracking in production
-    sourcemap: true,
+    // Disable source maps in production to prevent secrets exposure
+    sourcemap: false,
     // Increase chunk size warning limit
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
@@ -34,6 +34,10 @@ export default defineConfig(({ mode }) => ({
           'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
           'supabase': ['@supabase/supabase-js'],
         }
+      },
+      // Exclude test files from bundle
+      treeshake: {
+        moduleSideEffects: false
       }
     }
   }

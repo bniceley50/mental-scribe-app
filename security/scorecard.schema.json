@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Security Score Summary",
+  "type": "object",
+  "required": ["score", "max", "passed", "failed"],
+  "properties": {
+    "score": { "type": "integer", "minimum": 0 },
+    "max": { "type": "integer", "minimum": 1 },
+    "passed": { "type": "array", "items": { "type": "string" } },
+    "failed": { "type": "array", "items": { "type": "string" } },
+    "details": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "passed": { "type": "boolean" },
+          "reason": { "type": "string" }
+        },
+        "required": ["passed"]
+      }
+    }
+  }
+}

@@ -34,6 +34,10 @@ export default defineConfig(({ mode }) => ({
           'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
           'supabase': ['@supabase/supabase-js'],
         }
+      },
+      // Exclude test files from bundle
+      treeshake: {
+        moduleSideEffects: false
       }
     }
   }

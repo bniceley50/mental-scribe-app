@@ -1,0 +1,6 @@
+# CSP Analysis
+
+CSP: default-src 
+
+✅ No high-severity CSP issues detected
+

@@ -1,7 +1,7 @@
 
 a1af028b963b2c4b7cf955785e86ee026174bc01ab2386e94e7564543f2996b5  705  security/scorecard.schema.json
-a703c7202c9f347dbb76d42c0e65b980bedee8eb3982242989fd0d3e35a04867  452  security/summary.json
+0472feec1b67a6fb44c64e9c684d41324563493a0fb791f95c82ef9cd0b84916  449  security/summary.json
 4b704cdf5323148de95dcf94f614aa147789460dc546222e9a65fd2dd5034e56  76  security/artifacts/csp-evaluator.txt
-796cea5d5146d7501032386b64ece9342f3ea0a7d4643505a6e992ee57ad1b93  31  security/artifacts/dist-secrets.txt
-84a79f613087dd81b44a0ebbb466d9f31ca2eb76e37f5d5d9595bd01f3d85a81  2694  security/artifacts/playwright.json
-ecf8c625143617895b35aad07ad1ed7b66aae7e195e3dbccd1ffe4d31b7aa5e0  27  security/artifacts/secrets-scan.log
+e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  0  security/artifacts/dist-secrets.txt
+51cc89062e8a53261c079f5626892178d3d7f3d03b1211a6dc8e236b53221b14  2716  security/artifacts/playwright.json
+434397900ee28345e4445cafe454cce6445fc740e39e0e1cdeb77b04f3ba2ed2  27  security/artifacts/secrets-scan.log

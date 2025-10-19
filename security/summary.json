@@ -1,13 +1,12 @@
 {
-  "score": 2,
+  "score": 3,
   "max": 3,
   "passed": [
     "csp_strict",
-    "no_secrets_in_dist"
-  ],
-  "failed": [
+    "no_secrets_in_dist",
     "e2e_smoke"
   ],
+  "failed": [],
   "details": {
     "csp_strict": {
       "passed": true,
@@ -18,8 +17,8 @@
       "reason": "0 likely JWT-like tokens found in dist"
     },
     "e2e_smoke": {
-      "passed": false,
-      "reason": "some tests failed"
+      "passed": true,
+      "reason": "no failed tests reported"
     }
   }
 }

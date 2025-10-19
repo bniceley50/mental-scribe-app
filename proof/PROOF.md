@@ -1,13 +1,13 @@
 # PROOF
 
-- Timestamp: 2025-10-19T01:29:28Z
+- Timestamp: 2025-10-19T16:36:08Z
 - Node: v20.19.1
 - npm:  10.8.2
-- Git HEAD: 5310466391b63a62efc775e7dba0ca4a29667596
+- Git HEAD: dfcc703812ca2d1a07b62f074d4e79207fad2998
 
 ## Git Status
 
-## chore/ci-hardening...origin/chore/ci-hardening  M playwright.config.ts  M proof/artifact-manifest.txt  M security/artifacts/csp-evaluator.txt  M security/artifacts/dist-secrets.txt  M security/artifacts/playwright.json  M security/summary.json  M test-results/.last-run.json  M test/e2e/smoke.spec.ts
+## chore/ci-hardening...origin/chore/ci-hardening  M proof/artifact-manifest.txt  D security/artifacts/playwright.json  D security/summary.json  M test-results/.last-run.json ?? .eslintcache ?? review/diff-stat.txt ?? review/recent-commits.txt ?? scripts/make-review.mjs
 
 ## Phase Results
 - file-assert: 1
@@ -16,39 +16,13 @@
 - npm run sec:prove: 1
 
 ## security/summary.json
-```json
-{
-  "score": 3,
-  "max": 3,
-  "passed": [
-    "csp_strict",
-    "no_secrets_in_dist",
-    "e2e_smoke"
-  ],
-  "failed": [],
-  "details": {
-    "csp_strict": {
-      "passed": true,
-      "reason": "no high-severity CSP issues found"
-    },
-    "no_secrets_in_dist": {
-      "passed": true,
-      "reason": "0 likely JWT-like tokens found in dist"
-    },
-    "e2e_smoke": {
-      "passed": true,
-      "reason": "no failed tests reported"
-    }
-  }
-}
-
-```
+Not found
 
 ## Control Summary
 | Metric | Value |
 | --- | --- |
 | Score |  /  |
-| Passed | csp_strict, no_secrets_in_dist, e2e_smoke |
+| Passed | - |
 | Failed | - |
 
 ## Dist JWT Token Count

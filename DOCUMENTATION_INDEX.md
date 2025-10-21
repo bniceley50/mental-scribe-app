@@ -33,6 +33,7 @@
 | Document | Purpose | Length | Audience | Best For |
 |----------|---------|--------|----------|----------|
 | **[META_REVIEW_PROMPT.md](META_REVIEW_PROMPT.md)** | AI agent documentation & code review guide | 15 pages | AI Reviewers | Systematic doc accuracy & code review |
+| **[META_REVIEW_USAGE.md](META_REVIEW_USAGE.md)** | How to use the meta review prompt | 4 pages | All | Quick start guide for AI reviews |
 | **[AI_REVIEW_PROMPT.md](AI_REVIEW_PROMPT.md)** | Comprehensive project review request | 9 pages | Human Reviewers | External code review |
 | **[review/REVIEWER_BLURB.md](review/REVIEWER_BLURB.md)** | Comprehensive reviewer guide | 3 pages | Code reviewers | Technical deep-dive |
 | **[review/REVIEW.md](review/REVIEW.md)** | Full code review | 2 pages | Technical team | Quality assessment |
@@ -143,16 +144,16 @@
 
 ## 📊 Documentation Statistics
 
-**Total Documents**: 17+  
-**Total Pages**: ~45 pages  
-**Total Lines of Code**: ~2,700+ lines  
+**Total Documents**: 18+  
+**Total Pages**: ~49 pages  
+**Total Lines of Code**: ~3,400+ lines  
 **Automation Scripts**: 3  
 **Templates**: 7 ready-to-use  
 **Evidence Files**: 6+ artifacts  
 
 **Coverage**:
 - ✅ Ship workflows (4 documents)
-- ✅ Code review (6 documents)
+- ✅ Code review (7 documents)
 - ✅ Communication (2 documents)
 - ✅ Evidence/proof (3 artifacts)
 - ✅ Automation (3 scripts)
@@ -177,7 +178,8 @@
 
 **Looking for...**
 
-- **Documentation & code review** → `META_REVIEW_PROMPT.md`
+- **AI documentation review guide** → `META_REVIEW_PROMPT.md`
+- **How to use AI review** → `META_REVIEW_USAGE.md`
 - **External code review request** → `AI_REVIEW_PROMPT.md`
 - **Quick ship commands** → `SHIP_PLAN.md`
 - **Windows PowerShell** → `WINDOWS_SHIP_CHECKLIST.md`

@@ -1,0 +1,15 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/events" },
+    { "path": "./packages/flows" },
+    { "path": "./apps/playground" },
+    { "path": "./apps/mscribe-cli" },
+    { "path": "./apps/admin" }
+  ],
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true
+  }
+}

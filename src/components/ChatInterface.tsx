@@ -84,7 +84,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   
-  const { messages: dbMessages, addMessage } = useMessages(conversationId);
+  const { messages: dbMessages, addMessage, hasMore, loadOlderMessages, loading: messagesLoading } = useMessages(conversationId);
   const { createConversation, conversations } = useConversations();
 
   const [displayMessages, setDisplayMessages] = useState<Array<DBMessage & { isStreaming?: boolean }>>([]);
@@ -622,6 +622,26 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       {displayMessages.length > 0 && (
         <Card className="h-[500px] overflow-y-auto p-6 shadow-md border-border/50 bg-card/80 backdrop-blur-sm">
           <div className="space-y-4">
+            {/* Load Older Messages Button */}
+            {hasMore && conversationId && (
+              <div className="flex justify-center pb-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={loadOlderMessages}
+                  disabled={messagesLoading}
+                  className="hover:bg-primary/10"
+                  aria-live="polite"
+                >
+                  {messagesLoading ? (
+                    <>Loading...</>
+                  ) : (
+                    <>Load older messages</>
+                  )}
+                </Button>
+              </div>
+            )}
+
             {displayMessages.map((message) => (
               <div
                 key={message.id}

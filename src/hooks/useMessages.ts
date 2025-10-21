@@ -12,10 +12,15 @@ export interface Message {
 export const useMessages = (conversationId: string | null) => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const [oldestMessageTimestamp, setOldestMessageTimestamp] = useState<string | null>(null);
+  const PAGE_SIZE = 20;
 
-  const fetchMessages = async () => {
+  const fetchMessages = async (loadMore = false) => {
     if (!conversationId) {
       setMessages([]);
+      setHasMore(true);
+      setOldestMessageTimestamp(null);
       return;
     }
 
@@ -43,26 +48,61 @@ export const useMessages = (conversationId: string | null) => {
         }
       }
 
-      const { data, error } = await supabase
+      // Keyset pagination: fetch messages older than the oldest we have
+      let query = supabase
         .from("messages")
         .select("*")
         .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: false })
+        .limit(PAGE_SIZE + 1);
+
+      // If loading more, fetch only older messages
+      if (loadMore && oldestMessageTimestamp) {
+        query = query.lt("created_at", oldestMessageTimestamp);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       
+      // Check if there are more messages
+      const hasMoreMessages = (data?.length || 0) > PAGE_SIZE;
+      const messagesToDisplay = hasMoreMessages ? data!.slice(0, PAGE_SIZE) : (data || []);
+      
       // Cast the data to Message[] type
-      const typedMessages = (data || []).map(msg => ({
+      const typedMessages = messagesToDisplay.map(msg => ({
         ...msg,
         role: msg.role as "user" | "assistant"
       }));
       
-      setMessages(typedMessages);
+      // Reverse to show oldest first (since we fetched newest first for pagination)
+      const reversedMessages = [...typedMessages].reverse();
+      
+      if (loadMore) {
+        // Prepend older messages
+        setMessages(prev => [...reversedMessages, ...prev]);
+      } else {
+        // Initial load
+        setMessages(reversedMessages);
+      }
+      
+      setHasMore(hasMoreMessages);
+      
+      // Update the oldest timestamp for next pagination
+      if (reversedMessages.length > 0) {
+        setOldestMessageTimestamp(reversedMessages[0].created_at);
+      }
     } catch (error: any) {
       console.error("Error fetching messages:", error);
       toast.error("Failed to load messages");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadOlderMessages = () => {
+    if (!loading && hasMore) {
+      fetchMessages(true);
     }
   };
 
@@ -122,7 +162,9 @@ export const useMessages = (conversationId: string | null) => {
   return {
     messages,
     loading,
+    hasMore,
     addMessage,
     refreshMessages: fetchMessages,
+    loadOlderMessages,
   };
 };

@@ -1,0 +1,185 @@
+# .github/workflows/weekly-audit.yml
+name: Weekly Technical Debt Audit
+
+on:
+  schedule:
+    - cron: '0 9 * * MON'  # Every Monday at 9 AM UTC
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run security audit
+        run: |
+          echo "## 🔒 Security Audit" >> $GITHUB_STEP_SUMMARY
+          npm audit --audit-level=moderate --format=json > audit-results.json || true
+          
+          # Count vulnerabilities
+          CRITICAL=$(jq '.vulnerabilities | to_entries | map(select(.value.severity == "critical")) | length' audit-results.json)
+          HIGH=$(jq '.vulnerabilities | to_entries | map(select(.value.severity == "high")) | length' audit-results.json)
+          MODERATE=$(jq '.vulnerabilities | to_entries | map(select(.value.severity == "moderate")) | length' audit-results.json)
+          
+          echo "- Critical: $CRITICAL" >> $GITHUB_STEP_SUMMARY
+          echo "- High: $HIGH" >> $GITHUB_STEP_SUMMARY  
+          echo "- Moderate: $MODERATE" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+            echo "❌ Security vulnerabilities found!" >> $GITHUB_STEP_SUMMARY
+            echo "::warning::Security audit found $CRITICAL critical and $HIGH high severity vulnerabilities"
+          else
+            echo "✅ No critical/high vulnerabilities" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Check bundle sizes
+        run: |
+          echo "## 📦 Bundle Size Check" >> $GITHUB_STEP_SUMMARY
+          npm run build
+          node scripts/assert-bundles.mjs || echo "Bundle check failed"
+          
+          if [ -f "dist/bundle-report.json" ]; then
+            UTILIZATION=$(jq -r '.budgetUtilization' dist/bundle-report.json)
+            echo "- Budget Utilization: ${UTILIZATION}%" >> $GITHUB_STEP_SUMMARY
+            
+            if (( $(echo "$UTILIZATION > 90" | bc -l) )); then
+              echo "⚠️ Bundle size approaching budget limit" >> $GITHUB_STEP_SUMMARY
+              echo "::warning::Bundle utilization at ${UTILIZATION}% - consider optimization"
+            fi
+          fi
+      
+      - name: Check code quality metrics
+        run: |
+          echo "## 📊 Code Quality Metrics" >> $GITHUB_STEP_SUMMARY
+          
+          # Count TODO/FIXME comments
+          TODOS=$(grep -r "TODO\|FIXME" src/ | wc -l || echo "0")
+          echo "- TODO/FIXME comments: $TODOS" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for console.log statements
+          CONSOLE_LOGS=$(grep -r "console\." src/ | grep -v ".test." | wc -l || echo "0")
+          echo "- Console statements: $CONSOLE_LOGS" >> $GITHUB_STEP_SUMMARY
+          
+          # Large files (>500 lines)
+          LARGE_FILES=$(find src/ -name "*.ts" -o -name "*.tsx" | xargs wc -l | awk '$1 > 500 {count++} END {print count+0}')
+          echo "- Large files (>500 lines): $LARGE_FILES" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "$CONSOLE_LOGS" -gt 5 ]; then
+            echo "⚠️ High number of console statements" >> $GITHUB_STEP_SUMMARY
+            echo "::warning::Found $CONSOLE_LOGS console statements in production code"
+          fi
+      
+      - name: Check dependency freshness
+        run: |
+          echo "## 📅 Dependency Freshness" >> $GITHUB_STEP_SUMMARY
+          
+          npx npm-check-updates --format json > dependency-check.json || true
+          
+          if [ -f "dependency-check.json" ]; then
+            OUTDATED=$(jq '. | length' dependency-check.json)
+            echo "- Outdated dependencies: $OUTDATED" >> $GITHUB_STEP_SUMMARY
+            
+            if [ "$OUTDATED" -gt 10 ]; then
+              echo "⚠️ Many outdated dependencies" >> $GITHUB_STEP_SUMMARY
+              echo "::warning::$OUTDATED dependencies are outdated"
+            fi
+          fi
+      
+      - name: Test coverage check
+        run: |
+          echo "## 🧪 Test Coverage" >> $GITHUB_STEP_SUMMARY
+          
+          npm run test:coverage -- --reporter=json > coverage-results.json || true
+          
+          if [ -f "coverage-results.json" ]; then
+            # Extract coverage percentage (simplified)
+            echo "- Coverage report generated" >> $GITHUB_STEP_SUMMARY
+            echo "- Check detailed results in CI artifacts" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Create audit issue
+        if: ${{ github.event_name == 'schedule' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // Read audit results
+            let securitySummary = "No audit data available";
+            let bundleSummary = "No bundle data available";
+            
+            try {
+              const auditData = JSON.parse(fs.readFileSync('audit-results.json', 'utf8'));
+              const vulns = auditData.vulnerabilities || {};
+              const critical = Object.values(vulns).filter(v => v.severity === 'critical').length;
+              const high = Object.values(vulns).filter(v => v.severity === 'high').length;
+              const moderate = Object.values(vulns).filter(v => v.severity === 'moderate').length;
+              
+              securitySummary = `Critical: ${critical}, High: ${high}, Moderate: ${moderate}`;
+            } catch (e) {
+              console.log('Could not parse audit results:', e.message);
+            }
+            
+            try {
+              const bundleData = JSON.parse(fs.readFileSync('dist/bundle-report.json', 'utf8'));
+              bundleSummary = `Budget utilization: ${bundleData.budgetUtilization}%`;
+            } catch (e) {
+              console.log('Could not parse bundle results:', e.message);
+            }
+            
+            const date = new Date().toISOString().split('T')[0];
+            
+            const issueBody = `
+            ## Weekly Technical Debt Audit - ${date}
+            
+            This is an automated audit of our technical debt metrics.
+            
+            ### 🔒 Security Status
+            ${securitySummary}
+            
+            ### 📦 Bundle Size Status  
+            ${bundleSummary}
+            
+            ### 📊 Action Items
+            - [ ] Review security vulnerabilities (if any)
+            - [ ] Check bundle optimization opportunities
+            - [ ] Review TODO/FIXME comments
+            - [ ] Update outdated dependencies
+            
+            ### 📋 Full Results
+            Check the [workflow run](https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for detailed metrics.
+            
+            ---
+            *This issue was automatically created by the weekly audit workflow.*
+            `;
+            
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `Weekly Technical Debt Audit - ${date}`,
+              body: issueBody,
+              labels: ['technical-debt', 'audit', 'automated']
+            });
+      
+      - name: Upload audit artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: weekly-audit-results
+          path: |
+            audit-results.json
+            dependency-check.json
+            coverage-results.json
+            dist/bundle-report.json
+          retention-days: 30

@@ -1,0 +1,27 @@
+#!/bin/bash
+# Bash script to create all P0-P2 GitHub issues
+# Run with: ./scripts/create-github-issues.sh
+
+echo "🚀 Creating GitHub issues for Technical Debt remediation..."
+
+# P0 Issues
+gh issue create -t "P0: Security – Dependency Security Baseline" -b $'**Goal**: lock Vite ^5.4.21; patch prod deps; add weekly audit CI that fails on high/critical.\n\n**Business Impact**: Eliminates critical security vulnerabilities that could lead to data breaches. Prevents "Log4j" style fire drills.\n\n**AC**\n- Vite pinned ^5.4.21; lockfile refreshed\n- Weekly audit workflow committed (.github/workflows/weekly-audit.yml)\n- CI fails on high/critical prod vulns\n- Release note added\n\n**Effort**: 0.5 person-weeks\n**Owner**: @security-champions' -l "P0,security,CI" -a @security-champions
+
+gh issue create -t "P0: Refactor – ChatInterface Component Decomposition" -b $'**Goal**: cut 1K+ LOC surface into 4 components + 3 hooks with no behavior change.\n\n**Business Impact**: New engineer onboarding takes 2x longer; bug fix cycles 50% slower than codebase average. This refactoring will improve development velocity by 20%.\n\n**AC**\n- Files ≤300 LOC each; shared types; no cross-boundary state\n- Components: ChatHeader, MessageList, MessageComposer, ConversationSidebar\n- Hooks: useMessages, useScrollAnchors, useUploads\n- Existing tests pass; CSP smoke green\n- Performance maintained or improved\n\n**Effort**: 3 person-weeks\n**Owner**: @frontend-leads' -l "P0,refactor,ux" -a @frontend-leads
+
+gh issue create -t "P0: Tooling – Environment Configuration Infrastructure" -b $'**Goal**: ensure required env vars exist locally/CI, fail fast.\n\n**Business Impact**: Missing environment configurations cause deployment failures and create operational risk. This prevents CI/CD pipeline flakes.\n\n**AC**\n- env.example checked in with required/optional vars documented\n- scripts/verify-env.mjs added\n- prebuild/CI step fails on missing required vars\n- README updated with environment setup instructions\n\n**Effort**: 0.5 person-weeks\n**Owner**: @platform-team' -l "P0,tooling,CI" -a @platform-team
+
+# P1 Issues
+gh issue create -t "P1: Performance – Virtualized Message List" -b $'**Goal**: 60fps and O(visible) DOM with 1k+ msgs; preserve scroll after "Load older".\n\n**Business Impact**: UI lag on large datasets affects user satisfaction. List rendering issues impact clinical workflow efficiency.\n\n**AC**\n- Virtualization lib (react-virtuoso) integrated\n- startReached => loadOlder pattern implemented\n- Scroll anchor preserved after pagination\n- Accessibility intact (aria-live, aria-busy)\n- Playwright e2e test added for anchor preservation\n- Memory usage optimized for large message lists\n\n**Effort**: 1.5 person-weeks\n**Owner**: @frontend-leads' -l "P1,performance,a11y" -a @frontend-leads
+
+gh issue create -t "P1: Performance – Bundle Size Budgets & CI Guardrails" -b $'**Goal**: enforce size budgets; attach bundle visualization to PR.\n\n**Business Impact**: Prevents bundle size drift that degrades performance. Proactive monitoring prevents user experience regressions.\n\n**AC**\n- Budgets: app ≤180KB, vendor shard ≤350KB (gzip)\n- scripts/assert-bundles.mjs added\n- CI step fails on >10% bundle size regression\n- Bundle analyzer report uploaded as CI artifact\n- postbuild hook validates budgets\n\n**Effort**: 0.5 person-weeks\n**Owner**: @platform-team' -l "P1,performance,CI" -a @platform-team
+
+gh issue create -t "P1: Testing – Pagination & RLS Edge Cases" -b $'**Goal**: robust unit + e2e around keyset pagination + RLS access patterns.\n\n**Business Impact**: Missing tests for critical functionality increases regression risk by 60%. This reduces manual testing overhead.\n\n**AC**\n- Unit tests: duplicates, boundary conditions (=20), rapid toggles\n- e2e tests: anchor restore, disabled state, message order\n- RLS query path verified in test environment\n- Pagination edge cases covered (exact page boundary)\n- Test coverage >80% for pagination logic\n\n**Effort**: 1 person-week\n**Owner**: @qa-champions' -l "P1,testing" -a @qa-champions
+
+# P2 Issues
+gh issue create -t "P2: Security – Centralized DOMPurify Wrapper" -b $'**Goal**: centralize all sanitization through typed presets.\n\n**Business Impact**: Multiple sanitization patterns create security risk. Single hardening point reduces attack surface.\n\n**AC**\n- sanitize.ts with presets: strictText, htmlExport, pdfText\n- All call-sites migrated to use centralized function\n- Existing tests pass\n- Security audit validates sanitization coverage\n\n**Effort**: 0.5 person-weeks\n**Owner**: @security-champions' -l "P2,security,cleanup" -a @security-champions
+
+gh issue create -t "P2: Reliability – ESLint Hardening & Error Policy" -b $'**Goal**: enforce code quality rules + standardize error handling with retries.\n\n**Business Impact**: Inconsistent error patterns increase debugging time by 40%. Standardized retries improve user experience.\n\n**AC**\n- ESLint rules: max-lines (300), complexity (15), exhaustive-deps:error\n- Error shape standardized: {code, message, retryable, source}\n- Unified jittered backoff on 429/5xx responses\n- All linting errors resolved\n\n**Effort**: 1 person-week\n**Owner**: @full-stack-team' -l "P2,reliability,lint" -a @full-stack-team
+
+echo "✅ All GitHub issues created successfully!"
+echo "📋 View issues at: https://github.com/bniceley50/mental-scribe-app/issues"

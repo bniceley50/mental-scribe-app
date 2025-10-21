@@ -102,7 +102,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     return () => {
       if (draftSaveTimeout) clearTimeout(draftSaveTimeout);
     };
-  }, [input, conversationId]);
+  }, [input, conversationId, draftSaveTimeout]);
 
   // Load draft on mount and cleanup on unmount
   // SECURITY: Using sessionStorage to prevent PHI from persisting across sessions
@@ -151,6 +151,12 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     scrollToBottom();
   }, [displayMessages]);
 
+  const loadConversationFiles = async () => {
+    if (!conversationId) return;
+    const files = await getConversationFiles(conversationId);
+    setUploadedFiles(files);
+  };
+
   useEffect(() => {
     if (conversationId) {
       loadConversationFiles();
@@ -163,13 +169,8 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       setUploadedFiles([]);
       setConversationTitle("");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationId, conversations]);
-
-  const loadConversationFiles = async () => {
-    if (!conversationId) return;
-    const files = await getConversationFiles(conversationId);
-    setUploadedFiles(files);
-  };
 
   const generateTitle = (content: string): string => {
     const firstLine = content.split("\n")[0];

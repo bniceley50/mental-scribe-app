@@ -314,6 +314,9 @@ const Auth = () => {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
+                  autoComplete="new-password"
+                  autoCapitalize="none"
+                  spellCheck={false}
                 />
               </div>
               <Button
@@ -434,6 +437,9 @@ const Auth = () => {
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
                       required
+                      autoComplete="email"
+                      autoCapitalize="none"
+                      spellCheck={false}
                     />
                   </div>
                   <Button
@@ -471,6 +477,9 @@ const Auth = () => {
                       onChange={(e) => setEmail(e.target.value)}
                       required
                       className="transition-all"
+                      autoComplete="email"
+                      autoCapitalize="none"
+                      spellCheck={false}
                     />
                   </div>
                   <div className="space-y-2">
@@ -483,6 +492,9 @@ const Auth = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       required
                       className="transition-all"
+                      autoComplete="current-password"
+                      autoCapitalize="none"
+                      spellCheck={false}
                     />
                   </div>
                   <Button
@@ -520,6 +532,9 @@ const Auth = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     className="transition-all"
+                    autoComplete="email"
+                    autoCapitalize="none"
+                    spellCheck={false}
                   />
                 </div>
                 <div className="space-y-2">
@@ -533,6 +548,9 @@ const Auth = () => {
                     required
                     minLength={6}
                     className="transition-all"
+                    autoComplete="new-password"
+                    autoCapitalize="none"
+                    spellCheck={false}
                   />
                 </div>
                 <Button

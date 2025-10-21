@@ -58,13 +58,13 @@
   },
   "suites": [
     {
-      "title": "smoke.spec.ts",
-      "file": "smoke.spec.ts",
+      "title": "csp-smoke.spec.ts",
+      "file": "csp-smoke.spec.ts",
       "column": 0,
       "line": 0,
       "specs": [
         {
-          "title": "home loads",
+          "title": "prod preview renders without blocking CSP violations",
           "ok": true,
           "tags": [],
           "tests": [
@@ -79,12 +79,12 @@
                   "workerIndex": 0,
                   "parallelIndex": 0,
                   "status": "passed",
-                  "duration": 916,
+                  "duration": 3637,
                   "errors": [],
                   "stdout": [],
                   "stderr": [],
                   "retry": 0,
-                  "startTime": "2025-10-19T19:56:31.076Z",
+                  "startTime": "2025-10-21T01:03:59.494Z",
                   "annotations": [],
                   "attachments": []
                 }
@@ -92,8 +92,8 @@
               "status": "expected"
             }
           ],
-          "id": "4219922fea2e2bd3c691-2071930fcf3d863b0c93",
-          "file": "smoke.spec.ts",
+          "id": "650bf453f88b3e7d6b43-b0d7f55ff96982624a53",
+          "file": "csp-smoke.spec.ts",
           "line": 3,
           "column": 1
         }
@@ -102,8 +102,8 @@
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-10-19T19:56:30.248Z",
-    "duration": 1890.8419999999996,
+    "startTime": "2025-10-21T01:03:58.595Z",
+    "duration": 4707.5869999999995,
     "expected": 1,
     "skipped": 0,
     "unexpected": 0,

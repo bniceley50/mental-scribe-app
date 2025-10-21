@@ -35,10 +35,9 @@ export default defineConfig(({ mode }) => ({
           'supabase': ['@supabase/supabase-js'],
         }
       },
-      // Exclude test files from bundle
-      treeshake: {
-        moduleSideEffects: false
-      }
+      // NOTE: Avoid disabling module side effects globally; it can drop
+      // the side-effect-only entry (e.g., src/main.tsx) and produce a blank page.
+      // If you need custom treeshaking, scope it per-module instead.
     }
   }
 }));

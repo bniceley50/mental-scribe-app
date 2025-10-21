@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -18,7 +18,8 @@ interface NoteTemplatesProps {
   onSelectTemplate: (content: string) => void;
 }
 
-export const NoteTemplates = ({ onSelectTemplate }: NoteTemplatesProps) => {
+export const NoteTemplates = React.forwardRef<HTMLButtonElement, NoteTemplatesProps>(
+  ({ onSelectTemplate }, ref) => {
   const [open, setOpen] = useState(false);
 
   const handleCopyTemplate = (template: Template) => {
@@ -37,7 +38,7 @@ export const NoteTemplates = ({ onSelectTemplate }: NoteTemplatesProps) => {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm">
+        <Button ref={ref} variant="outline" size="sm">
           <BookTemplate className="w-4 h-4 mr-2" />
           Templates
         </Button>
@@ -101,4 +102,5 @@ export const NoteTemplates = ({ onSelectTemplate }: NoteTemplatesProps) => {
       </DialogContent>
     </Dialog>
   );
-};
+});
+NoteTemplates.displayName = "NoteTemplates";

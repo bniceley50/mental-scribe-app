@@ -10,6 +10,7 @@ import { StreamingMessage } from "@/components/MessageActions";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import Thread from "@/features/messages/components/Thread";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -126,67 +127,9 @@ const History = () => {
                 <p className="text-lg">No messages in this conversation</p>
               </div>
             ) : (
-              <ScrollArea className="h-[600px] pr-4">
-                <div className="space-y-6">
-                  {messages.map((message, index) => (
-                    <div
-                      key={message.id}
-                      className={cn(
-                        "flex w-full",
-                        message.role === "user" ? "justify-end" : "justify-start"
-                      )}
-                    >
-                      <div
-                        className={cn(
-                          "max-w-[85%] rounded-lg px-5 py-4 shadow-sm border transition-all",
-                          message.role === "user"
-                            ? "bg-primary/5 border-primary/20"
-                            : "bg-card border-border"
-                        )}
-                      >
-                        <div className="flex items-center gap-2 mb-3">
-                          {message.role === "assistant" && (
-                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
-                              <FileText className="w-4 h-4 text-white" />
-                            </div>
-                          )}
-                          <div className="flex-1">
-                            <span className="text-sm font-medium text-foreground">
-                              {message.role === "user" ? "You" : "AI Assistant"}
-                            </span>
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                              <Clock className="w-3 h-3" />
-                              {formatTime(message.created_at)}
-                              <span className="mx-1">•</span>
-                              {formatDistanceToNow(new Date(message.created_at), {
-                                addSuffix: true,
-                              })}
-                            </div>
-                          </div>
-                        </div>
-
-                        {message.role === "assistant" ? (
-                          <div className="prose prose-sm max-w-none">
-                            <StreamingMessage content={message.content} isStreaming={false} />
-                          </div>
-                        ) : (
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap text-foreground">
-                            {message.content}
-                          </p>
-                        )}
-
-                        {index === 0 && (
-                          <div className="mt-3 pt-3 border-t border-border/50">
-                            <span className="text-xs text-muted-foreground">
-                              First message in conversation
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </ScrollArea>
+              selectedConversationId && (
+                <Thread conversationId={selectedConversationId} />
+              )
             )}
           </CardContent>
         </Card>

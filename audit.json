@@ -1,0 +1,105 @@
+{
+  "auditReportVersion": 2,
+  "vulnerabilities": {
+    "esbuild": {
+      "name": "esbuild",
+      "severity": "moderate",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1102341,
+          "name": "esbuild",
+          "dependency": "esbuild",
+          "title": "esbuild enables any website to send any requests to the development server and read the response",
+          "url": "https://github.com/advisories/GHSA-67mh-4wv8-2f99",
+          "severity": "moderate",
+          "cwe": [
+            "CWE-346"
+          ],
+          "cvss": {
+            "score": 5.3,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:R/S:U/C:H/I:N/A:N"
+          },
+          "range": "<=0.24.2"
+        }
+      ],
+      "effects": [
+        "vite"
+      ],
+      "range": "<=0.24.2",
+      "nodes": [
+        "node_modules/vite/node_modules/esbuild"
+      ],
+      "fixAvailable": {
+        "name": "vite",
+        "version": "7.1.11",
+        "isSemVerMajor": true
+      }
+    },
+    "libxmljs2": {
+      "name": "libxmljs2",
+      "severity": "critical",
+      "isDirect": false,
+      "via": [
+        {
+          "source": 1100657,
+          "name": "libxmljs2",
+          "dependency": "libxmljs2",
+          "title": "libxmljs2 vulnerable to type confusion when parsing specially crafted XML",
+          "url": "https://github.com/advisories/GHSA-78h3-pg4x-j8cv",
+          "severity": "critical",
+          "cwe": [
+            "CWE-843"
+          ],
+          "cvss": {
+            "score": 8.1,
+            "vectorString": "CVSS:3.1/AV:N/AC:H/PR:N/UI:N/S:U/C:H/I:H/A:H"
+          },
+          "range": "<=0.35.0"
+        }
+      ],
+      "effects": [],
+      "range": "<=0.35.0",
+      "nodes": [
+        "node_modules/libxmljs2"
+      ],
+      "fixAvailable": true
+    },
+    "vite": {
+      "name": "vite",
+      "severity": "moderate",
+      "isDirect": true,
+      "via": [
+        "esbuild"
+      ],
+      "effects": [],
+      "range": "0.11.0 - 6.1.6",
+      "nodes": [
+        "node_modules/vite"
+      ],
+      "fixAvailable": {
+        "name": "vite",
+        "version": "7.1.11",
+        "isSemVerMajor": true
+      }
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 2,
+      "high": 0,
+      "critical": 1,
+      "total": 3
+    },
+    "dependencies": {
+      "prod": 506,
+      "dev": 358,
+      "optional": 202,
+      "peer": 8,
+      "peerOptional": 0,
+      "total": 944
+    }
+  }
+}

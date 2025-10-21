@@ -8,10 +8,12 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
-    "preview": "vite preview --port 4173",
+    "preview": "vite preview --strictPort --port 4173",
     "sec:clean": "node -e \"try{fs=require('fs');fs.rmSync('security/artifacts',{recursive:true,force:true});fs.rmSync('security/summary.json',{force:true});fs.mkdirSync('security/artifacts',{recursive:true})}catch(e){}\"",
     "sec:prove": "npm run build && node scripts/run-all-proof.mjs all && node scripts/security-score.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:smoke": "playwright test test/e2e/csp-smoke.spec.ts",
+    "test:smoke:preview": "npm run build && concurrently -k -s first -n preview,tests \"npm:preview\" \"wait-on http://127.0.0.1:4173 && npm run test:smoke\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -94,6 +96,8 @@
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",
     "autoprefixer": "^10.4.21",
+    "concurrently": "^9.0.0",
+    "dotenv": "^17.2.3",
     "eslint": "^9.32.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
@@ -104,6 +108,11 @@
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
-    "vite": "^5.4.20"
+  "vite": "^5.4.21",
+    "wait-on": "^7.2.0"
+  }
+  ,
+  "overrides": {
+    "libxmljs2": "^0.35.1"
   }
 }

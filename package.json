@@ -86,6 +86,7 @@
     "@cyclonedx/cyclonedx-npm": "^4.0.3",
     "@esbuild/win32-x64": "^0.25.11",
     "@eslint/js": "^9.32.0",
+    "@originjs/vite-plugin-federation": "^1.4.1",
     "@playwright/test": "^1.56.1",
     "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^22.16.5",

@@ -1,0 +1,282 @@
+.rls-viewer {
+  width: 100%;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.section-header h2 {
+  margin: 0;
+  color: #333;
+}
+
+.refresh-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #667eea;
+  border-radius: 6px;
+  background: white;
+  color: #667eea;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+  background: #667eea;
+  color: white;
+}
+
+.rls-grid {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 2rem;
+}
+
+.tables-list h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.table-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.table-card {
+  padding: 1rem;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.table-card:hover {
+  border-color: #667eea;
+  transform: translateX(4px);
+}
+
+.table-card.selected {
+  border-color: #667eea;
+  background: #f0f4ff;
+}
+
+.table-name {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.table-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.status-badge.enabled {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.disabled {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.policy-count {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.policies-panel {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 1.5rem;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.policies-panel h3 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.policies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.policy-card {
+  background: white;
+  border-radius: 8px;
+  padding: 1.5rem;
+  border-left: 4px solid #667eea;
+}
+
+.policy-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.policy-header h4 {
+  margin: 0;
+  color: #333;
+  font-size: 1rem;
+}
+
+.cmd-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.cmd-badge.select {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.cmd-badge.insert {
+  background: #e8f5e9;
+  color: #388e3c;
+}
+
+.cmd-badge.update {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.cmd-badge.delete {
+  background: #ffebee;
+  color: #d32f2f;
+}
+
+.cmd-badge.all {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.policy-details {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.detail-row strong {
+  color: #666;
+  font-size: 0.875rem;
+}
+
+.detail-row code {
+  background: #f8f9fa;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-family: 'Courier New', monospace;
+  overflow-x: auto;
+  display: block;
+}
+
+.test-section {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: white;
+  border-radius: 8px;
+}
+
+.test-section h4 {
+  margin: 0 0 1rem 0;
+  color: #333;
+}
+
+.test-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.test-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.test-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid #667eea;
+  border-radius: 6px;
+  background: white;
+  color: #667eea;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 120px;
+}
+
+.test-btn:hover {
+  background: #667eea;
+  color: white;
+}
+
+.test-result {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.loading,
+.error,
+.empty-state {
+  padding: 2rem;
+  text-align: center;
+  color: #666;
+  font-size: 1rem;
+}
+
+.error-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.error {
+  color: #d32f2f;
+  font-weight: 600;
+}
+
+.error-hint {
+  color: #666;
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+@media (max-width: 1024px) {
+  .rls-grid {
+    grid-template-columns: 1fr;
+  }
+}

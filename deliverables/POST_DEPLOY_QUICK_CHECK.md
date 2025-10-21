@@ -1,4 +1,4 @@
-# Post-deploy quick check (drop as PR comment)
+# ✅ Post-Deploy Quick Check (v1.3.0)
 
 ```bash
 URL="https://<your-app>.vercel.app"
@@ -9,6 +9,8 @@ curl -sI "$URL" | grep -iE "content-security-policy|x-frame-options|strict-trans
 echo "→ CSP Smoke"
 BASE_URL="$URL" npx playwright test -g "CSP smoke" --reporter=line
 ```
+
+Expected: page renders, no blocking CSP errors, CSP/XFO/HSTS present.
 
 Labels: `security`, `feature`, `performance`, `a11y`, `ready-to-merge`
 Milestone: `Ship Safety & Pagination v1`

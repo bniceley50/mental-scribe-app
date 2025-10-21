@@ -1,7 +1,7 @@
 {
   "config": {
-    "configFile": "C:\\Users\\Brian\\Desktop\\mental-scribe-app\\playwright.config.ts",
-    "rootDir": "C:/Users/Brian/Desktop/mental-scribe-app/test/e2e",
+    "configFile": "C:\\Users\\Brian\\Desktop\\shadow-sidekick-electron\\mental-scribe-app\\playwright.config.ts",
+    "rootDir": "C:/Users/Brian/Desktop/shadow-sidekick-electron/mental-scribe-app/test/e2e",
     "forbidOnly": false,
     "fullyParallel": false,
     "globalSetup": null,
@@ -33,7 +33,7 @@
     "quiet": false,
     "projects": [
       {
-        "outputDir": "C:/Users/Brian/Desktop/mental-scribe-app/test-results",
+        "outputDir": "C:/Users/Brian/Desktop/shadow-sidekick-electron/mental-scribe-app/test-results",
         "repeatEach": 1,
         "retries": 0,
         "metadata": {
@@ -41,7 +41,7 @@
         },
         "id": "chromium",
         "name": "chromium",
-        "testDir": "C:/Users/Brian/Desktop/mental-scribe-app/test/e2e",
+        "testDir": "C:/Users/Brian/Desktop/shadow-sidekick-electron/mental-scribe-app/test/e2e",
         "testIgnore": [],
         "testMatch": [
           "**/*.@(spec|test).?(c|m)[jt]s?(x)"
@@ -58,55 +58,580 @@
   },
   "suites": [
     {
-      "title": "smoke.spec.ts",
-      "file": "smoke.spec.ts",
+      "title": "functional-test-suite.spec.ts",
+      "file": "functional-test-suite.spec.ts",
       "column": 0,
       "line": 0,
-      "specs": [
+      "specs": [],
+      "suites": [
         {
-          "title": "home loads",
-          "ok": true,
-          "tags": [],
-          "tests": [
+          "title": "Mental Scribe - Complete Functionality Test Suite",
+          "file": "functional-test-suite.spec.ts",
+          "line": 6,
+          "column": 6,
+          "specs": [
             {
-              "timeout": 60000,
-              "annotations": [],
-              "expectedStatus": "passed",
-              "projectId": "chromium",
-              "projectName": "chromium",
-              "results": [
+              "title": "Page loads successfully",
+              "ok": true,
+              "tags": [],
+              "tests": [
                 {
-                  "workerIndex": 0,
-                  "parallelIndex": 0,
-                  "status": "passed",
-                  "duration": 916,
-                  "errors": [],
-                  "stdout": [],
-                  "stderr": [],
-                  "retry": 0,
-                  "startTime": "2025-10-19T19:56:31.076Z",
+                  "timeout": 60000,
                   "annotations": [],
-                  "attachments": []
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1484,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-21T20:27:47.586Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
                 }
               ],
-              "status": "expected"
+              "id": "894fefb04aa0564dd73f-647a625f74390aeee92f",
+              "file": "functional-test-suite.spec.ts",
+              "line": 13,
+              "column": 3
+            },
+            {
+              "title": "CSP allows JavaScript execution",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1410,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-21T20:27:49.183Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "894fefb04aa0564dd73f-1aac19dff632be77410f",
+              "file": "functional-test-suite.spec.ts",
+              "line": 18,
+              "column": 3
+            },
+            {
+              "title": "Navigation elements are visible",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1347,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-21T20:27:50.605Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "894fefb04aa0564dd73f-bac054e70305e5da3b23",
+              "file": "functional-test-suite.spec.ts",
+              "line": 24,
+              "column": 3
+            },
+            {
+              "title": "Authentication UI is present",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 1334,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-21T20:27:51.961Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "894fefb04aa0564dd73f-04d801b7fe49e9d1ec7f",
+              "file": "functional-test-suite.spec.ts",
+              "line": 29,
+              "column": 3
+            },
+            {
+              "title": "Quick Actions section exists",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3348,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-21T20:27:53.303Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "894fefb04aa0564dd73f-c14d2f65a9b26cdd668f",
+              "file": "functional-test-suite.spec.ts",
+              "line": 36,
+              "column": 3
+            },
+            {
+              "title": "All critical buttons are clickable",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3398,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Found 4 visible buttons on the page\n"
+                        },
+                        {
+                          "text": "Button 1: \"Sign In\" - Enabled\n"
+                        },
+                        {
+                          "text": "Button 2: \"Sign Up\" - Enabled\n"
+                        },
+                        {
+                          "text": "Button 3: \"Sign In\" - Enabled\n"
+                        },
+                        {
+                          "text": "Button 4: \"Forgot your password?\" - Enabled\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-21T20:27:56.660Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "894fefb04aa0564dd73f-0472e00fb027c1185ce9",
+              "file": "functional-test-suite.spec.ts",
+              "line": 50,
+              "column": 3
+            },
+            {
+              "title": "Forms are interactive",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3399,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Found 2 visible inputs\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-21T20:28:00.071Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "894fefb04aa0564dd73f-e976dfb57e4eecd2ac27",
+              "file": "functional-test-suite.spec.ts",
+              "line": 70,
+              "column": 3
+            },
+            {
+              "title": "No console errors on load",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 4618,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m3\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m3\u001b[39m\n    at C:\\Users\\Brian\\Desktop\\shadow-sidekick-electron\\mental-scribe-app\\test\\e2e\\functional-test-suite.spec.ts:110:35",
+                        "location": {
+                          "file": "C:\\Users\\Brian\\Desktop\\shadow-sidekick-electron\\mental-scribe-app\\test\\e2e\\functional-test-suite.spec.ts",
+                          "column": 35,
+                          "line": 110
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 108 |\u001b[39m     \n \u001b[90m 109 |\u001b[39m     console\u001b[33m.\u001b[39mlog(\u001b[32m'Console errors:'\u001b[39m\u001b[33m,\u001b[39m errors)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 110 |\u001b[39m     expect(criticalErrors\u001b[33m.\u001b[39mlength)\u001b[33m.\u001b[39mtoBe(\u001b[35m0\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                   \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 111 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 112 |\u001b[39m\n \u001b[90m 113 |\u001b[39m   test(\u001b[32m'Page is responsive'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\Brian\\Desktop\\shadow-sidekick-electron\\mental-scribe-app\\test\\e2e\\functional-test-suite.spec.ts",
+                            "column": 35,
+                            "line": 110
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBe\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m) // Object.is equality\u001b[22m\n\nExpected: \u001b[32m0\u001b[39m\nReceived: \u001b[31m3\u001b[39m\n\n\u001b[0m \u001b[90m 108 |\u001b[39m     \n \u001b[90m 109 |\u001b[39m     console\u001b[33m.\u001b[39mlog(\u001b[32m'Console errors:'\u001b[39m\u001b[33m,\u001b[39m errors)\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 110 |\u001b[39m     expect(criticalErrors\u001b[33m.\u001b[39mlength)\u001b[33m.\u001b[39mtoBe(\u001b[35m0\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                   \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 111 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 112 |\u001b[39m\n \u001b[90m 113 |\u001b[39m   test(\u001b[32m'Page is responsive'\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m\n\u001b[2m    at C:\\Users\\Brian\\Desktop\\shadow-sidekick-electron\\mental-scribe-app\\test\\e2e\\functional-test-suite.spec.ts:110:35\u001b[22m"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "Console errors: [\n  \u001b[32m\"The Content Security Policy directive 'frame-ancestors' is ignored when delivered via a <meta> element.\"\u001b[39m,\n  \u001b[32m'X-Frame-Options may only be set via an HTTP header sent along with a document. It may not be set inside <meta>.'\u001b[39m,\n  \u001b[32m`Refused to execute inline event handler because it violates the following Content Security Policy directive: \"script-src 'nonce-lTNyvATsI/2FXt/yPC9owQ==' 'strict-dynamic' https:\". Either the 'unsafe-inline' keyword, a hash ('sha256-...'), or a nonce ('nonce-...') is required to enable inline execution. Note that hashes do not apply to event handlers, style attributes and javascript: navigations unless the 'unsafe-hashes' keyword is present.\\n`\u001b[39m\n]\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-21T20:28:03.479Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\Brian\\Desktop\\shadow-sidekick-electron\\mental-scribe-app\\test-results\\functional-test-suite-Ment-bb489-e-No-console-errors-on-load-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\Brian\\Desktop\\shadow-sidekick-electron\\mental-scribe-app\\test\\e2e\\functional-test-suite.spec.ts",
+                        "column": 35,
+                        "line": 110
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "894fefb04aa0564dd73f-841760aba602414edf56",
+              "file": "functional-test-suite.spec.ts",
+              "line": 89,
+              "column": 3
+            },
+            {
+              "title": "Page is responsive",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 3264,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-21T20:28:08.955Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "894fefb04aa0564dd73f-88aaf1463e0ee93ea9af",
+              "file": "functional-test-suite.spec.ts",
+              "line": 113,
+              "column": 3
+            },
+            {
+              "title": "Security headers are present",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 1590,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mundefined\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mundefined\u001b[39m\n    at C:\\Users\\Brian\\Desktop\\shadow-sidekick-electron\\mental-scribe-app\\test\\e2e\\functional-test-suite.spec.ts:135:52",
+                        "location": {
+                          "file": "C:\\Users\\Brian\\Desktop\\shadow-sidekick-electron\\mental-scribe-app\\test\\e2e\\functional-test-suite.spec.ts",
+                          "column": 52,
+                          "line": 135
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 133 |\u001b[39m     expect(headers\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m[\u001b[32m'x-content-type-options'\u001b[39m])\u001b[33m.\u001b[39mtoBeTruthy()\u001b[33m;\u001b[39m\n \u001b[90m 134 |\u001b[39m     expect(headers\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m[\u001b[32m'referrer-policy'\u001b[39m])\u001b[33m.\u001b[39mtoBeTruthy()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 135 |\u001b[39m     expect(headers\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m[\u001b[32m'strict-transport-security'\u001b[39m])\u001b[33m.\u001b[39mtoBeTruthy()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 136 |\u001b[39m     \n \u001b[90m 137 |\u001b[39m     console\u001b[33m.\u001b[39mlog(\u001b[32m'Security Headers:'\u001b[39m\u001b[33m,\u001b[39m {\n \u001b[90m 138 |\u001b[39m       \u001b[32m'X-Frame-Options'\u001b[39m\u001b[33m:\u001b[39m headers\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m[\u001b[32m'x-frame-options'\u001b[39m]\u001b[33m,\u001b[39m\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\Brian\\Desktop\\shadow-sidekick-electron\\mental-scribe-app\\test\\e2e\\functional-test-suite.spec.ts",
+                            "column": 52,
+                            "line": 135
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeTruthy\u001b[2m()\u001b[22m\n\nReceived: \u001b[31mundefined\u001b[39m\n\n\u001b[0m \u001b[90m 133 |\u001b[39m     expect(headers\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m[\u001b[32m'x-content-type-options'\u001b[39m])\u001b[33m.\u001b[39mtoBeTruthy()\u001b[33m;\u001b[39m\n \u001b[90m 134 |\u001b[39m     expect(headers\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m[\u001b[32m'referrer-policy'\u001b[39m])\u001b[33m.\u001b[39mtoBeTruthy()\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 135 |\u001b[39m     expect(headers\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m[\u001b[32m'strict-transport-security'\u001b[39m])\u001b[33m.\u001b[39mtoBeTruthy()\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                                                    \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 136 |\u001b[39m     \n \u001b[90m 137 |\u001b[39m     console\u001b[33m.\u001b[39mlog(\u001b[32m'Security Headers:'\u001b[39m\u001b[33m,\u001b[39m {\n \u001b[90m 138 |\u001b[39m       \u001b[32m'X-Frame-Options'\u001b[39m\u001b[33m:\u001b[39m headers\u001b[33m?\u001b[39m\u001b[33m.\u001b[39m[\u001b[32m'x-frame-options'\u001b[39m]\u001b[33m,\u001b[39m\u001b[0m\n\u001b[2m    at C:\\Users\\Brian\\Desktop\\shadow-sidekick-electron\\mental-scribe-app\\test\\e2e\\functional-test-suite.spec.ts:135:52\u001b[22m"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-21T20:28:12.324Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\Brian\\Desktop\\shadow-sidekick-electron\\mental-scribe-app\\test-results\\functional-test-suite-Ment-c0e1a-ecurity-headers-are-present-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\Brian\\Desktop\\shadow-sidekick-electron\\mental-scribe-app\\test\\e2e\\functional-test-suite.spec.ts",
+                        "column": 52,
+                        "line": 135
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "894fefb04aa0564dd73f-b0ebabcdccdbc1751a2a",
+              "file": "functional-test-suite.spec.ts",
+              "line": 128,
+              "column": 3
+            },
+            {
+              "title": "All assets load successfully",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 4226,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Failed asset requests: []\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-21T20:28:14.786Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "894fefb04aa0564dd73f-4b74339b2be90d1191a1",
+              "file": "functional-test-suite.spec.ts",
+              "line": 145,
+              "column": 3
+            },
+            {
+              "title": "Navigation works without errors",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 10569,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Testing 4 clickable elements\n"
+                        },
+                        {
+                          "text": "✓ Clicked: \"Sign In\"\n"
+                        },
+                        {
+                          "text": "✓ Clicked: \"Sign Up\"\n"
+                        },
+                        {
+                          "text": "✓ Clicked: \"Sign In\"\n"
+                        },
+                        {
+                          "text": "✓ Clicked: \"Forgot your password?\"\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-21T20:28:19.113Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "894fefb04aa0564dd73f-e88d7f89b8934f644c1a",
+              "file": "functional-test-suite.spec.ts",
+              "line": 162,
+              "column": 3
+            },
+            {
+              "title": "TypeScript/React errors check",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 60000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 6577,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "Page errors: []\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2025-10-21T20:28:29.693Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "894fefb04aa0564dd73f-dd9321c3c3e5d195b9a6",
+              "file": "functional-test-suite.spec.ts",
+              "line": 190,
+              "column": 3
             }
-          ],
-          "id": "4219922fea2e2bd3c691-2071930fcf3d863b0c93",
-          "file": "smoke.spec.ts",
-          "line": 3,
-          "column": 1
+          ]
         }
       ]
     }
   ],
   "errors": [],
   "stats": {
-    "startTime": "2025-10-19T19:56:30.248Z",
-    "duration": 1890.8419999999996,
-    "expected": 1,
+    "startTime": "2025-10-21T20:27:46.624Z",
+    "duration": 49702.669,
+    "expected": 11,
     "skipped": 0,
-    "unexpected": 0,
+    "unexpected": 2,
     "flaky": 0
   }
 }

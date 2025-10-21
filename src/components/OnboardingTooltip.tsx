@@ -120,6 +120,7 @@ export const OnboardingTooltip = () => {
         }
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentStep, isActive, currentStepData]);
 
   const updateTooltipPosition = () => {

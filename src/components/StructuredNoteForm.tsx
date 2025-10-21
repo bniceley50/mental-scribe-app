@@ -61,63 +61,6 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
     is_telehealth: false,
   });
 
-  // Auto-save functionality with recording guard
-  useEffect(() => {
-    if (isRecording) {
-      console.log("StructuredNoteForm: Skipping auto-save while recording");
-      return;
-    }
-
-    const autoSaveTimer = setTimeout(() => {
-      if (conversationId && Object.values(formData).some(v => v !== "" && v !== false)) {
-        console.log("StructuredNoteForm: Auto-save triggered");
-        handleSave(true);
-      }
-    }, 30000);
-
-    return () => clearTimeout(autoSaveTimer);
-  }, [formData, conversationId, isRecording]);
-
-  // Load existing note if available
-  useEffect(() => {
-    if (conversationId) {
-      loadExistingNote();
-    }
-  }, [conversationId]);
-
-  const loadExistingNote = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("structured_notes")
-        .select("*")
-        .eq("conversation_id", conversationId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (data) {
-        setFormData({
-          client_perspective: data.client_perspective || "",
-          current_status: data.current_status || "",
-          response_to_interventions: data.response_to_interventions || "",
-          new_issues_presented: data.new_issues_presented || false,
-          new_issues_details: data.new_issues_details || "",
-          goals_progress: data.goals_progress || "",
-          safety_assessment: data.safety_assessment || "",
-          clinical_impression: data.clinical_impression || "",
-          treatment_plan: data.treatment_plan || "",
-          next_steps: data.next_steps || "",
-          is_telehealth: data.is_telehealth || false,
-        });
-        setLastSaved(new Date(data.updated_at));
-      }
-    } catch (error) {
-      console.error("Error loading structured note:", error);
-    }
-  };
-
   const handleSave = async (autoSave = false) => {
     setSaving(true);
 
@@ -171,6 +114,63 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
       setSaving(false);
     }
   };
+
+  const loadExistingNote = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("structured_notes")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (data) {
+        setFormData({
+          client_perspective: data.client_perspective || "",
+          current_status: data.current_status || "",
+          response_to_interventions: data.response_to_interventions || "",
+          new_issues_presented: data.new_issues_presented || false,
+          new_issues_details: data.new_issues_details || "",
+          goals_progress: data.goals_progress || "",
+          safety_assessment: data.safety_assessment || "",
+          clinical_impression: data.clinical_impression || "",
+          treatment_plan: data.treatment_plan || "",
+          next_steps: data.next_steps || "",
+          is_telehealth: data.is_telehealth || false,
+        });
+        setLastSaved(new Date(data.updated_at));
+      }
+    } catch (error) {
+      console.error("Error loading structured note:", error);
+    }
+  };
+
+  // Auto-save functionality with recording guard
+  useEffect(() => {
+    if (isRecording) {
+      return;
+    }
+
+    const autoSaveTimer = setTimeout(() => {
+      if (conversationId && Object.values(formData).some(v => v !== "" && v !== false)) {
+        handleSave(true);
+      }
+    }, 30000);
+
+    return () => clearTimeout(autoSaveTimer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData, conversationId, isRecording]);
+
+  // Load existing note if available
+  useEffect(() => {
+    if (conversationId) {
+      loadExistingNote();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversationId]);
 
   const updateField = (field: keyof StructuredNote, value: string | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));

@@ -4,8 +4,16 @@ on:
   push:
     tags: [ 'v*' ]
 
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   release:
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,4 +23,5 @@ jobs:
           body_path: deliverables/RELEASE_v1.3.0.md
           files: |
             deliverables/QUICK_SHIP_CARD_2025-10-21.md
-            docs/SECURITY_REVIEW_2025-10-21.md
+            review/SECURITY_REVIEW_2025-10-21.md
+          fail_on_unmatched_files: true

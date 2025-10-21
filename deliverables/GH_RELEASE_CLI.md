@@ -8,7 +8,7 @@ gh release create v1.3.0 \
   -t "v1.3.0 – Ship-safety + Pagination v1 + A+ Security Review" \
   -F deliverables/RELEASE_v1.3.0.md \
   deliverables/QUICK_SHIP_CARD_2025-10-21.md \
-  docs/SECURITY_REVIEW_2025-10-21.md
+  review/SECURITY_REVIEW_2025-10-21.md
 ```
 
 ```powershell
@@ -17,7 +17,7 @@ gh release create v1.3.0 `
   -t "v1.3.0 – Ship-safety + Pagination v1 + A+ Security Review" `
   -F deliverables/RELEASE_v1.3.0.md `
   deliverables/QUICK_SHIP_CARD_2025-10-21.md `
-  docs/SECURITY_REVIEW_2025-10-21.md
+  review/SECURITY_REVIEW_2025-10-21.md
 ```
 
 Notes:

@@ -1,0 +1,25 @@
+{
+  "name": "@mscribe/playground",
+  "version": "1.0.0",
+  "description": "Developer playground for testing Mental Scribe flows",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@mscribe/events": "workspace:*",
+    "@mscribe/flows": "workspace:*",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "rxjs": "7.8.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react-swc": "^3.7.2",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.11"
+  }
+}

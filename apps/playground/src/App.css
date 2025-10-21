@@ -1,0 +1,213 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: #f5f5f5;
+  color: #333;
+}
+
+code {
+  font-family: 'Courier New', monospace;
+}
+
+.app {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.header {
+  margin-bottom: 2rem;
+}
+
+.header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.header p {
+  color: #666;
+}
+
+.flow-selector {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+}
+
+.flow-selector h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.flow-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.flow-button {
+  padding: 0.75rem 1.5rem;
+  background: #0066cc;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: background 0.2s;
+}
+
+.flow-button:hover {
+  background: #0052a3;
+}
+
+.flow-button:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.execution-panel {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.execution-panel h2 {
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.step {
+  padding: 1rem;
+  border-left: 4px solid #ddd;
+  margin-bottom: 1rem;
+  background: #f9f9f9;
+}
+
+.step.completed {
+  border-left-color: #00cc66;
+}
+
+.step.failed {
+  border-left-color: #cc0000;
+}
+
+.step.skipped {
+  border-left-color: #999;
+  opacity: 0.7;
+}
+
+.step-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.step-name {
+  font-weight: bold;
+}
+
+.step-status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.step-status.completed {
+  background: #e6f7f0;
+  color: #00cc66;
+}
+
+.step-status.failed {
+  background: #ffe6e6;
+  color: #cc0000;
+}
+
+.step-status.skipped {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.step-details {
+  font-size: 0.875rem;
+  color: #666;
+}
+
+.step-data {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: white;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  overflow-x: auto;
+}
+
+.flow-result {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: #e8f4f8;
+  border-radius: 8px;
+}
+
+.flow-result h3 {
+  margin-bottom: 1rem;
+}
+
+.result-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.result-item {
+  background: white;
+  padding: 1rem;
+  border-radius: 6px;
+}
+
+.result-label {
+  font-size: 0.875rem;
+  color: #666;
+  margin-bottom: 0.25rem;
+}
+
+.result-value {
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.logs {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.log-entry {
+  padding: 0.25rem 0;
+  border-bottom: 1px solid #333;
+}
+
+.log-time {
+  color: #888;
+  margin-right: 0.5rem;
+}

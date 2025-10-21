@@ -6,7 +6,7 @@
 
 A HIPAA-aware clinical documentation assistant powered by AI to help mental health professionals create structured clinical notes.
 
-📐 **[Architecture](docs/ARCHITECTURE.md)** | 📚 **[API Reference](docs/API_REFERENCE.md)** | 🧪 **[Testing Guide](docs/TEST_COVERAGE_SETUP.md)**
+📐 **[Architecture](docs/ARCHITECTURE.md)** | 📚 **[API Reference](docs/API_REFERENCE.md)** | 🧪 **[Testing Guide](docs/TEST_COVERAGE_SETUP.md)** | 🤖 **[AI Review Prompt](META_REVIEW_PROMPT.md)**
 
 ## Project Info
 

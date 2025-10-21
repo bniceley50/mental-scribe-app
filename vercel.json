@@ -1,4 +1,9 @@
 {
+  "build": {
+    "env": {
+      "NPM_CONFIG_IGNORE_OPTIONAL": "true"
+    }
+  },
   "headers": [
     {
       "source": "/(.*)",

@@ -1,4 +1,5 @@
 {
+  "buildCommand": "npm ci --omit=optional && npm run build",
   "build": {
     "env": {
       "NPM_CONFIG_IGNORE_OPTIONAL": "true"

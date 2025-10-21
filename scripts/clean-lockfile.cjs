@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// Clean Windows-specific rollup dependencies from package-lock.json
+// Clean Windows-specific dependencies from package-lock.json
 const fs = require('fs');
 const path = require('path');
 
@@ -9,11 +9,12 @@ const lockfilePath = path.join(__dirname, '..', 'package-lock.json');
 if (fs.existsSync(lockfilePath)) {
   const lockfile = JSON.parse(fs.readFileSync(lockfilePath, 'utf8'));
   
-  // Function to clean Windows rollup packages from an object
+  // Function to clean Windows-specific packages from an object
   const cleanObject = (obj) => {
     if (!obj) return;
     Object.keys(obj).forEach(key => {
-      if (key.includes('rollup-win32')) {
+      // Remove packages with Windows-specific names
+      if (key.includes('win32') || key.includes('windows') || key.includes('rollup-win32') || key.includes('swc') && key.includes('win32')) {
         delete obj[key];
       }
       // Also clean nested objects
@@ -39,7 +40,7 @@ if (fs.existsSync(lockfilePath)) {
   }
   
   fs.writeFileSync(lockfilePath, JSON.stringify(lockfile, null, 2));
-  console.log('Cleaned Windows-specific rollup dependencies from package-lock.json');
+  console.log('Cleaned Windows-specific dependencies from package-lock.json');
 } else {
   console.log('package-lock.json not found');
 }

@@ -1,0 +1,304 @@
+name: Security Scanning
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # Run weekly security scans
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript', 'typescript']
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended,security-and-quality
+      
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+      
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
+
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Run npm audit
+        run: pnpm audit --audit-level=moderate
+        continue-on-error: true
+      
+      - name: Check for high/critical vulnerabilities
+        run: |
+          AUDIT_RESULT=$(pnpm audit --audit-level=high --json || true)
+          HIGH_COUNT=$(echo "$AUDIT_RESULT" | jq '.metadata.vulnerabilities.high // 0')
+          CRITICAL_COUNT=$(echo "$AUDIT_RESULT" | jq '.metadata.vulnerabilities.critical // 0')
+          
+          echo "High vulnerabilities: $HIGH_COUNT"
+          echo "Critical vulnerabilities: $CRITICAL_COUNT"
+          
+          if [ "$CRITICAL_COUNT" -gt 0 ]; then
+            echo "❌ Critical vulnerabilities found!"
+            exit 1
+          fi
+          
+          if [ "$HIGH_COUNT" -gt 5 ]; then
+            echo "⚠️ Too many high vulnerabilities ($HIGH_COUNT > 5)"
+            exit 1
+          fi
+          
+          echo "✅ Dependency audit passed"
+
+  sql-injection-scan:
+    name: SQL Injection Detection
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Scan SQL files for injection risks
+        run: |
+          echo "🔍 Scanning for SQL injection vulnerabilities..."
+          
+          # Patterns that indicate potential SQL injection risks
+          DANGEROUS_PATTERNS=(
+            '\$\{.*\}.*FROM'
+            '\$\{.*\}.*WHERE'
+            '\$\{.*\}.*INSERT'
+            '\$\{.*\}.*UPDATE'
+            '\$\{.*\}.*DELETE'
+            'string.*\+.*SELECT'
+            'string.*\+.*FROM'
+            'string.*\+.*WHERE'
+            'eval.*sql'
+            'exec.*sql'
+          )
+          
+          FOUND_ISSUES=0
+          
+          # Scan TypeScript/JavaScript files
+          for pattern in "${DANGEROUS_PATTERNS[@]}"; do
+            echo "Checking pattern: $pattern"
+            MATCHES=$(grep -rnE "$pattern" src/ supabase/functions/ --include="*.ts" --include="*.js" || true)
+            
+            if [ -n "$MATCHES" ]; then
+              echo "⚠️ Potential SQL injection risk found:"
+              echo "$MATCHES"
+              FOUND_ISSUES=$((FOUND_ISSUES + 1))
+            fi
+          done
+          
+          # Check for parameterized queries usage
+          echo ""
+          echo "✅ Checking for safe parameterized queries..."
+          PARAM_QUERIES=$(grep -rn "\.from\|\.select\|\.insert\|\.update\|\.delete" src/ --include="*.ts" | wc -l)
+          echo "Found $PARAM_QUERIES uses of Supabase query builders (safe)"
+          
+          if [ $FOUND_ISSUES -gt 0 ]; then
+            echo ""
+            echo "❌ Found $FOUND_ISSUES potential SQL injection risks"
+            echo "Please review the code and use parameterized queries"
+            exit 1
+          fi
+          
+          echo ""
+          echo "✅ SQL injection scan passed"
+
+  rls-policy-validation:
+    name: RLS Policy Validation
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Validate RLS policies
+        run: |
+          echo "🛡️ Validating Row Level Security policies..."
+          
+          # Check for RLS enable statements in migrations
+          MIGRATIONS_DIR="supabase/migrations"
+          
+          if [ ! -d "$MIGRATIONS_DIR" ]; then
+            echo "⚠️ No migrations directory found"
+            exit 0
+          fi
+          
+          echo "Checking migrations for RLS policies..."
+          
+          # Count tables with RLS enabled
+          RLS_ENABLED=$(grep -r "ALTER TABLE.*ENABLE ROW LEVEL SECURITY" "$MIGRATIONS_DIR" || true | wc -l)
+          echo "Tables with RLS enabled: $RLS_ENABLED"
+          
+          # Count policy definitions
+          POLICIES=$(grep -r "CREATE POLICY" "$MIGRATIONS_DIR" || true | wc -l)
+          echo "Total policies defined: $POLICIES"
+          
+          # Critical tables that must have RLS
+          CRITICAL_TABLES=(
+            "clients"
+            "user_sessions"
+            "clinical_notes"
+            "patient_consents"
+          )
+          
+          MISSING_RLS=0
+          for table in "${CRITICAL_TABLES[@]}"; do
+            if ! grep -r "ALTER TABLE.*$table.*ENABLE ROW LEVEL SECURITY" "$MIGRATIONS_DIR" > /dev/null 2>&1; then
+              echo "❌ Missing RLS for critical table: $table"
+              MISSING_RLS=$((MISSING_RLS + 1))
+            else
+              echo "✅ RLS enabled for: $table"
+            fi
+          done
+          
+          if [ $MISSING_RLS -gt 0 ]; then
+            echo ""
+            echo "❌ $MISSING_RLS critical tables missing RLS!"
+            exit 1
+          fi
+          
+          # Check for policies on critical tables
+          for table in "${CRITICAL_TABLES[@]}"; do
+            POLICY_COUNT=$(grep -r "CREATE POLICY.*ON.*$table" "$MIGRATIONS_DIR" || true | wc -l)
+            if [ "$POLICY_COUNT" -eq 0 ]; then
+              echo "⚠️ Warning: No policies defined for $table"
+            else
+              echo "✅ $table has $POLICY_COUNT policy/policies"
+            fi
+          done
+          
+          echo ""
+          echo "✅ RLS validation passed"
+
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Scan for secrets
+        run: |
+          echo "🔐 Scanning for exposed secrets..."
+          
+          # Patterns for common secrets
+          SECRET_PATTERNS=(
+            'supabase.*anon.*key.*=.*ey[A-Za-z0-9]'
+            'supabase.*service.*role.*key.*=.*ey[A-Za-z0-9]'
+            'SUPABASE_SERVICE_ROLE_KEY=ey[A-Za-z0-9]'
+            'password.*=.*[^\$\{]'
+            'api[_-]?key.*=.*[A-Za-z0-9]{32}'
+            'secret.*=.*[A-Za-z0-9]{32}'
+            'private[_-]?key.*BEGIN'
+          )
+          
+          FOUND_SECRETS=0
+          
+          # Exclude safe files
+          EXCLUDE_PATTERNS="--exclude-dir=node_modules --exclude-dir=.git --exclude-dir=dist --exclude=*.md --exclude=*.yml --exclude=*.yaml"
+          
+          for pattern in "${SECRET_PATTERNS[@]}"; do
+            MATCHES=$(grep -rE "$pattern" . $EXCLUDE_PATTERNS || true)
+            
+            if [ -n "$MATCHES" ]; then
+              echo "⚠️ Potential secret found with pattern: $pattern"
+              # Don't print the actual match to avoid exposing secrets in logs
+              echo "$MATCHES" | sed 's/ey[A-Za-z0-9]\{20,\}/ey***REDACTED***/g'
+              FOUND_SECRETS=$((FOUND_SECRETS + 1))
+            fi
+          done
+          
+          if [ $FOUND_SECRETS -gt 0 ]; then
+            echo ""
+            echo "❌ Found $FOUND_SECRETS potential secrets in code"
+            echo "Please remove secrets and use environment variables"
+            exit 1
+          fi
+          
+          echo "✅ No secrets detected"
+
+  security-summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [codeql, dependency-audit, sql-injection-scan, rls-policy-validation, secret-scan]
+    if: always()
+    
+    steps:
+      - name: Generate Security Summary
+        run: |
+          echo "# 🔐 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| CodeQL Analysis | ${{ needs.codeql.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Dependency Audit | ${{ needs.dependency-audit.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| SQL Injection Scan | ${{ needs.sql-injection-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| RLS Policy Validation | ${{ needs.rls-policy-validation.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Secret Scanning | ${{ needs.secret-scan.result == 'success' && '✅ Passed' || '❌ Failed' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.codeql.result }}" != "success" ] || \
+             [ "${{ needs.dependency-audit.result }}" != "success" ] || \
+             [ "${{ needs.sql-injection-scan.result }}" != "success" ] || \
+             [ "${{ needs.rls-policy-validation.result }}" != "success" ] || \
+             [ "${{ needs.secret-scan.result }}" != "success" ]; then
+            echo "❌ Security checks failed. Please review the logs above." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          else
+            echo "✅ All security checks passed!" >> $GITHUB_STEP_SUMMARY
+          fi

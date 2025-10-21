@@ -1,9 +1,9 @@
 {
-  "installCommand": "npm ci --omit=optional",
+  "installCommand": "rm -rf node_modules package-lock.json && npm install --include=optional",
   "buildCommand": "npm run build",
   "build": {
     "env": {
-      "NPM_CONFIG_IGNORE_OPTIONAL": "true"
+      "NPM_CONFIG_IGNORE_OPTIONAL": "false"
     }
   },
   "headers": [

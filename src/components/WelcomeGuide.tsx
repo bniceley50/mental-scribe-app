@@ -114,9 +114,9 @@ export const WelcomeGuide = () => {
               </p>
             </div>
 
-            <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
               <h4 className="font-medium text-foreground mb-2 flex items-center gap-2">
-                <Lock className="w-4 h-4 text-blue-600" />
+                <Lock className="w-4 h-4 text-primary" />
                 Privacy & Data Security
               </h4>
               <p className="text-sm text-muted-foreground">

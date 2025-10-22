@@ -11,13 +11,13 @@ export const Part2Badge = ({ consentStatus = "none", size = "default" }: Part2Ba
   const getStatusColor = () => {
     switch (consentStatus) {
       case "obtained":
-        return "bg-emerald-500/10 text-emerald-600 border-emerald-500/20";
+        return "bg-accent/10 text-accent-foreground border-accent/20";
       case "expired":
         return "bg-amber-500/10 text-amber-600 border-amber-500/20";
       case "revoked":
-        return "bg-red-500/10 text-red-600 border-red-500/20";
+        return "bg-destructive/10 text-destructive-foreground border-destructive/20";
       default:
-        return "bg-purple-500/10 text-purple-600 border-purple-500/20";
+        return "bg-primary/10 text-primary-foreground border-primary/20";
     }
   };
 

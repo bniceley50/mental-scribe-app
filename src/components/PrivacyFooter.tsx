@@ -108,7 +108,7 @@ export const PrivacyFooter = () => {
                 </ul>
               </section>
 
-              <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <div className="p-4 bg-primary/10 border border-primary/20 rounded-lg">
                 <p className="text-sm text-foreground">
                   <strong>Questions or Concerns?</strong>
                 </p>

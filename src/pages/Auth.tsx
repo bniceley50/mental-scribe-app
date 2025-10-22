@@ -324,7 +324,7 @@ const Auth = () => {
                 {resetSubmitting ? "Updating..." : "Update Password"}
               </Button>
               {resetError && <p className="text-sm text-destructive">{resetError}</p>}
-              {resetMessage && <p className="text-sm text-emerald-600">{resetMessage}</p>}
+              {resetMessage && <p className="text-sm text-accent-foreground">{resetMessage}</p>}
               <Button
                 type="button"
                 variant="ghost"
@@ -444,7 +444,7 @@ const Auth = () => {
                     {resetSubmitting ? "Sending link..." : "Send reset link"}
                   </Button>
                   {resetError && <p className="text-sm text-destructive">{resetError}</p>}
-                  {resetMessage && <p className="text-sm text-emerald-600">{resetMessage}</p>}
+                  {resetMessage && <p className="text-sm text-accent-foreground">{resetMessage}</p>}
                   <Button
                     type="button"
                     variant="ghost"

@@ -1,0 +1,150 @@
+{
+  "v1_token_diff": {
+    "created": "2025-10-22",
+    "owner": "ui-theming",
+    "due_date": "2025-10-28",
+    "status": "planned",
+    "diffs": [
+      {
+        "file": "src/index.css",
+        "token": "--primary",
+        "from": "hsl(210 79% 60%)",
+        "to": "hsl(268 56% 38%)",
+        "why": "Align to purple",
+        "contrast_before": "2.99:1",
+        "contrast_after": "9.3:1",
+        "contrast_note": "white on primary",
+        "risk": "Brand shift",
+        "status": "PASS",
+        "citation": "src/index.css:22"
+      },
+      {
+        "file": "src/index.css",
+        "token": "--primary-foreground",
+        "from": "hsl(0 0% 100%)",
+        "to": "hsl(0 0% 100%)",
+        "why": "Keep white",
+        "contrast_before": "2.99:1",
+        "contrast_after": "9.3:1",
+        "contrast_note": "white on primary",
+        "risk": "None",
+        "status": "PASS",
+        "citation": "src/index.css:23"
+      },
+      {
+        "file": "src/index.css",
+        "token": "--accent",
+        "from": "hsl(175 60% 50%)",
+        "to": "hsl(174 62% 44%)",
+        "why": "Closer to teal",
+        "contrast_before": "1.99:1",
+        "contrast_after": "2.52:1",
+        "contrast_note": "white on accent",
+        "risk": "Contrast",
+        "status": "FAIL (with white)",
+        "citation": "src/index.css:33"
+      },
+      {
+        "file": "src/index.css",
+        "token": "--accent-foreground",
+        "from": "hsl(0 0% 100%)",
+        "to": "#111111",
+        "why": "Meet AA on teal",
+        "contrast_before": "1.99:1",
+        "contrast_after": "7.5:1",
+        "contrast_note": "text on accent",
+        "risk": "Visual shift",
+        "status": "PASS",
+        "citation": "src/index.css:34"
+      },
+      {
+        "file": "src/index.css",
+        "token": "--cta",
+        "from": "—",
+        "to": "hsl(27 90% 55%)",
+        "why": "Add CTA token",
+        "contrast_before": "—",
+        "contrast_after": "—",
+        "contrast_note": "New token",
+        "risk": "New token",
+        "status": "—",
+        "citation": "New (insert after --accent-foreground)"
+      },
+      {
+        "file": "src/index.css",
+        "token": "--cta-foreground",
+        "from": "—",
+        "to": "#111111",
+        "why": "AA on orange",
+        "contrast_before": "—",
+        "contrast_after": "7.2:1",
+        "contrast_note": "text on CTA",
+        "risk": "Visual shift",
+        "status": "PASS",
+        "citation": "New (insert after --cta)"
+      },
+      {
+        "file": "src/index.css",
+        "token": "--foreground",
+        "from": "hsl(210 20% 20%)",
+        "to": "hsl(210 20% 20%)",
+        "why": "Keep body text",
+        "contrast_before": "12.3:1",
+        "contrast_after": "12.3:1",
+        "contrast_note": "on bg",
+        "risk": "None",
+        "status": "PASS",
+        "citation": "src/index.css:13"
+      },
+      {
+        "file": "tailwind.config.ts",
+        "token": "radius tiers",
+        "from": "--radius: 0.75rem",
+        "to": "tiers 0.5/0.75/1rem",
+        "why": "Card/button consistency",
+        "contrast_before": "n/a",
+        "contrast_after": "n/a",
+        "contrast_note": "",
+        "risk": "Consistency",
+        "status": "PENDING",
+        "citation": "tailwind.config.ts:67-69"
+      },
+      {
+        "file": "tailwind.config.ts",
+        "token": "container",
+        "from": "2xl: 1400px",
+        "to": "enforce 1280–1400px",
+        "why": "Layout target",
+        "contrast_before": "n/a",
+        "contrast_after": "n/a",
+        "contrast_note": "",
+        "risk": "Layout shift",
+        "status": "PENDING",
+        "citation": "tailwind.config.ts:17"
+      }
+    ],
+    "dark_mode_tokens": [
+      {
+        "file": "src/index.css",
+        "token": "--primary",
+        "to": "hsl(268 56% 38%)",
+        "citation": "src/index.css:78",
+        "note": "Same value as light mode"
+      },
+      {
+        "file": "src/index.css",
+        "token": "--accent",
+        "to": "hsl(174 62% 44%)",
+        "citation": "src/index.css:87",
+        "note": "Same value as light mode"
+      },
+      {
+        "file": "src/index.css",
+        "token": "--accent-foreground",
+        "to": "#111111",
+        "citation": "src/index.css:88",
+        "note": "Same near-black as light mode for AA compliance"
+      }
+    ]
+  }
+}

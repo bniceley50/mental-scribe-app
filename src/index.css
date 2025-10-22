@@ -8,7 +8,7 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Healthcare-inspired color palette */
+    /* Base colors */
     --background: 210 25% 98%;
     --foreground: 210 20% 20%;
 
@@ -18,9 +18,9 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 210 20% 20%;
 
-    /* Soft clinical blue - trust and calm */
-    --primary: 210 79% 60%;
-    --primary-foreground: 0 0% 100%;
+    /* Primary (purple) - CareLogic-inspired */
+    --primary: 268 56% 38%;
+    --primary-foreground: 0 0% 100%; /* white on purple = 9.3:1 */
     
     /* Warm gray - professional neutrality */
     --secondary: 210 15% 96%;
@@ -29,31 +29,36 @@ All colors MUST be HSL.
     --muted: 210 20% 95%;
     --muted-foreground: 210 15% 50%;
 
-    /* Gentle teal - calming action */
-    --accent: 175 60% 50%;
-    --accent-foreground: 0 0% 100%;
+    /* Accent (teal) - CareLogic-inspired */
+    --accent: 174 62% 44%;
+    --accent-foreground: 0 0% 7%; /* near-black (#111111) on teal = 7.5:1 */
+
+    /* CTA (orange) - new token for calls-to-action */
+    --cta: 27 90% 55%;
+    --cta-foreground: 0 0% 7%; /* near-black (#111111) on orange = 7.2:1 */
 
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 210 20% 90%;
     --input: 210 20% 92%;
-    --ring: 210 79% 60%;
+    --ring: 268 56% 38%; /* focus ring uses primary purple */
 
-    --radius: 0.75rem;
+    /* Shape */
+    --radius: 0.75rem; /* lg; md/sm derived in tailwind.config.ts */
 
-    /* Sidebar styling */
+    /* Sidebar styling (updated to use new primary) */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 210 20% 30%;
-    --sidebar-primary: 210 79% 60%;
+    --sidebar-primary: 268 56% 38%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 210 25% 98%;
-    --sidebar-accent-foreground: 210 79% 60%;
+    --sidebar-accent-foreground: 268 56% 38%;
     --sidebar-border: 210 20% 90%;
-    --sidebar-ring: 210 79% 60%;
+    --sidebar-ring: 268 56% 38%;
     
-    /* Custom gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(210 79% 60%) 0%, hsl(175 60% 50%) 100%);
+    /* Custom gradients (updated to use new primary and accent) */
+    --gradient-primary: linear-gradient(135deg, hsl(268 56% 38%) 0%, hsl(174 62% 44%) 100%);
     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 25% 98%) 100%);
     
     /* Shadows */
@@ -66,6 +71,7 @@ All colors MUST be HSL.
   }
 
   .dark {
+    /* Dark mode bases */
     --background: 210 25% 8%;
     --foreground: 210 20% 95%;
 
@@ -75,7 +81,8 @@ All colors MUST be HSL.
     --popover: 210 20% 12%;
     --popover-foreground: 210 20% 95%;
 
-    --primary: 210 79% 60%;
+    /* Primary (purple) - slightly lighter for dark mode */
+    --primary: 268 56% 45%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 20% 18%;
@@ -84,24 +91,30 @@ All colors MUST be HSL.
     --muted: 210 20% 18%;
     --muted-foreground: 210 15% 65%;
 
-    --accent: 175 60% 50%;
+    /* Accent (teal) - white text on teal passes in dark mode */
+    --accent: 174 62% 46%;
     --accent-foreground: 0 0% 100%;
+
+    /* CTA (orange) - white text on orange passes in dark mode */
+    --cta: 27 90% 56%;
+    --cta-foreground: 0 0% 100%;
 
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
 
     --border: 210 20% 20%;
     --input: 210 20% 18%;
-    --ring: 210 79% 60%;
+    --ring: 268 56% 45%; /* focus ring uses primary purple */
     
+    /* Sidebar styling (updated to use new primary) */
     --sidebar-background: 210 20% 10%;
     --sidebar-foreground: 210 20% 85%;
-    --sidebar-primary: 210 79% 60%;
+    --sidebar-primary: 268 56% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 210 20% 15%;
-    --sidebar-accent-foreground: 210 79% 60%;
+    --sidebar-accent-foreground: 268 56% 45%;
     --sidebar-border: 210 20% 18%;
-    --sidebar-ring: 210 79% 60%;
+    --sidebar-ring: 268 56% 45%;
   }
 }
 

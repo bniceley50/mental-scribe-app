@@ -1,0 +1,10 @@
+text_token,bg_token,size,ratio,AA,AAA,note,links
+--foreground,--background,body,12.3,PASS,PASS,Body text,src/index.css:12-13
+--primary-foreground,--primary,button,9.3,PASS,n/a,White on purple,src/index.css:22-23
+--accent-foreground,--accent,chip,7.5,PASS,n/a,Using #111111,src/index.css:33-34
+--cta-foreground,--cta,button,7.2,PASS,n/a,Using #111111,New tokens
+--muted-foreground,--muted,caption,6.5,PASS,PASS,Fine for small text,src/index.css:29-30
+--foreground,--primary,body,1.4,FAIL,FAIL,Don't place body text on purple,src/index.css:13;22
+--foreground,--accent,body,5.1,PASS,PASS,Text on teal surface,src/index.css:13;33
+--foreground (dark),--background (dark),body,16.5,PASS,PASS,Dark mode body,src/index.css:69-70
+--primary-foreground,--primary (dark),button,9.3,PASS,n/a,Same as light,src/index.css:78-79

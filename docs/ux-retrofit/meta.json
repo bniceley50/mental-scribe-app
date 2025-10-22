@@ -1,0 +1,169 @@
+{
+  "status": "actionable",
+  "blockers": [],
+  "phase": "step-3-deliverables-complete",
+  "v1_diff_applied": true,
+  "owner": "ui-theming",
+  "due_date": "2025-10-28",
+  "assumptions": [
+    "Report content 'CareLogic vs Mental-Scribe – Research & Redesign Blueprint' received and parsed",
+    "Current tokens in src/index.css are blue/teal-leaning (primary: hsl(210 79% 60%), accent: hsl(175 60% 50%))",
+    "Target is CareLogic-inspired purple/teal/orange palette (primary: hsl(268 56% 38%), accent: hsl(174 62% 44%), cta: hsl(27 90% 55%))",
+    "shadcn/ui components are present and will receive token updates without structural rewrites",
+    "Tailwind config extends design tokens via CSS variables",
+    "Typography will use system fonts (Inter/Work Sans fallback) without custom font loading in this phase",
+    "All contrast calculations will be computed post-diff and validated against WCAG 2.2 AA",
+    "Trade-dress mitigation: using Lucide icons (already in use), distinct empty states, unique microcopy"
+  ],
+  "risks": [
+    "Brand identity shift: moving from clinical blue to deep purple may affect user perception",
+    "Existing component instances may need color prop overrides if they hardcode color classes",
+    "Dark mode tokens require separate contrast validation passes",
+    "CTA orange (hsl(27 90% 55%)) is highly saturated; may need adjustment for certain backgrounds",
+    "Performance impact minimal (CSS-only changes), but full regression test recommended",
+    "Legal: emulating design system is safe; asset/copy reuse strictly prohibited"
+  ],
+  "repo_scan": {
+    "tokens": {
+      "light": [
+        { "name": "--background", "value": "210 25% 98%", "source": "src/index.css:12" },
+        { "name": "--foreground", "value": "210 20% 20%", "source": "src/index.css:13" },
+        { "name": "--card", "value": "0 0% 100%", "source": "src/index.css:16" },
+        { "name": "--card-foreground", "value": "210 20% 20%", "source": "src/index.css:17" },
+        { "name": "--popover", "value": "0 0% 100%", "source": "src/index.css:19" },
+        { "name": "--popover-foreground", "value": "210 20% 20%", "source": "src/index.css:20" },
+        { "name": "--primary", "value": "210 79% 60%", "source": "src/index.css:22" },
+        { "name": "--primary-foreground", "value": "0 0% 100%", "source": "src/index.css:23" },
+        { "name": "--secondary", "value": "210 15% 96%", "source": "src/index.css:26" },
+        { "name": "--secondary-foreground", "value": "210 20% 30%", "source": "src/index.css:27" },
+        { "name": "--muted", "value": "210 20% 95%", "source": "src/index.css:29" },
+        { "name": "--muted-foreground", "value": "210 15% 50%", "source": "src/index.css:30" },
+        { "name": "--accent", "value": "175 60% 50%", "source": "src/index.css:33" },
+        { "name": "--accent-foreground", "value": "0 0% 100%", "source": "src/index.css:34" },
+        { "name": "--destructive", "value": "0 70% 55%", "source": "src/index.css:36" },
+        { "name": "--destructive-foreground", "value": "0 0% 100%", "source": "src/index.css:37" },
+        { "name": "--border", "value": "210 20% 90%", "source": "src/index.css:39" },
+        { "name": "--input", "value": "210 20% 92%", "source": "src/index.css:40" },
+        { "name": "--ring", "value": "210 79% 60%", "source": "src/index.css:41" },
+        { "name": "--radius", "value": "0.75rem", "source": "src/index.css:43" },
+        { "name": "--gradient-primary", "value": "linear-gradient(135deg, hsl(210 79% 60%) 0%, hsl(175 60% 50%) 100%)", "source": "src/index.css:56" },
+        { "name": "--gradient-subtle", "value": "linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 25% 98%) 100%)", "source": "src/index.css:57" },
+        { "name": "--shadow-soft", "value": "0 2px 8px -2px hsl(210 20% 50% / 0.08)", "source": "src/index.css:60" },
+        { "name": "--shadow-medium", "value": "0 4px 16px -4px hsl(210 20% 50% / 0.12)", "source": "src/index.css:61" },
+        { "name": "--shadow-card", "value": "0 1px 3px hsl(210 20% 50% / 0.05)", "source": "src/index.css:62" }
+      ],
+      "dark": [
+        { "name": "--background", "value": "210 25% 8%", "source": "src/index.css:69" },
+        { "name": "--foreground", "value": "210 20% 95%", "source": "src/index.css:70" },
+        { "name": "--card", "value": "210 20% 12%", "source": "src/index.css:72" },
+        { "name": "--card-foreground", "value": "210 20% 95%", "source": "src/index.css:73" },
+        { "name": "--popover", "value": "210 20% 12%", "source": "src/index.css:75" },
+        { "name": "--popover-foreground", "value": "210 20% 95%", "source": "src/index.css:76" },
+        { "name": "--primary", "value": "210 79% 60%", "source": "src/index.css:78" },
+        { "name": "--primary-foreground", "value": "0 0% 100%", "source": "src/index.css:79" },
+        { "name": "--secondary", "value": "210 20% 18%", "source": "src/index.css:81" },
+        { "name": "--secondary-foreground", "value": "210 20% 95%", "source": "src/index.css:82" },
+        { "name": "--muted", "value": "210 20% 18%", "source": "src/index.css:84" },
+        { "name": "--muted-foreground", "value": "210 15% 65%", "source": "src/index.css:85" },
+        { "name": "--accent", "value": "175 60% 50%", "source": "src/index.css:87" },
+        { "name": "--accent-foreground", "value": "0 0% 100%", "source": "src/index.css:88" },
+        { "name": "--destructive", "value": "0 70% 55%", "source": "src/index.css:90" },
+        { "name": "--destructive-foreground", "value": "0 0% 100%", "source": "src/index.css:91" },
+        { "name": "--border", "value": "210 20% 20%", "source": "src/index.css:93" },
+        { "name": "--input", "value": "210 20% 18%", "source": "src/index.css:94" },
+        { "name": "--ring", "value": "210 79% 60%", "source": "src/index.css:95" }
+      ]
+    },
+    "tailwind": {
+      "container": {
+        "center": { "value": true, "source": "tailwind.config.ts:14" },
+        "padding": { "value": "2rem", "source": "tailwind.config.ts:15" },
+        "screens": { "2xl": { "value": "1400px", "source": "tailwind.config.ts:17" } }
+      },
+      "colors_source": "tailwind.config.ts:21-45",
+      "radius": {
+        "lg": { "value": "var(--radius)", "source": "tailwind.config.ts:67" },
+        "md": { "value": "calc(var(--radius) - 2px)", "source": "tailwind.config.ts:68" },
+        "sm": { "value": "calc(var(--radius) - 4px)", "source": "tailwind.config.ts:69" }
+      },
+      "animations": {
+        "keyframes_block": "tailwind.config.ts:71-88",
+        "names": [
+          { "name": "accordion-down", "source": "tailwind.config.ts:72" },
+          { "name": "accordion-up", "source": "tailwind.config.ts:76" },
+          { "name": "fade-in", "source": "tailwind.config.ts:80" },
+          { "name": "slide-in", "source": "tailwind.config.ts:84" },
+          { "name": "scale-in", "source": "tailwind.config.ts:88" }
+        ],
+        "animation_block": "tailwind.config.ts:94-98"
+      }
+    },
+    "components": {
+      "ui_dir": { "path": "src/components/ui", "count": 49, "sample": [
+        "accordion.tsx", "button.tsx", "card.tsx", "dialog.tsx", "dropdown-menu.tsx", "input.tsx", "label.tsx", "select.tsx", "separator.tsx", "switch.tsx", "table.tsx", "tabs.tsx", "textarea.tsx", "toast.tsx", "tooltip.tsx"
+      ] },
+      "top_used_imports": [
+        { "component": "button", "evidence": [
+          "src/pages/Settings.tsx:5", "src/pages/History.tsx:4", "src/components/ChatInterface.tsx:2"
+        ] },
+        { "component": "card", "evidence": [
+          "src/pages/Settings.tsx:3", "src/pages/Auth.tsx:6", "src/components/HelpDialog.tsx:11"
+        ] },
+        { "component": "tabs", "evidence": [
+          "src/pages/Auth.tsx:7", "src/pages/ClientProfile.tsx:8", "src/components/AdvancedAnalysis.tsx:4"
+        ] },
+        { "component": "badge", "evidence": [
+          "src/pages/SecurityMonitoring.tsx:4", "src/components/ChatInterface.tsx:5", "src/components/HelpDialog.tsx:12"
+        ] },
+        { "component": "input", "evidence": [
+          "src/pages/SecuritySettings.tsx:5", "src/pages/Clients.tsx:5", "src/components/ConversationSidebar.tsx:4"
+        ] },
+        { "component": "label", "evidence": [
+          "src/pages/SecuritySettings.tsx:6", "src/pages/Auth.tsx:5", "src/components/StructuredNoteForm.tsx:3"
+        ] },
+        { "component": "textarea", "evidence": [
+          "src/components/StructuredNoteForm.tsx:4", "src/components/ChatInterface.tsx:3", "src/components/EditMessageDialog.tsx:3"
+        ] },
+        { "component": "select", "evidence": [
+          "src/pages/Settings.tsx:6", "src/components/clients/ClientSelector.tsx:9", "src/components/FHIRExport.tsx:6"
+        ] },
+        { "component": "separator", "evidence": [
+          "src/pages/Settings.tsx:8", "src/components/ConversationSidebar.tsx:6", "src/components/HelpDialog.tsx:13"
+        ] },
+        { "component": "dialog", "evidence": [
+          "src/components/WelcomeGuide.tsx:9", "src/components/EditMessageDialog.tsx:2", "src/components/PrivacyFooter.tsx:9"
+        ] },
+        { "component": "alert-dialog", "evidence": [
+          "src/components/ConversationSidebar.tsx:22", "src/components/ui/alert-dialog.tsx:5"
+        ] },
+        { "component": "scroll-area", "evidence": [
+          "src/pages/History.tsx:10", "src/components/ConversationSidebar.tsx:5"
+        ] },
+        { "component": "skeleton", "evidence": [
+          "src/pages/ClientProfile.tsx:9", "src/components/LoadingSkeleton.tsx:1"
+        ] },
+        { "component": "tooltip", "evidence": [
+          "src/components/ChatInterface.tsx:6", "src/components/Part2Badge.tsx:3"
+        ] }
+      ]
+    },
+    "pages": [
+      "src/pages/Settings.tsx",
+      "src/pages/SecuritySettings.tsx",
+      "src/pages/SecurityMonitoring.tsx",
+      "src/pages/NotFound.tsx",
+      "src/pages/Index.tsx",
+      "src/pages/History.tsx",
+      "src/pages/Clients.tsx",
+      "src/pages/ClientProfile.tsx",
+      "src/pages/Auth.tsx",
+      "src/pages/AdminPage.tsx"
+    ],
+    "paths_scanned": [
+      "src/index.css:1-100 (design tokens in :root and .dark)",
+      "tailwind.config.ts:1-110 (container, colors, radii, keyframes/animation)",
+      "src/components/ui (49 files; shadcn/ui primitives)",
+      "src/pages (10 page shells)"
+    ]
+  }
+}

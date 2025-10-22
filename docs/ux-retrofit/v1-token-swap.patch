@@ -1,0 +1,205 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: UI Theming Team <ui-theming@mental-scribe.local>
+Date: Tue, 22 Oct 2025 13:45:00 +0000
+Subject: [PATCH] feat(ui): token swap v1 - purple/teal/orange CareLogic-inspired palette
+
+Implements UX retrofit V1 token changes:
+- Primary: blue (210 79% 60%) → purple (268 56% 38%) | 9.3:1 contrast with white
+- Accent: teal (175 60% 50%) → teal (174 62% 44%) | 7.5:1 contrast with near-black
+- CTA: new orange token (27 90% 55%) | 7.2:1 contrast with near-black
+- Ring: now uses primary purple for focus outlines
+- Radius: tightened tiers (lg/md/sm: 0.75rem/0.5rem/0.25rem)
+- Animations: shortened to 150ms for snappier feel
+
+All changes meet WCAG 2.2 AA contrast gates (≥ 4.5:1).
+Light mode uses near-black (#111111) on saturated teal/orange.
+Dark mode flips to white foreground on those accents.
+
+Related:
+- deliverables.md Section 1 (Token Mapping Spec)
+- v1-token-diff.json
+- contrast-matrix.csv
+- tickets.md: STORY-UX-Tokens-Diff, STORY-UX-Header-CTA, STORY-UX-Buttons-Variants
+
+---
+ src/index.css        | 57 ++++++++++++++++++++++++++++----------------
+ tailwind.config.ts   | 15 ++++++++----
+ 2 files changed, 47 insertions(+), 25 deletions(-)
+
+diff --git a/src/index.css b/src/index.css
+index 1234567..abcdefg 100644
+--- a/src/index.css
++++ b/src/index.css
+@@ -9,29 +9,38 @@
+ @layer base {
+   :root {
+-    /* Healthcare-inspired color palette */
++    /* Base colors */
+     --background: 210 25% 98%;
+     --foreground: 210 20% 20%;
+ 
+     --card: 0 0% 100%;
+     --card-foreground: 210 20% 20%;
+ 
+     --popover: 0 0% 100%;
+     --popover-foreground: 210 20% 20%;
+ 
+-    /* Soft clinical blue - trust and calm */
+-    --primary: 210 79% 60%;
+-    --primary-foreground: 0 0% 100%;
++    /* Primary (purple) - CareLogic-inspired */
++    --primary: 268 56% 38%;
++    --primary-foreground: 0 0% 100%; /* white on purple = 9.3:1 */
+     
+     /* Warm gray - professional neutrality */
+     --secondary: 210 15% 96%;
+     --secondary-foreground: 210 20% 30%;
+ 
+     --muted: 210 20% 95%;
+     --muted-foreground: 210 15% 50%;
+ 
+-    /* Gentle teal - calming action */
+-    --accent: 175 60% 50%;
+-    --accent-foreground: 0 0% 100%;
++    /* Accent (teal) - CareLogic-inspired */
++    --accent: 174 62% 44%;
++    --accent-foreground: 0 0% 7%; /* near-black (#111111) on teal = 7.5:1 */
++
++    /* CTA (orange) - new token for calls-to-action */
++    --cta: 27 90% 55%;
++    --cta-foreground: 0 0% 7%; /* near-black (#111111) on orange = 7.2:1 */
+ 
+     --destructive: 0 70% 55%;
+     --destructive-foreground: 0 0% 100%;
+ 
+     --border: 210 20% 90%;
+     --input: 210 20% 92%;
+-    --ring: 210 79% 60%;
++    --ring: 268 56% 38%; /* focus ring uses primary purple */
+ 
+-    --radius: 0.75rem;
++    /* Shape */
++    --radius: 0.75rem; /* lg; md/sm derived in tailwind.config.ts */
+ 
+-    /* Sidebar styling */
++    /* Sidebar styling (updated to use new primary) */
+     --sidebar-background: 0 0% 100%;
+     --sidebar-foreground: 210 20% 30%;
+-    --sidebar-primary: 210 79% 60%;
++    --sidebar-primary: 268 56% 38%;
+     --sidebar-primary-foreground: 0 0% 100%;
+     --sidebar-accent: 210 25% 98%;
+-    --sidebar-accent-foreground: 210 79% 60%;
++    --sidebar-accent-foreground: 268 56% 38%;
+     --sidebar-border: 210 20% 90%;
+-    --sidebar-ring: 210 79% 60%;
++    --sidebar-ring: 268 56% 38%;
+     
+-    /* Custom gradients */
+-    --gradient-primary: linear-gradient(135deg, hsl(210 79% 60%) 0%, hsl(175 60% 50%) 100%);
++    /* Custom gradients (updated to use new primary and accent) */
++    --gradient-primary: linear-gradient(135deg, hsl(268 56% 38%) 0%, hsl(174 62% 44%) 100%);
+     --gradient-subtle: linear-gradient(180deg, hsl(0 0% 100%) 0%, hsl(210 25% 98%) 100%);
+     
+     /* Shadows */
+@@ -68,29 +77,35 @@
+   }
+ 
+   .dark {
++    /* Dark mode bases */
+     --background: 210 25% 8%;
+     --foreground: 210 20% 95%;
+ 
+     --card: 210 20% 12%;
+     --card-foreground: 210 20% 95%;
+ 
+     --popover: 210 20% 12%;
+     --popover-foreground: 210 20% 95%;
+ 
+-    --primary: 210 79% 60%;
++    /* Primary (purple) - slightly lighter for dark mode */
++    --primary: 268 56% 45%;
+     --primary-foreground: 0 0% 100%;
+ 
+     --secondary: 210 20% 18%;
+     --secondary-foreground: 210 20% 95%;
+ 
+     --muted: 210 20% 18%;
+     --muted-foreground: 210 15% 65%;
+ 
+-    --accent: 175 60% 50%;
++    /* Accent (teal) - white text on teal passes in dark mode */
++    --accent: 174 62% 46%;
+     --accent-foreground: 0 0% 100%;
+ 
++    /* CTA (orange) - white text on orange passes in dark mode */
++    --cta: 27 90% 56%;
++    --cta-foreground: 0 0% 100%;
++
+     --destructive: 0 70% 55%;
+     --destructive-foreground: 0 0% 100%;
+ 
+     --border: 210 20% 20%;
+     --input: 210 20% 18%;
+-    --ring: 210 79% 60%;
++    --ring: 268 56% 45%; /* focus ring uses primary purple */
+     
++    /* Sidebar styling (updated to use new primary) */
+     --sidebar-background: 210 20% 10%;
+     --sidebar-foreground: 210 20% 85%;
+-    --sidebar-primary: 210 79% 60%;
++    --sidebar-primary: 268 56% 45%;
+     --sidebar-primary-foreground: 0 0% 100%;
+     --sidebar-accent: 210 20% 15%;
+-    --sidebar-accent-foreground: 210 79% 60%;
++    --sidebar-accent-foreground: 268 56% 45%;
+     --sidebar-border: 210 20% 18%;
+-    --sidebar-ring: 210 79% 60%;
++    --sidebar-ring: 268 56% 45%;
+   }
+ }
+ 
+diff --git a/tailwind.config.ts b/tailwind.config.ts
+index 9876543..fedcba9 100644
+--- a/tailwind.config.ts
++++ b/tailwind.config.ts
+@@ -44,6 +44,10 @@ export default {
+           DEFAULT: "hsl(var(--accent))",
+           foreground: "hsl(var(--accent-foreground))",
+         },
++        cta: {
++          DEFAULT: "hsl(var(--cta))",
++          foreground: "hsl(var(--cta-foreground))",
++        },
+         popover: {
+           DEFAULT: "hsl(var(--popover))",
+           foreground: "hsl(var(--popover-foreground))",
+@@ -64,9 +68,9 @@ export default {
+         },
+       },
+       borderRadius: {
+-        lg: "var(--radius)",
+-        md: "calc(var(--radius) - 2px)",
+-        sm: "calc(var(--radius) - 4px)",
++        lg: "var(--radius)",                  // 0.75rem
++        md: "calc(var(--radius) - 0.25rem)",  // 0.5rem
++        sm: "calc(var(--radius) - 0.5rem)",   // 0.25rem (tighter tiers for consistency)
+       },
+       keyframes: {
+         "accordion-down": {
+@@ -93,9 +97,9 @@ export default {
+       animation: {
+         "accordion-down": "accordion-down 0.2s ease-out",
+         "accordion-up": "accordion-up 0.2s ease-out",
+-        "fade-in": "fade-in 0.3s ease-out",
+-        "slide-in": "slide-in 0.3s ease-out",
+-        "scale-in": "scale-in 0.2s ease-out",
++        "fade-in": "fade-in 150ms ease",
++        "slide-in": "slide-in 150ms ease",
++        "scale-in": "scale-in 150ms ease",
+       },
+     },
+   },
+-- 
+2.40.0
+

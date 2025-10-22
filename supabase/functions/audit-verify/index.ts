@@ -1,6 +1,13 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { corsHeaders } from '../_shared/cors.ts'
+import { Counter, Histogram, Gauge, startTimer } from '../_shared/metrics.ts'
+
+// Metrics
+const verifyRequestsTotal = new Counter('audit_verify_requests_total', 'Total audit verification requests')
+const verifyDuration = new Histogram('audit_verify_duration_seconds', 'Audit verification request duration', [0.1, 0.5, 1, 2, 5, 10, 30])
+const chainIntegrityStatus = new Gauge('audit_chain_integrity', 'Audit chain integrity status (1=intact, 0=broken)')
+const entriesVerified = new Gauge('audit_entries_verified', 'Number of audit entries verified in last check')
 
 interface AuditEntry {
   id: number
@@ -63,6 +70,8 @@ async function computeHash(
 }
 
 serve(async (req) => {
+  const timer = startTimer()
+  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -79,6 +88,7 @@ serve(async (req) => {
     // Get authorization header
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
+      verifyRequestsTotal.inc({ status: 'unauthorized', error: 'missing_auth' })
       throw new Error('Missing authorization header')
     }
 
@@ -87,6 +97,7 @@ serve(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token)
     
     if (authError || !user) {
+      verifyRequestsTotal.inc({ status: 'unauthorized', error: 'invalid_token' })
       throw new Error('Unauthorized')
     }
 
@@ -98,6 +109,7 @@ serve(async (req) => {
       .single()
 
     if (userError || userData?.role !== 'admin') {
+      verifyRequestsTotal.inc({ status: 'forbidden', error: 'not_admin' })
       throw new Error('Insufficient permissions. Admin role required.')
     }
 
@@ -133,6 +145,11 @@ serve(async (req) => {
     for (const entry of entries as AuditEntry[]) {
       // Check if prev_hash matches expected
       if (entry.prev_hash !== prevHash) {
+        chainIntegrityStatus.set(0, { chain: 'audit' })
+        entriesVerified.set(verifiedCount, { chain: 'audit' })
+        verifyRequestsTotal.inc({ status: 'success', intact: 'false' })
+        verifyDuration.observe(timer(), { status: 'success' })
+        
         return new Response(
           JSON.stringify({
             intact: false,
@@ -166,6 +183,11 @@ serve(async (req) => {
 
       // Verify hash matches
       if (computedHash !== entry.hash) {
+        chainIntegrityStatus.set(0, { chain: 'audit' })
+        entriesVerified.set(verifiedCount, { chain: 'audit' })
+        verifyRequestsTotal.inc({ status: 'success', intact: 'false' })
+        verifyDuration.observe(timer(), { status: 'success' })
+        
         return new Response(
           JSON.stringify({
             intact: false,
@@ -190,6 +212,12 @@ serve(async (req) => {
     }
 
     // All entries verified successfully
+    const duration = timer()
+    verifyRequestsTotal.inc({ status: 'success', intact: 'true' })
+    verifyDuration.observe(duration, { status: 'success' })
+    chainIntegrityStatus.set(1, { chain: 'audit' })
+    entriesVerified.set(verifiedCount, { chain: 'audit' })
+    
     return new Response(
       JSON.stringify({
         intact: true,
@@ -206,12 +234,17 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error verifying audit chain:', error)
     
+    const duration = timer()
+    verifyRequestsTotal.inc({ status: 'error', intact: 'false' })
+    verifyDuration.observe(duration, { status: 'error' })
+    chainIntegrityStatus.set(0, { chain: 'audit' })
+    
     return new Response(
       JSON.stringify({
         intact: false,
         totalEntries: 0,
         verifiedEntries: 0,
-        error: error.message
+        error: error instanceof Error ? error.message : 'Unknown error'
       } as VerifyResult),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

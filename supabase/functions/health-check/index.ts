@@ -1,6 +1,12 @@
 /* eslint-env deno */
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { Counter, Histogram, startTimer } from '../_shared/metrics.ts';
+
+// Metrics
+const requestsTotal = new Counter('health_check_requests_total', 'Total health check requests');
+const requestDuration = new Histogram('health_check_duration_seconds', 'Health check request duration', [0.01, 0.05, 0.1, 0.5, 1, 2, 5]);
+const checkDuration = new Histogram('health_check_component_duration_seconds', 'Individual health check component duration', [0.01, 0.05, 0.1, 0.5, 1]);
 
 interface HealthCheckResult {
   status: 'healthy' | 'degraded' | 'unhealthy';
@@ -22,6 +28,7 @@ interface HealthCheckResponse {
 }
 
 serve(async (req) => {
+  const timer = startTimer();
   const startTime = Date.now();
   
   // Only allow GET requests
@@ -70,6 +77,10 @@ serve(async (req) => {
       checks
     };
     
+    // Record metrics
+    requestsTotal.inc({ status: overallStatus, method: req.method });
+    requestDuration.observe(timer(), { status: overallStatus });
+    
     return new Response(JSON.stringify(response, null, 2), {
       status: overallStatus === 'healthy' ? 200 : 503,
       headers: { 
@@ -80,6 +91,10 @@ serve(async (req) => {
     
   } catch (error) {
     console.error('Health check error:', error);
+    
+    // Record error metrics
+    requestsTotal.inc({ status: 'error', method: req.method });
+    requestDuration.observe(timer(), { status: 'error' });
     
     return new Response(JSON.stringify({
       status: 'unhealthy',
@@ -95,7 +110,7 @@ serve(async (req) => {
 });
 
 async function checkDatabase(supabase: SupabaseClient): Promise<HealthCheckResult> {
-  const startTime = Date.now();
+  const timer = startTimer();
   
   try {
     // Simple query to test database connectivity
@@ -106,27 +121,33 @@ async function checkDatabase(supabase: SupabaseClient): Promise<HealthCheckResul
     
     if (error) throw error;
     
-    const responseTime = Date.now() - startTime;
+    const responseTime = timer();
+    const status = responseTime < 0.1 ? 'healthy' : 'degraded';
+    
+    checkDuration.observe(responseTime, { component: 'database', status });
     
     return {
-      status: responseTime < 100 ? 'healthy' : 'degraded',
-      responseTime,
+      status,
+      responseTime: responseTime * 1000, // convert to ms for response
       details: {
-        queryTime: responseTime,
+        queryTime: responseTime * 1000,
         responsive: true
       }
     };
   } catch (error) {
+    const responseTime = timer();
+    checkDuration.observe(responseTime, { component: 'database', status: 'unhealthy' });
+    
     return {
       status: 'unhealthy',
-      responseTime: Date.now() - startTime,
+      responseTime: responseTime * 1000,
       error: error instanceof Error ? error.message : 'Database check failed'
     };
   }
 }
 
 async function checkAuth(supabase: SupabaseClient): Promise<HealthCheckResult> {
-  const startTime = Date.now();
+  const timer = startTimer();
   
   try {
     // Check if auth service is responding
@@ -134,26 +155,32 @@ async function checkAuth(supabase: SupabaseClient): Promise<HealthCheckResult> {
     
     if (error) throw error;
     
-    const responseTime = Date.now() - startTime;
+    const responseTime = timer();
+    const status = responseTime < 0.2 ? 'healthy' : 'degraded';
+    
+    checkDuration.observe(responseTime, { component: 'auth', status });
     
     return {
-      status: responseTime < 200 ? 'healthy' : 'degraded',
-      responseTime,
+      status,
+      responseTime: responseTime * 1000,
       details: {
         responsive: true
       }
     };
   } catch (error) {
+    const responseTime = timer();
+    checkDuration.observe(responseTime, { component: 'auth', status: 'unhealthy' });
+    
     return {
       status: 'unhealthy',
-      responseTime: Date.now() - startTime,
+      responseTime: responseTime * 1000,
       error: error instanceof Error ? error.message : 'Auth check failed'
     };
   }
 }
 
 async function checkStorage(supabase: SupabaseClient): Promise<HealthCheckResult> {
-  const startTime = Date.now();
+  const timer = startTimer();
   
   try {
     // Check if storage service is responding
@@ -161,20 +188,26 @@ async function checkStorage(supabase: SupabaseClient): Promise<HealthCheckResult
     
     if (error) throw error;
     
-    const responseTime = Date.now() - startTime;
+    const responseTime = timer();
+    const status = responseTime < 0.2 ? 'healthy' : 'degraded';
+    
+    checkDuration.observe(responseTime, { component: 'storage', status });
     
     return {
-      status: responseTime < 200 ? 'healthy' : 'degraded',
-      responseTime,
+      status,
+      responseTime: responseTime * 1000,
       details: {
         bucketCount: data?.length || 0,
         responsive: true
       }
     };
   } catch (error) {
+    const responseTime = timer();
+    checkDuration.observe(responseTime, { component: 'storage', status: 'unhealthy' });
+    
     return {
       status: 'unhealthy',
-      responseTime: Date.now() - startTime,
+      responseTime: responseTime * 1000,
       error: error instanceof Error ? error.message : 'Storage check failed'
     };
   }

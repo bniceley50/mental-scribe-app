@@ -912,7 +912,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
 
           {/* Part 2 Classification Checkbox */}
           {!conversationId && (
-            <div className="flex items-center gap-3 p-3 rounded-lg border border-purple-500/20 bg-purple-500/5">
+            <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
               <Checkbox 
                 id="part2-protected"
                 checked={isPart2Protected}
@@ -923,7 +923,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
                 htmlFor="part2-protected"
                 className="text-sm font-medium cursor-pointer flex items-center gap-2"
               >
-                <Shield className="w-4 h-4 text-purple-600" />
+                <Shield className="w-4 h-4 text-primary" />
                 This session involves substance use disorder treatment (42 CFR Part 2)
               </Label>
             </div>

@@ -23,19 +23,7 @@ export default defineConfig(({ mode }) => ({
           ? 'http://localhost:5174/assets/remoteEntry.js'
           : '/admin/assets/remoteEntry.js'
       },
-      shared: {
-        react: {
-          singleton: true,
-          requiredVersion: '^18.3.1',
-        },
-        'react-dom': {
-          singleton: true,
-          requiredVersion: '^18.3.1',
-        },
-        '@supabase/supabase-js': {
-          singleton: true,
-        },
-      },
+      shared: ['react', 'react-dom', '@supabase/supabase-js'],
     })
   ].filter(Boolean),
   resolve: {

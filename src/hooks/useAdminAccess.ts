@@ -1,16 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-
-interface User {
-  id: string;
-  email?: string;
-  user_metadata?: {
-    role?: string;
-  };
-  app_metadata?: {
-    role?: string;
-  };
-}
+import type { User } from '@supabase/supabase-js';
 
 /**
  * Hook to check if current user has admin access
@@ -55,14 +45,18 @@ export function useAdminAccess() {
 
       setUser(user);
 
-      // Check role from user metadata or app metadata
-      const role =
-        user.user_metadata?.role ||
-        user.app_metadata?.role ||
-        'user';
+      // Check role from user_roles table using RLS-safe function
+      const { data: hasRole, error: roleError } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _role: 'admin'
+      });
 
-      const hasAdminAccess = role === 'admin' || role === 'superadmin';
-      setIsAdmin(hasAdminAccess);
+      if (roleError) {
+        console.error('Failed to check role:', roleError);
+        setIsAdmin(false);
+      } else {
+        setIsAdmin(hasRole || false);
+      }
     } catch (error) {
       console.error('Failed to check admin access:', error);
       setIsAdmin(false);

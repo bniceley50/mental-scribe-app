@@ -14,19 +14,7 @@ export default defineConfig({
         './UserManagement': './src/components/UserManagement.tsx',
         './RLSPolicyViewer': './src/components/RLSPolicyViewer.tsx',
       },
-      shared: {
-        react: {
-          singleton: true,
-          requiredVersion: '^18.3.1',
-        },
-        'react-dom': {
-          singleton: true,
-          requiredVersion: '^18.3.1',
-        },
-        '@supabase/supabase-js': {
-          singleton: true,
-        },
-      },
+      shared: ['react', 'react-dom', '@supabase/supabase-js'],
     }),
   ],
   build: {

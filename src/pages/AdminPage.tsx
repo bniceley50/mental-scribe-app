@@ -6,8 +6,8 @@ import { useAdminAccess } from '@/hooks/useAdminAccess';
 const AdminApp = lazy(() =>
   import('admin/AdminApp').catch(() => {
     console.error('Failed to load admin module');
-    return { default: () => <div>Failed to load admin panel</div> };
-  })
+    return { default: () => <div>Failed to load admin panel</div> } as any;
+  }) as Promise<{ default: React.ComponentType<any> }>
 );
 
 export default function AdminPage() {

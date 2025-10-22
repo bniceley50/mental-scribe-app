@@ -4,7 +4,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@mscribe/scheduler": ["./packages/scheduler/src/index.ts"],
+      "@mscribe/scheduler/*": ["./packages/scheduler/src/*"]
     },
     "noImplicitAny": false,
     "noUnusedParameters": false,

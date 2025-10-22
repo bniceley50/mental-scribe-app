@@ -1,0 +1,26 @@
+{
+  "name": "@mscribe/scheduler",
+  "version": "1.0.0",
+  "description": "Scheduled job orchestration system for Mental Scribe",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src --ext .ts",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": ["scheduler", "cron", "jobs", "ops"],
+  "author": "Mental Scribe Team",
+  "license": "MIT",
+  "dependencies": {
+    "cron-parser": "^4.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.16.5",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

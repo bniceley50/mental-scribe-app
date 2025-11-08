@@ -1,18 +1,12 @@
-import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 describe('logger sinks', () => {
-  const originalEnv = import.meta.env;
-  
   beforeEach(() => {
     vi.resetModules();
     (global as any).fetch = vi.fn(() => Promise.resolve({ ok: true })) as any;
   });
-  
-  afterAll(() => {
-    (import.meta as any).env = originalEnv;
-  });
 
-  it('http sink posts events when configured', async () => {
+  it('http sink posts events (info+)', async () => {
     (import.meta as any).env = { 
       VITE_LOG_POST_URL: 'https://example.local/log', 
       MODE: 'test', 
@@ -30,6 +24,17 @@ describe('logger sinks', () => {
     const body = JSON.parse(fetchMock.mock.calls[0][1].body);
     expect(body.msg).toBe('hello');
     expect(JSON.stringify(body)).not.toContain('a@b.com'); // redacted
+  });
+
+  it('sentry sink is a no-op when SDK not installed', async () => {
+    (import.meta as any).env = { 
+      VITE_SENTRY_DSN: 'https://key@o123.ingest.sentry.io/456', 
+      MODE: 'test', 
+      VITE_LOG_LEVEL: 'debug' 
+    };
+    
+    const { logger } = await import('..');
+    expect(() => logger.error('boom', new Error('test'))).not.toThrow();
   });
 
   it('redacts PII patterns in context', async () => {

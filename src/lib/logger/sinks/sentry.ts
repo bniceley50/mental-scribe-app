@@ -1,46 +1,44 @@
 import type { LogEvent, LogSink } from '../types';
 
-const DSN = import.meta.env.VITE_SENTRY_DSN as string | undefined;
+const DSN = (import.meta as any).env?.VITE_SENTRY_DSN as string | undefined;
 
 /**
- * Sentry sink for error tracking (optional)
- * Requires manual installation: pnpm add @sentry/react
- * Configure via VITE_SENTRY_DSN env var
+ * Optional Sentry sink.
+ * - No top-level import of @sentry/react
+ * - Runtime dynamic import guarded with vite-ignore so Vite doesn't resolve it.
  */
 export const sentrySink = (): LogSink | null => {
-  // Return null if DSN not configured - no Sentry needed
   if (!DSN) return null;
-  
-  let sentryLoaded = false;
+
+  let inited = false;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let Sentry: any = null;
+  let SentryMod: any | null = null;
 
   async function ensureInit() {
-    if (sentryLoaded) return;
+    if (inited) return SentryMod;
+    inited = true;
+
+    // IMPORTANT: do not let Vite/Rollup touch this at build time.
+    // If the SDK isn't installed, this resolves to null.
     try {
-      // Only attempt dynamic import at runtime when emit is called
-      // Prevent Vite/Rollup from resolving this at build time
-      // @ts-expect-error - Optional peer dependency, ignored at build
-      const mod = await import(/* @vite-ignore */ '@sentry/react').catch(() => null);
-      if (!mod) return;
-      Sentry = mod;
-      Sentry.init({
-        dsn: DSN,
-        tracesSampleRate: 0.0
-      });
-      sentryLoaded = true;
+      // @ts-expect-error - Optional peer dependency
+      SentryMod = await import(/* @vite-ignore */ '@sentry/react');
+      if (SentryMod?.init) {
+        SentryMod.init({ dsn: DSN, tracesSampleRate: 0.0 });
+      }
     } catch {
-      // Sentry not available
+      SentryMod = null;
     }
+    return SentryMod;
   }
 
   return {
     name: 'sentry',
     minLevel: 'error',
     emit: async (e: LogEvent) => {
-      await ensureInit();
-      if (!Sentry) return;
-      Sentry.captureMessage(e.msg, {
+      const S = await ensureInit();
+      if (!S?.captureMessage) return; // no-op if SDK missing
+      S.captureMessage(e.msg, {
         level: 'error',
         extra: { ...e.ctx, sessionId: e.sessionId, route: e.route, ts: e.ts }
       });

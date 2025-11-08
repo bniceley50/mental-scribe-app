@@ -19,19 +19,16 @@ export const sentrySink = (): LogSink | null => {
     if (sentryLoaded) return;
     try {
       // Only attempt dynamic import at runtime when emit is called
-      // This prevents Vite from trying to resolve @sentry/react at build time
-      // @ts-expect-error - Optional peer dependency
-      Sentry = await import('@sentry/react').then(mod => {
-        mod.init({
-          dsn: DSN,
-          tracesSampleRate: 0.0
-        });
-        sentryLoaded = true;
-        return mod;
-      }).catch(() => {
-        console.warn('[@logger] Sentry SDK not installed. Run: pnpm add @sentry/react');
-        return null;
+      // Prevent Vite/Rollup from resolving this at build time
+      // @ts-expect-error - Optional peer dependency, ignored at build
+      const mod = await import(/* @vite-ignore */ '@sentry/react').catch(() => null);
+      if (!mod) return;
+      Sentry = mod;
+      Sentry.init({
+        dsn: DSN,
+        tracesSampleRate: 0.0
       });
+      sentryLoaded = true;
     } catch {
       // Sentry not available
     }

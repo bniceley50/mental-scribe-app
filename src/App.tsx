@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { LoggerProvider } from "@/lib/logger/LoggerProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import History from "./pages/History";
@@ -25,7 +26,8 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
+          <LoggerProvider>
+            <Routes>
             {/* Public routes */}
             <Route path="/auth" element={<Auth />} />
             
@@ -41,6 +43,7 @@ const App = () => (
             {/* 404 - Public */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </LoggerProvider>
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>

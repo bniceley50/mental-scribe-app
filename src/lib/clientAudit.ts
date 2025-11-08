@@ -7,6 +7,7 @@
  */
 
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "./logger";
 
 /**
  * Access method types for client view logging
@@ -43,16 +44,16 @@ export async function logClientView(
 
     if (error) {
       // Log error but don't block UI - auditing is non-blocking
-      console.error('Failed to log client view:', error);
+      logger.error('Failed to log client view', error, { clientId });
       
       // TODO: Send to error tracking service (Sentry, etc.)
       return;
     }
 
-    console.debug(`Client view logged: ${clientId}`);
+    logger.debug(`Client view logged: ${clientId}`);
   } catch (err) {
     // Catch any unexpected errors to ensure UI is never blocked
-    console.error('Unexpected error in logClientView:', err);
+    logger.error('Unexpected error in logClientView', err, { clientId });
     // TODO: Send to error tracking service
   }
 }
@@ -97,7 +98,7 @@ export async function batchLogClientViews(
   // Aggregate failures for monitoring
   const failures = results.filter(r => r.status === 'rejected');
   if (failures.length > 0) {
-    console.error(`Batch audit logging: ${failures.length}/${clientIds.length} failed`);
+    logger.error(`Batch audit logging: ${failures.length}/${clientIds.length} failed`);
     // TODO: Send aggregated failure metrics to monitoring service
   }
 }
@@ -122,6 +123,6 @@ export function useClientViewLogger(clientId: string | undefined): void {
   
   // Fire and forget - don't block component rendering
   logClientView(clientId).catch(err => {
-    console.error('Client view logging failed:', err);
+    logger.error('Client view logging failed', err, { clientId });
   });
 }

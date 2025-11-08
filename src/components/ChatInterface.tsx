@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Send, FileText, Sparkles, Clock, Paperclip, StopCircle, Download, Copy, Trash2, BookTemplate, Save, Table, Shield } from "lucide-react";
 import { toast as showToast } from "sonner";
 import { cn } from "@/lib/utils";
+import { logger } from "@/lib/logger";
 import { useMessages, Message as DBMessage } from "@/hooks/useMessages";
 import { useConversations } from "@/hooks/useConversations";
 import { FileDropZone } from "./FileDropZone";
@@ -280,7 +281,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
           });
         },
         onError: (error) => {
-          console.error("Streaming error:", error);
+          logger.error("Streaming error", new Error(error), { conversationId, action: lastAction });
           
           // Dismiss streaming toast
           showToast.dismiss("streaming-toast");
@@ -323,7 +324,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         // The onError callback will handle cleanup
       });
     } catch (error: any) {
-      console.error("Error during analysis:", error);
+      logger.error("Error during analysis", error, { conversationId });
       showToast.error("Failed to analyze notes");
       
       // Remove the temporary streaming message
@@ -406,7 +407,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
           showToast.success("Edit applied successfully!");
         },
         onError: (error) => {
-          console.error("Edit error:", error);
+          logger.error("Edit error", new Error(error), { messageId: editingMessage.id });
           showToast.error(error);
           
           setDisplayMessages((prev) =>
@@ -417,7 +418,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         },
       });
     } catch (error) {
-      console.error("Error applying edit:", error);
+      logger.error("Error applying edit", error as Error);
       showToast.error("Failed to apply edit");
       setLoading(false);
     }
@@ -489,7 +490,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         setShowFileUpload(false);
       }
     } catch (error: any) {
-      console.error("Error processing file:", error);
+      logger.error("Error processing file", error, { fileName: file.name });
       showToast.error(error.message || "Failed to process file");
     }
   };

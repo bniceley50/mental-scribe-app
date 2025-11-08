@@ -1,3 +1,5 @@
+import { logger } from "./logger";
+
 /**
  * Password security utilities using Have I Been Pwned (HIBP) API
  * Implements k-Anonymity model for privacy-safe password breach checking
@@ -32,7 +34,9 @@ export async function isPasswordLeaked(password: string): Promise<boolean> {
     
     if (!response.ok) {
       // SECURITY FIX: Fail closed - if API is down, require different password
-      console.error('HIBP API unavailable, failing closed for security');
+      logger.error('HIBP API unavailable, failing closed for security', undefined, {
+        status: response.status,
+      });
       return true; // Treat as leaked to prevent potentially compromised passwords
     }
     
@@ -46,7 +50,7 @@ export async function isPasswordLeaked(password: string): Promise<boolean> {
     });
   } catch (error) {
     // SECURITY FIX: Fail closed on errors - better to block signup than allow leaked password
-    console.error('Password leak check failed:', error);
+    logger.error('Password leak check failed', error);
     return true; // Treat as leaked to force user to try different password
   }
 }

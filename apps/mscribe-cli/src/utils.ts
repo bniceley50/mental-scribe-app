@@ -5,6 +5,21 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 /**
+ * Simple logger for CLI operations
+ * Note: This is a minimal implementation for Node.js CLI
+ */
+const cliLogger = {
+  error: (message: string, error?: unknown) => {
+    // eslint-disable-next-line no-console
+    console.error(`❌ Error: ${message}`, error || '');
+  },
+  info: (message: string) => {
+    // eslint-disable-next-line no-console
+    console.log(`ℹ️  ${message}`);
+  },
+};
+
+/**
  * Initialize Supabase client for CLI operations
  */
 export function getSupabaseClient(): SupabaseClient {
@@ -56,6 +71,6 @@ export function formatDuration(ms: number): string {
  * Exit with error message
  */
 export function exitWithError(message: string, code = 1): never {
-  console.error(`❌ Error: ${message}`);
+  cliLogger.error(message);
   process.exit(code);
 }

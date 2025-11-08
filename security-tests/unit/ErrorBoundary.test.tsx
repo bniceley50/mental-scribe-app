@@ -1,6 +1,17 @@
 import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import { render } from '@testing-library/react';
-import { ErrorBoundary } from '../ErrorBoundary';
+import { ErrorBoundary } from '../../src/components/ErrorBoundary';
+import * as loggerModule from '../../src/lib/logger';
+
+// Mock the logger
+vi.mock('../../src/lib/logger', () => ({
+  logger: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
 
 // Component that throws an error
 const ThrowError = ({ shouldThrow }: { shouldThrow: boolean }) => {
@@ -11,7 +22,7 @@ const ThrowError = ({ shouldThrow }: { shouldThrow: boolean }) => {
 };
 
 describe('ErrorBoundary', () => {
-  // Suppress console.error for these tests
+  // Suppress console.error for these tests (React still logs to console)
   const originalError = console.error;
   beforeAll(() => {
     console.error = vi.fn();

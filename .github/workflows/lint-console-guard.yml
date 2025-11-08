@@ -44,5 +44,5 @@ jobs:
             echo "✅ No stray console calls found"
           fi
       
-      - name: Run tests
+      - name: Run tests (includes logger sinks)
         run: pnpm test --run

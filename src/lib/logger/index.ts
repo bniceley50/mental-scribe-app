@@ -2,7 +2,6 @@
 import { redactCtx } from './redact';
 import { consoleSink } from './sinks/console';
 import { httpSink } from './sinks/http';
-import { sentrySink } from './sinks/sentry';
 import { Context, Level, LogEvent, LogSink, levelRank } from './types';
 
 const MODE = import.meta.env.MODE ?? 'development';
@@ -10,14 +9,28 @@ const ENV_LEVEL = (import.meta.env.VITE_LOG_LEVEL as Level | undefined) ?? (MODE
 
 const sinks: LogSink[] = [];
 
-function registerDefaults() {
+async function registerDefaults() {
   // Always have a console sink; pretty in dev, JSON in prod
   sinks.push(consoleSink(MODE === 'development'));
-  const h = httpSink(); if (h) sinks.push(h);
-  const s = sentrySink(); if (s) sinks.push(s);
+  
+  // Optional HTTP sink
+  const h = httpSink(); 
+  if (h) sinks.push(h);
+  
+  // Optional Sentry sink (lazy-loaded only if DSN configured)
+  if (import.meta.env.VITE_SENTRY_DSN) {
+    try {
+      const { sentrySink } = await import('./sinks/sentry');
+      const s = sentrySink();
+      if (s) sinks.push(s);
+    } catch (err) {
+      console.warn('[@logger] Failed to load Sentry sink:', err);
+    }
+  }
 }
 
-registerDefaults();
+// Initialize sinks asynchronously
+void registerDefaults();
 
 function emitAll(e: LogEvent) {
   const min = levelRank[ENV_LEVEL];

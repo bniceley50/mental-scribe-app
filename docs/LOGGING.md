@@ -109,15 +109,34 @@ VITE_LOG_POST_AUTH=Bearer abc123
 - Fire-and-forget with 2.5s timeout
 - Uses `keepalive` for reliability
 
-### Sentry Sink (optional)
-Configure via env var:
-```env
-VITE_SENTRY_DSN=https://<key>@oXXXX.ingest.sentry.io/XXXX
+### Sentry Sink (optional, off by default)
+
+Sentry is **optional**. It's only enabled when BOTH are true:
+1. `@sentry/react` is installed, and
+2. `VITE_SENTRY_DSN` is set.
+
+**Enable (only if you want Sentry):**
+```bash
+pnpm add @sentry/react
+# npm i @sentry/react   # or yarn add @sentry/react
 ```
 
-- Minimum level: `error`
-- Lazy-loads @sentry/react (no bundle weight in dev)
-- Includes session/route correlation in extras
+**Configure in .env:**
+```env
+VITE_SENTRY_DSN=https://<key>@oXXXX.ingest.sentry.io/XXXX
+# leave blank or remove to disable
+```
+
+**Notes:**
+- No DSN or missing package ⇒ sink no-ops (no bundle errors)
+- We never import `@sentry/react` statically; it's loaded at runtime only when enabled
+- **PHI/PII Warning**: Our logger redacts emails/phones by default. **Do not log patient data.**
+
+**Verify:**
+- With DSN set and package installed, trigger an error and you should see an event in Sentry
+- With DSN unset or package missing, app builds/runs clean; no Sentry traffic
+
+**⚠️ Important:** Do not import `@sentry/react` anywhere else. The logger handles loading it.
 
 ## Session Correlation
 

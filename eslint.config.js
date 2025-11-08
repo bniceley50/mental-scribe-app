@@ -21,7 +21,13 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
       "@typescript-eslint/no-unused-vars": "off",
-      "no-console": ["error", { allow: ["warn", "error"] }],
+      "no-console": ["error", { allow: [] }],
+    },
+  },
+  {
+    files: ["src/lib/logger.ts", "apps/**/src/**/logger.ts"],
+    rules: {
+      "no-console": "off",
     },
   },
 );

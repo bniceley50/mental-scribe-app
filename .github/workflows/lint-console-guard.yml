@@ -1,0 +1,48 @@
+name: Lint & Console Guard
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+
+jobs:
+  lint-and-guard:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Run ESLint
+        run: pnpm lint --max-warnings 0
+      
+      - name: Block stray console calls
+        run: |
+          set -e
+          echo "Scanning for console.* calls outside logger internals..."
+          
+          # Use grep to find console calls, excluding logger files
+          if grep -r -n --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" \
+            --exclude-dir=node_modules \
+            --exclude-dir=dist \
+            --exclude-dir=.git \
+            'console\.\(log\|error\|warn\|info\|debug\)' \
+            src/ apps/ | grep -v 'src/lib/logger'; then
+            echo "❌ Found direct console calls outside logger internals"
+            exit 1
+          else
+            echo "✅ No stray console calls found"
+          fi
+      
+      - name: Run tests
+        run: pnpm test --run

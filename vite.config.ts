@@ -11,6 +11,8 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
+  optimizeDeps: { exclude: ['@sentry/react'] },
+  ssr: { external: ['@sentry/react'] },
   plugins: [
     react(), 
     mode === "development" && componentTagger(),
@@ -37,6 +39,7 @@ export default defineConfig(({ mode }) => ({
     // Increase chunk size warning limit
     chunkSizeWarningLimit: 1000,
     rollupOptions: {
+      external: ['@sentry/react'],
       output: {
         // Manual chunk splitting for better caching
         manualChunks: {

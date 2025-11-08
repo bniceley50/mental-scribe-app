@@ -3,10 +3,12 @@ import type { LogEvent, LogSink } from '../types';
 const DSN = (import.meta as any).env?.VITE_SENTRY_DSN as string | undefined;
 
 /**
- * Optional Sentry sink.
- * - No top-level import of @sentry/react
- * - Runtime dynamic import guarded with vite-ignore so Vite doesn't resolve it.
+ * Indirect dynamic import so bundlers can't statically see the specifier.
+ * No top-level imports, no type imports from @sentry/react.
  */
+const dynImport = (id: string) =>
+  (Function('return import(arguments[0])') as any)(id) as Promise<any>;
+
 export const sentrySink = (): LogSink | null => {
   if (!DSN) return null;
 
@@ -18,13 +20,14 @@ export const sentrySink = (): LogSink | null => {
     if (inited) return SentryMod;
     inited = true;
 
-    // IMPORTANT: do not let Vite/Rollup touch this at build time.
-    // If the SDK isn't installed, this resolves to null.
+    // Dynamically import via indirection so bundlers cannot resolve at build time.
     try {
-      // @ts-expect-error - Optional peer dependency
-      SentryMod = await import(/* @vite-ignore */ '@sentry/react');
-      if (SentryMod?.init) {
-        SentryMod.init({ dsn: DSN, tracesSampleRate: 0.0 });
+      const mod = await dynImport('@sentry/react').catch(() => null);
+      if (mod?.init) {
+        mod.init({ dsn: DSN, tracesSampleRate: 0.0 });
+        SentryMod = mod;
+      } else {
+        SentryMod = null;
       }
     } catch {
       SentryMod = null;

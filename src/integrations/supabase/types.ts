@@ -985,6 +985,31 @@ export type Database = {
       }
     }
     Views: {
+      performance_index_usage: {
+        Row: {
+          index_name: unknown
+          scans: number | null
+          schemaname: unknown
+          size: string | null
+          table_name: unknown
+          tuples_fetched: number | null
+          tuples_read: number | null
+        }
+        Relationships: []
+      }
+      performance_table_bloat: {
+        Row: {
+          dead_tuples: number | null
+          last_autovacuum: string | null
+          last_vacuum: string | null
+          live_tuples: number | null
+          pct_dead: number | null
+          schemaname: unknown
+          table_name: unknown
+          total_size: string | null
+        }
+        Relationships: []
+      }
       user_sessions_safe: {
         Row: {
           created_at: string | null
@@ -1053,34 +1078,16 @@ export type Database = {
         }
         Returns: boolean
       }
-      cleanup_expired_sessions: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_old_failed_logins: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_old_password_history: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      cleanup_old_rate_limits: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      clear_failed_logins: {
-        Args: { _identifier: string }
-        Returns: undefined
-      }
+      cleanup_expired_sessions: { Args: never; Returns: undefined }
+      cleanup_old_failed_logins: { Args: never; Returns: undefined }
+      cleanup_old_password_history: { Args: never; Returns: undefined }
+      cleanup_old_rate_limits: { Args: never; Returns: undefined }
+      clear_failed_logins: { Args: { _identifier: string }; Returns: undefined }
       derive_classification: {
         Args: { _program_id: string }
         Returns: Database["public"]["Enums"]["data_classification"]
       }
-      generate_salt: {
-        Args: Record<PropertyKey, never>
-        Returns: string
-      }
+      generate_salt: { Args: never; Returns: string }
       get_suspicious_access_patterns: {
         Args: { _access_threshold?: number; _hours_lookback?: number }
         Returns: {
@@ -1106,10 +1113,7 @@ export type Database = {
         }
         Returns: boolean
       }
-      hash_external_id: {
-        Args: { raw_id: string }
-        Returns: string
-      }
+      hash_external_id: { Args: { raw_id: string }; Returns: string }
       hash_recovery_code: {
         Args: { code: string; salt: string }
         Returns: string
@@ -1146,10 +1150,7 @@ export type Database = {
         Args: { _email: string; _ip_address: string; _user_id: string }
         Returns: undefined
       }
-      sanitize_audit_metadata: {
-        Args: { meta: Json }
-        Returns: Json
-      }
+      sanitize_audit_metadata: { Args: { meta: Json }; Returns: Json }
       update_session_activity: {
         Args: { _session_token: string }
         Returns: undefined

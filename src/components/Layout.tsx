@@ -8,6 +8,7 @@ import { ConversationSidebar } from "./ConversationSidebar";
 import { PrivacyFooter } from "./PrivacyFooter";
 import { HelpDialog } from "./HelpDialog";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
+import { SecurityNotificationBell } from "./admin/SecurityNotificationBell";
 
 interface LayoutProps {
   children: ReactNode;
@@ -68,6 +69,7 @@ const Layout = ({ children, currentConversationId, onConversationSelect }: Layou
             <div data-onboarding="help-button">
               <HelpDialog />
             </div>
+            {isAdmin && <SecurityNotificationBell />}
             <Button
               variant="ghost"
               size="sm"

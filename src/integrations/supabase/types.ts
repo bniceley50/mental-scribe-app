@@ -25,9 +25,11 @@ export type Database = {
           ip_address: string | null
           metadata: Json | null
           part2_disclosure_purpose: string | null
+          pii_redacted: boolean | null
           prev_hash: string | null
           program_id: string | null
           purpose: string | null
+          redaction_count: number | null
           resource_id: string | null
           resource_type: string
           secret_version: number
@@ -44,9 +46,11 @@ export type Database = {
           ip_address?: string | null
           metadata?: Json | null
           part2_disclosure_purpose?: string | null
+          pii_redacted?: boolean | null
           prev_hash?: string | null
           program_id?: string | null
           purpose?: string | null
+          redaction_count?: number | null
           resource_id?: string | null
           resource_type: string
           secret_version?: number
@@ -63,9 +67,11 @@ export type Database = {
           ip_address?: string | null
           metadata?: Json | null
           part2_disclosure_purpose?: string | null
+          pii_redacted?: boolean | null
           prev_hash?: string | null
           program_id?: string | null
           purpose?: string | null
+          redaction_count?: number | null
           resource_id?: string | null
           resource_type?: string
           secret_version?: number
@@ -677,6 +683,8 @@ export type Database = {
       }
       recordings: {
         Row: {
+          chunks_completed: number | null
+          chunks_total: number | null
           client_id: string | null
           conversation_id: string | null
           created_at: string
@@ -686,13 +694,20 @@ export type Database = {
           file_size: number | null
           file_url: string
           id: string
+          processing_error: string | null
+          processing_status:
+            | Database["public"]["Enums"]["audio_processing_status"]
+            | null
           program_id: string | null
+          resume_token: string | null
           transcription_status: string | null
           transcription_text: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          chunks_completed?: number | null
+          chunks_total?: number | null
           client_id?: string | null
           conversation_id?: string | null
           created_at?: string
@@ -702,13 +717,20 @@ export type Database = {
           file_size?: number | null
           file_url: string
           id?: string
+          processing_error?: string | null
+          processing_status?:
+            | Database["public"]["Enums"]["audio_processing_status"]
+            | null
           program_id?: string | null
+          resume_token?: string | null
           transcription_status?: string | null
           transcription_text?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          chunks_completed?: number | null
+          chunks_total?: number | null
           client_id?: string | null
           conversation_id?: string | null
           created_at?: string
@@ -718,7 +740,12 @@ export type Database = {
           file_size?: number | null
           file_url?: string
           id?: string
+          processing_error?: string | null
+          processing_status?:
+            | Database["public"]["Enums"]["audio_processing_status"]
+            | null
           program_id?: string | null
+          resume_token?: string | null
           transcription_status?: string | null
           transcription_text?: string | null
           updated_at?: string
@@ -783,10 +810,12 @@ export type Database = {
           client_id: string | null
           client_perspective: string | null
           clinical_impression: string | null
+          content_json: Json | null
           conversation_id: string
           created_at: string
           current_status: string | null
           data_classification: Database["public"]["Enums"]["data_classification"]
+          differential_diagnosis: Json | null
           goals_progress: string | null
           id: string
           is_part2_protected: boolean
@@ -806,10 +835,12 @@ export type Database = {
           client_id?: string | null
           client_perspective?: string | null
           clinical_impression?: string | null
+          content_json?: Json | null
           conversation_id: string
           created_at?: string
           current_status?: string | null
           data_classification?: Database["public"]["Enums"]["data_classification"]
+          differential_diagnosis?: Json | null
           goals_progress?: string | null
           id?: string
           is_part2_protected?: boolean
@@ -829,10 +860,12 @@ export type Database = {
           client_id?: string | null
           client_perspective?: string | null
           clinical_impression?: string | null
+          content_json?: Json | null
           conversation_id?: string
           created_at?: string
           current_status?: string | null
           data_classification?: Database["public"]["Enums"]["data_classification"]
+          differential_diagnosis?: Json | null
           goals_progress?: string | null
           id?: string
           is_part2_protected?: boolean
@@ -871,6 +904,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tenant_quotas: {
+        Row: {
+          created_at: string
+          current_usage: number | null
+          id: string
+          limit_value: number
+          quota_type: string
+          reset_at: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_usage?: number | null
+          id?: string
+          limit_value: number
+          quota_type: string
+          reset_at?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_usage?: number | null
+          id?: string
+          limit_value?: number
+          quota_type?: string
+          reset_at?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       uploaded_files: {
         Row: {
@@ -1102,6 +1168,10 @@ export type Database = {
         Args: { _subject_external_id: string; _user_id: string }
         Returns: boolean
       }
+      check_and_increment_quota: {
+        Args: { _increment?: number; _quota_type: string; _user_id: string }
+        Returns: boolean
+      }
       check_password_history: {
         Args: {
           _history_limit?: number
@@ -1227,6 +1297,13 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "user"
+      audio_processing_status:
+        | "pending"
+        | "processing"
+        | "completed"
+        | "failed"
+        | "chunking"
+        | "assembling"
       consent_status: "active" | "revoked" | "expired"
       data_classification: "standard_phi" | "part2_protected"
       disclosure_purpose_type:
@@ -1373,6 +1450,14 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin", "user"],
+      audio_processing_status: [
+        "pending",
+        "processing",
+        "completed",
+        "failed",
+        "chunking",
+        "assembling",
+      ],
       consent_status: ["active", "revoked", "expired"],
       data_classification: ["standard_phi", "part2_protected"],
       disclosure_purpose_type: [

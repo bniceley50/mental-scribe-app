@@ -166,8 +166,34 @@ The incremental verifier only checks entries **after** the cursor position `(cre
 ### Clock Skew
 If server clocks are severely out of sync, `created_at` ordering may not match insertion order. This is acceptable for audit purposes as we care about the server's view of time.
 
-### Algorithm Migration
-New rows use v2 (delimited) hashing. Legacy rows continue to verify with v1 (non-delimited). Over time, as old rows age out or are archived, the chain becomes purely v2. There is no need to rehash historical data.
+## Algorithm Migration
+
+New rows use v2 (delimited) hashing with `secret_version=2`. Legacy rows continue to verify with v1 (non-delimited) using `secret_version=1`. Over time, as old rows age out or are archived, the chain becomes purely v2.
+
+**CRITICAL**: Never change existing rows' `secret_version` or `hash` values. The dual-algorithm verifier handles both transparently.
+
+### Secret Rotation Schedule
+
+```sql
+-- Current state:
+-- v1 (secret_version=1): Legacy rows, non-delimited concat
+-- v2 (secret_version=2): New rows (default), delimited concat_ws('|', ...)
+
+-- To add v3 in the future (e.g., algorithm change or rotation):
+INSERT INTO private.audit_secrets(version, secret) 
+VALUES (3, 'NEW-SECRET-HERE') ON CONFLICT DO NOTHING;
+
+ALTER TABLE public.audit_logs ALTER COLUMN secret_version SET DEFAULT 3;
+```
+
+### Backfill Limitations
+
+The incremental verifier only checks entries **after** the cursor position `(created_at, id)`. If you backfill old entries with `created_at < last_created_at`, they won't be verified incrementally.
+
+**Solutions**:
+- Run `SELECT verify_audit_chain(user_id)` for affected users
+- Delete the user's cursor to force full re-verification: `DELETE FROM audit_chain_cursor WHERE user_id = $1`
+- Wait for the weekly full scan (Sunday 03:00 UTC)
 
 ## Migration Impact
 

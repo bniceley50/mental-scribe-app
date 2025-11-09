@@ -6,7 +6,7 @@ const cors = makeCors();
 
 Deno.serve(cors.wrap(async (req) => {
   if (!["GET", "POST", "OPTIONS"].includes(req.method)) {
-    return cors.json({ ok: false, error: "Method Not Allowed" }, { status: 405 });
+    return new Response("Method Not Allowed", { status: 405 });
   }
 
   const supabase = createClient(
@@ -16,29 +16,32 @@ Deno.serve(cors.wrap(async (req) => {
   );
 
   // ---- Admin auth check ----
-  const authHeader = req.headers.get("authorization") ?? req.headers.get("Authorization");
-  if (!authHeader?.toLowerCase().startsWith("bearer ")) {
-    return cors.json({ ok: false, error: "Missing bearer token" }, { status: 401 });
+  const auth = req.headers.get("authorization") ?? req.headers.get("Authorization");
+  if (!auth?.toLowerCase().startsWith("bearer ")) {
+    return cors.json({ ok: false, error: "Missing bearer" }, { status: 401 });
   }
   
-  const token = authHeader.replace(/^Bearer\s+/i, "");
-  const { data: who, error: authErr } = await supabase.auth.getUser(token);
-  if (authErr || !who?.user?.id) {
+  const token = auth.replace(/^Bearer\s+/i, "");
+  const { data: who } = await supabase.auth.getUser(token);
+  if (!who?.user?.id) {
     return cors.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
   // Check admin role
-  const { data: isAdmin, error: roleErr } = await supabase.rpc("is_admin", {
-    uid: who.user.id
+  const { data: isAdmin, error: adminErr } = await supabase.rpc("is_admin", {
+    _user_id: who.user.id
   });
   
-  if (roleErr || !isAdmin) {
-    return cors.json({ ok: false, error: "Forbidden - admin role required" }, { status: 403 });
+  if (adminErr) {
+    return cors.json({ ok: false, error: adminErr.message }, { status: 500 });
+  }
+  if (!isAdmin) {
+    return cors.json({ ok: false, error: "Forbidden" }, { status: 403 });
   }
 
-  // Optional filter: ?user_id=... to verify a single user, or run all
-  const userId = new URL(req.url).searchParams.get("user_id");
-  let result;
+  // Optional filter: ?user_id=... to verify single user, or run all
+  const params = new URL(req.url).searchParams;
+  const userId = params.get("user_id");
 
   if (userId) {
     // Single user incremental verification
@@ -47,22 +50,18 @@ Deno.serve(cors.wrap(async (req) => {
     });
     
     if (error) {
-      console.error("Incremental verification error:", error);
       return cors.json({ ok: false, error: error.message }, { status: 500 });
     }
     
-    result = data;
+    return cors.json({ ok: true, result: data });
   } else {
     // Admin manual kick: run incremental for all users
     const { error } = await supabase.rpc("run_incremental_for_all_users");
     
     if (error) {
-      console.error("Bulk verification error:", error);
       return cors.json({ ok: false, error: error.message }, { status: 500 });
     }
     
-    result = { kicked: true };
+    return cors.json({ ok: true, kicked: true });
   }
-
-  return cors.json({ ok: true, result });
 }));

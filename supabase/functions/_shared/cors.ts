@@ -6,16 +6,18 @@
 
 export function makeCors(origin?: string) {
   // P0 FIX: Only allow production domains + localhost for dev
+  // Use CORS_ORIGIN env var for production domain control
+  const corsOrigin = Deno.env.get("CORS_ORIGIN") || "https://bmtzgeffbzmcwmnprxmx.supabase.co";
+  
   const allowedOrigins = [
-    "https://bmtzgeffbzmcwmnprxmx.supabase.co",  // Supabase project domain
+    corsOrigin,
     "http://localhost:8080",                      // Local dev
     "http://localhost:7997",                      // Preview server
     "http://localhost:4173",                      // Vite preview
-    // Add your production domains here
   ];
   
   const requestOrigin = origin || "*";
-  const isAllowed = allowedOrigins.includes(requestOrigin) || requestOrigin === "*";
+  const isAllowed = allowedOrigins.includes(requestOrigin);
   
   const base = {
     "Access-Control-Allow-Origin": isAllowed ? requestOrigin : allowedOrigins[0],

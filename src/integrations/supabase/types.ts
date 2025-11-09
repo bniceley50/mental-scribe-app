@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       audit_chain_cursor: {
         Row: {
+          last_created_at: string | null
           last_hash: string
           last_verified_id: string
           updated_at: string
@@ -23,6 +24,7 @@ export type Database = {
           verified_at: string
         }
         Insert: {
+          last_created_at?: string | null
           last_hash: string
           last_verified_id: string
           updated_at?: string
@@ -30,6 +32,7 @@ export type Database = {
           verified_at?: string
         }
         Update: {
+          last_created_at?: string | null
           last_hash?: string
           last_verified_id?: string
           updated_at?: string
@@ -1322,6 +1325,7 @@ export type Database = {
         Returns: undefined
       }
       refresh_mv_and_log: { Args: { _mv: string }; Returns: undefined }
+      run_incremental_for_all_users: { Args: never; Returns: undefined }
       sanitize_audit_metadata: { Args: { meta: Json }; Returns: Json }
       update_session_activity: {
         Args: { _session_token: string }

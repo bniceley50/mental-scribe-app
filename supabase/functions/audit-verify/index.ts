@@ -29,7 +29,7 @@ Deno.serve(cors.wrap(async (req) => {
 
   // P0 FIX: Check admin using dedicated is_admin() function (read-only membership check)
   const { data: isAdmin, error: roleErr } = await supabase.rpc("is_admin", {
-    _user_id: who.user.id
+    uid: who.user.id
   });
   
   if (roleErr || !isAdmin) {

@@ -10,6 +10,8 @@ import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
 import { AuditVerification } from "@/components/admin/AuditVerification";
+import { useBrokenAuditChainAlert } from "@/hooks/useBrokenAuditChainAlert";
+import { BrokenChainAlertBanner } from "@/components/admin/BrokenChainAlertBanner";
 
 interface VerifyResult {
   intact: boolean;
@@ -31,6 +33,7 @@ export default function AuditDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastChecked, setLastChecked] = useState<Date | null>(null);
+  const { brokenChain, dismiss } = useBrokenAuditChainAlert();
 
   useEffect(() => {
     if (!adminLoading && !isAdmin) {
@@ -112,7 +115,12 @@ export default function AuditDashboard() {
 
   return (
     <Layout>
-      <div className="container mx-auto py-8 px-4 max-w-6xl">
+      {/* Critical Alert Banner for Broken Chains */}
+      {brokenChain && (
+        <BrokenChainAlertBanner brokenChain={brokenChain} onDismiss={dismiss} />
+      )}
+      
+      <div className={`container mx-auto py-8 px-4 max-w-6xl ${brokenChain ? 'pt-32' : ''}`}>
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
             <Shield className="h-8 w-8" />

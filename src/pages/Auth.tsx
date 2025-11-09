@@ -138,11 +138,15 @@ const Auth = () => {
     setLoading(true);
 
     try {
+      // CRITICAL: Always include emailRedirectTo for proper authentication flow
+      const redirectUrl = `${window.location.origin}/`;
+      
       // Call secure-signup edge function with server-side HIBP enforcement
       const { data, error } = await supabase.functions.invoke('secure-signup', {
         body: {
           email: validation.data.email,
           password: validation.data.password,
+          emailRedirectTo: redirectUrl,
         },
       });
 

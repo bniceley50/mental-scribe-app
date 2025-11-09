@@ -2,17 +2,18 @@
 
 **PR**: [#8](https://github.com/bniceley50/mental-scribe-app/pull/8)  
 **Status**: ✅ **READY TO SHIP**  
-**Last Updated**: October 19, 2025
+**Last Updated**: October 19, 2025  
+**Organization Update**: November 9, 2025 - Consolidated to `docs/planning/`
 
 ---
 
 ## 🎯 Quick Start
 
-**Need to ship right now?** → See [`SHIP_PLAN.md`](SHIP_PLAN.md) (1-page quick reference)
+**Need to ship right now?** → See [`docs/planning/SHIP_PLAN.md`](docs/planning/SHIP_PLAN.md) (1-page quick reference)
 
-**Using Windows PowerShell?** → See [`WINDOWS_SHIP_CHECKLIST.md`](WINDOWS_SHIP_CHECKLIST.md) (PowerShell-native commands)
+**Using Windows PowerShell?** → See [`docs/planning/WINDOWS_SHIP_CHECKLIST.md`](docs/planning/WINDOWS_SHIP_CHECKLIST.md) (PowerShell-native commands)
 
-**Need templates for announcements?** → See [`RELEASE_NOTES_TEMPLATES.md`](RELEASE_NOTES_TEMPLATES.md) (7 ready-to-use templates)
+**Need templates for announcements?** → See [`docs/planning/RELEASE_NOTES_TEMPLATES.md`](docs/planning/RELEASE_NOTES_TEMPLATES.md) (7 ready-to-use templates)
 
 ---
 
@@ -22,11 +23,11 @@
 
 | Document | Purpose | Length | Audience | Best For |
 |----------|---------|--------|----------|----------|
-| **[SHIP_PLAN.md](SHIP_PLAN.md)** | Ultra-concise ship workflow | 1 page | All | Fast lookups, quick reference |
-| **[WINDOWS_SHIP_CHECKLIST.md](WINDOWS_SHIP_CHECKLIST.md)** | PowerShell-native ship guide | 5 pages | Windows devs | Complete PowerShell workflow |
-| **[GO_NO_GO_CHECKLIST.md](GO_NO_GO_CHECKLIST.md)** | Detailed go/no-go decision | 3 pages | Release managers | Ship decision making |
-| **[SHIP_CHECKLIST.md](SHIP_CHECKLIST.md)** | Step-by-step merge guide | 2 pages | All developers | Manual merge procedures |
-| **[COMPLETE_SHIP_PACKAGE.md](COMPLETE_SHIP_PACKAGE.md)** | Master overview | 6 pages | All stakeholders | Comprehensive view |
+| **[docs/planning/SHIP_PLAN.md](docs/planning/SHIP_PLAN.md)** | Ultra-concise ship workflow | 1 page | All | Fast lookups, quick reference |
+| **[docs/planning/WINDOWS_SHIP_CHECKLIST.md](docs/planning/WINDOWS_SHIP_CHECKLIST.md)** | PowerShell-native ship guide | 5 pages | Windows devs | Complete PowerShell workflow |
+| **[docs/planning/GO_NO_GO_CHECKLIST.md](docs/planning/GO_NO_GO_CHECKLIST.md)** | Detailed go/no-go decision | 3 pages | Release managers | Ship decision making |
+| **[docs/planning/SHIP_CHECKLIST.md](docs/planning/SHIP_CHECKLIST.md)** | Step-by-step merge guide | 2 pages | All developers | Manual merge procedures |
+| **[docs/planning/COMPLETE_SHIP_PACKAGE.md](docs/planning/COMPLETE_SHIP_PACKAGE.md)** | Master overview | 6 pages | All stakeholders | Comprehensive view |
 
 ### Review & Evidence
 
@@ -42,8 +43,8 @@
 
 | Document | Purpose | Length | Audience | Best For |
 |----------|---------|--------|----------|----------|
-| **[RELEASE_NOTES_TEMPLATES.md](RELEASE_NOTES_TEMPLATES.md)** | Release announcement templates | 4 pages | All | Copy-paste communication |
-| **[review/PR_BODY.md](review/PR_BODY.md)** | PR description | 1 page | GitHub users | PR documentation |
+| **[docs/planning/RELEASE_NOTES_TEMPLATES.md](docs/planning/RELEASE_NOTES_TEMPLATES.md)** | Release announcement templates | 4 pages | All | Copy-paste communication |
+| **[docs/planning/PR_BODY.md](docs/planning/PR_BODY.md)** | PR description | 1 page | GitHub users | PR documentation |
 
 ### Evidence & Proof
 
@@ -74,7 +75,7 @@
 ### Scenario 1: "I need to ship this PR right now"
 
 **Path**: Ultra-fast ship
-1. Read: [`SHIP_PLAN.md`](SHIP_PLAN.md) (60 seconds)
+1. Read: [`docs/planning/SHIP_PLAN.md`](docs/planning/SHIP_PLAN.md) (60 seconds)
 2. Execute: Option B - Automated (2 commands)
 3. Verify: Production smoke tests
 
@@ -85,7 +86,7 @@
 ### Scenario 2: "I'm on Windows and need PowerShell commands"
 
 **Path**: Windows-native workflow
-1. Read: [`WINDOWS_SHIP_CHECKLIST.md`](WINDOWS_SHIP_CHECKLIST.md) (5 minutes)
+1. Read: [`docs/planning/WINDOWS_SHIP_CHECKLIST.md`](docs/planning/WINDOWS_SHIP_CHECKLIST.md) (5 minutes)
 2. Execute: Pre-flight check → Merge → Release
 3. Verify: PowerShell verification commands
 
@@ -96,7 +97,7 @@
 ### Scenario 3: "I need approval to merge this PR"
 
 **Path**: Go/no-go decision
-1. Review: [`GO_NO_GO_CHECKLIST.md`](GO_NO_GO_CHECKLIST.md)
+1. Review: [`docs/planning/GO_NO_GO_CHECKLIST.md`](docs/planning/GO_NO_GO_CHECKLIST.md)
 2. Present: [`review/PR_SUMMARY_VARIANTS.md`](review/PR_SUMMARY_VARIANTS.md) (management version)
 3. Evidence: [`proof/PROOF.md`](proof/PROOF.md)
 
@@ -107,7 +108,7 @@
 ### Scenario 4: "I need to announce this release"
 
 **Path**: Communication templates
-1. Choose audience: [`RELEASE_NOTES_TEMPLATES.md`](RELEASE_NOTES_TEMPLATES.md)
+1. Choose audience: [`docs/planning/RELEASE_NOTES_TEMPLATES.md`](docs/planning/RELEASE_NOTES_TEMPLATES.md)
 2. Copy template: Stakeholder/Technical/Executive
 3. Customize: Replace version numbers and URLs
 
@@ -133,7 +134,7 @@
 1. Audit trail: [`proof/PROOF.md`](proof/PROOF.md)
 2. Evidence: [`security/artifacts/`](security/artifacts/)
 3. Review: [`review/REVIEW.md`](review/REVIEW.md)
-4. Templates: [`RELEASE_NOTES_TEMPLATES.md`](RELEASE_NOTES_TEMPLATES.md) (compliance version)
+4. Templates: [`docs/planning/RELEASE_NOTES_TEMPLATES.md`](docs/planning/RELEASE_NOTES_TEMPLATES.md) (compliance version)
 
 **Total time**: ~60 minutes full audit
 
@@ -175,12 +176,12 @@
 
 **Looking for...**
 
-- **Quick ship commands** → `SHIP_PLAN.md`
-- **Windows PowerShell** → `WINDOWS_SHIP_CHECKLIST.md`
-- **Go/no-go decision** → `GO_NO_GO_CHECKLIST.md`
-- **Everything in one place** → `COMPLETE_SHIP_PACKAGE.md`
+- **Quick ship commands** → `docs/planning/SHIP_PLAN.md`
+- **Windows PowerShell** → `docs/planning/WINDOWS_SHIP_CHECKLIST.md`
+- **Go/no-go decision** → `docs/planning/GO_NO_GO_CHECKLIST.md`
+- **Everything in one place** → `docs/planning/COMPLETE_SHIP_PACKAGE.md`
 - **Code review details** → `review/REVIEWER_BLURB.md`
-- **Announcement templates** → `RELEASE_NOTES_TEMPLATES.md`
+- **Announcement templates** → `docs/planning/RELEASE_NOTES_TEMPLATES.md`
 - **Audit trail** → `proof/PROOF.md`
 - **Security score** → `security/summary.json`
 - **Automation scripts** → `scripts/` directory
@@ -191,10 +192,10 @@
 ## 🎯 Recommended Reading Order
 
 **For First-Time Ship**:
-1. `SHIP_PLAN.md` (overview)
-2. `WINDOWS_SHIP_CHECKLIST.md` or `SHIP_CHECKLIST.md` (platform-specific)
-3. `RELEASE_NOTES_TEMPLATES.md` (communication)
-4. `GO_NO_GO_CHECKLIST.md` (verification)
+1. `docs/planning/SHIP_PLAN.md` (overview)
+2. `docs/planning/WINDOWS_SHIP_CHECKLIST.md` or `docs/planning/SHIP_CHECKLIST.md` (platform-specific)
+3. `docs/planning/RELEASE_NOTES_TEMPLATES.md` (communication)
+4. `docs/planning/GO_NO_GO_CHECKLIST.md` (verification)
 
 **For Reviewers**:
 1. `review/REVIEWER_BLURB.md` (technical guide)
@@ -204,8 +205,8 @@
 
 **For Stakeholders**:
 1. `review/PR_SUMMARY_VARIANTS.md` (quick summary)
-2. `RELEASE_NOTES_TEMPLATES.md` (communication templates)
-3. `COMPLETE_SHIP_PACKAGE.md` (comprehensive overview)
+2. `docs/planning/RELEASE_NOTES_TEMPLATES.md` (communication templates)
+3. `docs/planning/COMPLETE_SHIP_PACKAGE.md` (comprehensive overview)
 
 ---
 
@@ -226,10 +227,10 @@
 
 **Choose your path** based on your needs:
 
-- **Fast ship** → [`SHIP_PLAN.md`](SHIP_PLAN.md)
-- **Windows native** → [`WINDOWS_SHIP_CHECKLIST.md`](WINDOWS_SHIP_CHECKLIST.md)
-- **Detailed walkthrough** → [`GO_NO_GO_CHECKLIST.md`](GO_NO_GO_CHECKLIST.md)
-- **Comprehensive view** → [`COMPLETE_SHIP_PACKAGE.md`](COMPLETE_SHIP_PACKAGE.md)
+- **Fast ship** → [`docs/planning/SHIP_PLAN.md`](docs/planning/SHIP_PLAN.md)
+- **Windows native** → [`docs/planning/WINDOWS_SHIP_CHECKLIST.md`](docs/planning/WINDOWS_SHIP_CHECKLIST.md)
+- **Detailed walkthrough** → [`docs/planning/GO_NO_GO_CHECKLIST.md`](docs/planning/GO_NO_GO_CHECKLIST.md)
+- **Comprehensive view** → [`docs/planning/COMPLETE_SHIP_PACKAGE.md`](docs/planning/COMPLETE_SHIP_PACKAGE.md)
 
 ---
 

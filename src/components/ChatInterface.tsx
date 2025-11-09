@@ -1,25 +1,14 @@
 import { useState, useRef, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Send, FileText, Sparkles, Clock, Paperclip, StopCircle, Download, Copy, Trash2, BookTemplate, Save, Table, Shield } from "lucide-react";
+import { FileText, Table } from "lucide-react";
 import { toast as showToast } from "sonner";
-import { cn } from "@/lib/utils";
 import { logger } from "@/lib/logger";
 import { useMessages, Message as DBMessage } from "@/hooks/useMessages";
 import { useConversations } from "@/hooks/useConversations";
-import { FileDropZone } from "./FileDropZone";
-import { FilePreview } from "./FilePreview";
-import { MessageActions, StreamingMessage } from "./MessageActions";
-import { ExamplePrompts } from "./ExamplePrompts";
-import { NoteTemplates } from "./NoteTemplates";
 import { AdvancedAnalysis } from "./AdvancedAnalysis";
 import { StructuredNoteForm } from "./StructuredNoteForm";
-import { VoiceInput } from "./VoiceInput";
-import { SpeakButton } from "./SpeakButton";
 import { EditMessageDialog } from "./EditMessageDialog";
 import {
   extractTextFromFile,
@@ -32,13 +21,6 @@ import { analyzeNotesStreaming } from "@/lib/openai";
 import { exportConversationToPDF, exportConversationToText, copyConversationToClipboard } from "@/lib/exportUtils";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -48,10 +30,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
-import { Part2Badge } from "@/components/Part2Badge";
-import { ClientSelector } from "@/components/clients/ClientSelector";
+import { ChatInput, ChatInputRef } from "./chat/ChatInput";
+import { MessageList } from "./chat/MessageList";
+import { ConversationHeader } from "./chat/ConversationHeader";
+import { QuickActions } from "./chat/QuickActions";
+import { FileManager } from "./chat/FileManager";
 
 interface UploadedFile {
   id: string;
@@ -78,20 +61,17 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
   const [conversationTitle, setConversationTitle] = useState<string>("");
   const [draftSaveTimeout, setDraftSaveTimeout] = useState<NodeJS.Timeout | null>(null);
   const [isPart2Protected, setIsPart2Protected] = useState(false);
-  const [showPart2Warning, setShowPart2Warning] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState<string>("");
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingMessage, setEditingMessage] = useState<DBMessage | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const chatInputRef = useRef<ChatInputRef>(null);
   
   const { messages: dbMessages, addMessage, hasMore, loadOlderMessages, loading: messagesLoading } = useMessages(conversationId);
   const { createConversation, conversations } = useConversations();
 
   const [displayMessages, setDisplayMessages] = useState<Array<DBMessage & { isStreaming?: boolean }>>([]);
 
-  // Auto-save draft to sessionStorage (cleared when tab closes)
-  // SECURITY: Using sessionStorage instead of localStorage to prevent PHI persistence
+  // Auto-save draft to sessionStorage
   useEffect(() => {
     if (input && !conversationId) {
       if (draftSaveTimeout) clearTimeout(draftSaveTimeout);
@@ -105,8 +85,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     };
   }, [input, conversationId]);
 
-  // Load draft on mount and cleanup on unmount
-  // SECURITY: Using sessionStorage to prevent PHI from persisting across sessions
+  // Load draft on mount
   useEffect(() => {
     if (!conversationId) {
       const draft = sessionStorage.getItem("clinicalai_draft");
@@ -115,7 +94,6 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       }
     }
 
-    // Cleanup: Clear draft when component unmounts or user signs out
     return () => {
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (!session) {
@@ -127,7 +105,6 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
 
   useEffect(() => {
     if (dbMessages.length === 0 && !conversationId) {
-      // Show welcome message for new conversations
       setDisplayMessages([
         {
           id: "welcome",
@@ -142,20 +119,9 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     }
   }, [dbMessages, conversationId]);
 
-  const scrollToBottom = () => {
-    requestAnimationFrame(() => {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [displayMessages]);
-
   useEffect(() => {
     if (conversationId) {
       loadConversationFiles();
-      // Load conversation title
       const conversation = conversations.find((c) => c.id === conversationId);
       if (conversation) {
         setConversationTitle(conversation.title);
@@ -181,13 +147,11 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     const messageContent = customPrompt || input.trim();
     if (!messageContent) return;
 
-    // Store for regeneration
     setLastUserMessage(messageContent);
     setLastAction(customAction || "session_summary");
 
     let currentConversationId = conversationId;
 
-    // Create new conversation if none exists
     if (!currentConversationId) {
       const title = generateTitle(messageContent);
       currentConversationId = await createConversation(
@@ -203,7 +167,6 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       
       onConversationCreated?.(currentConversationId);
       
-      // Show Part 2 warning if flagged
       if (isPart2Protected) {
         showToast.info("Session marked as 42 CFR Part 2 protected", {
           description: "All access to this conversation will be audited"
@@ -211,25 +174,20 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       }
     }
 
-    // Save user message to database
     const userMsg = await addMessage("user", messageContent);
     if (!userMsg) return;
 
     setInput("");
     setLoading(true);
 
-    // Create abort controller for stopping generation
     const controller = new AbortController();
     setAbortController(controller);
 
-    // Determine action type
     const action = customAction || "session_summary";
 
-    // Start streaming AI response
     let aiResponse = "";
     const streamingMessageId = `streaming-${Date.now()}`;
     
-    // Add a temporary streaming message with progress indicator
     setDisplayMessages((prev) => [
       ...prev,
       {
@@ -241,7 +199,6 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       },
     ]);
 
-    // Show streaming toast
     showToast.loading("Generating response...", {
       id: "streaming-toast",
       description: "AI is analyzing your notes"
@@ -253,7 +210,6 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         action: action as any,
         onChunk: (chunk) => {
           aiResponse += chunk;
-          // Update the streaming message in real-time
           setDisplayMessages((prev) =>
             prev.map((msg) =>
               msg.id === streamingMessageId
@@ -263,17 +219,11 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
           );
         },
         onComplete: async () => {
-          // Dismiss streaming toast
           showToast.dismiss("streaming-toast");
-          
-          // Save complete AI response to database
           await addMessage("assistant", aiResponse);
-          
-          // Remove the temporary streaming message (it will be replaced by the DB message)
           setDisplayMessages((prev) =>
             prev.filter((msg) => msg.id !== streamingMessageId)
           );
-          
           setLoading(false);
           setAbortController(null);
           showToast.success("Analysis complete!", {
@@ -282,15 +232,11 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         },
         onError: (error) => {
           logger.error("Streaming error", new Error(error), { conversationId, action: lastAction });
-          
-          // Dismiss streaming toast
           showToast.dismiss("streaming-toast");
           
-          // Check if it was user-initiated abort
           if (controller.signal.aborted) {
             showToast.info("Response generation stopped by user");
           } else {
-            // Provide user-friendly error messages
             let errorMessage = "Failed to generate response. Please try again.";
             
             if (error.includes("rate limit") || error.includes("429")) {
@@ -309,29 +255,21 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
             });
           }
           
-          // Remove the temporary streaming message
           setDisplayMessages((prev) =>
             prev.filter((msg) => msg.id !== streamingMessageId)
           );
-          
           setLoading(false);
           setAbortController(null);
         },
       });
 
-      // Handle abort signal
-      controller.signal.addEventListener("abort", () => {
-        // The onError callback will handle cleanup
-      });
+      controller.signal.addEventListener("abort", () => {});
     } catch (error: any) {
       logger.error("Error during analysis", error, { conversationId });
       showToast.error("Failed to analyze notes");
-      
-      // Remove the temporary streaming message
       setDisplayMessages((prev) =>
         prev.filter((msg) => msg.id !== streamingMessageId)
       );
-      
       setLoading(false);
       setAbortController(null);
     }
@@ -364,7 +302,6 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     let editedContent = "";
     const streamingMessageId = `editing-${Date.now()}`;
     
-    // Add a temporary streaming message
     setDisplayMessages((prev) => [
       ...prev,
       {
@@ -378,7 +315,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
 
     try {
       await analyzeNotesStreaming({
-        notes: "", // Not used for edit action
+        notes: "",
         action: "edit_content",
         originalContent: editingMessage.content,
         editInstruction: editInstruction,
@@ -393,14 +330,10 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
           );
         },
         onComplete: async () => {
-          // Save the edited content as a new assistant message
           await addMessage("assistant", editedContent);
-          
-          // Remove the temporary streaming message
           setDisplayMessages((prev) =>
             prev.filter((msg) => msg.id !== streamingMessageId)
           );
-          
           setLoading(false);
           setEditDialogOpen(false);
           setEditingMessage(null);
@@ -409,11 +342,9 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         onError: (error) => {
           logger.error("Edit error", new Error(error), { messageId: editingMessage.id });
           showToast.error(error);
-          
           setDisplayMessages((prev) =>
             prev.filter((msg) => msg.id !== streamingMessageId)
           );
-          
           setLoading(false);
         },
       });
@@ -445,7 +376,6 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
   const handleFileSelect = async (file: File) => {
     let currentConversationId = conversationId;
 
-    // Create conversation if none exists
     if (!currentConversationId) {
       const title = `Document Analysis: ${file.name}`;
       currentConversationId = await createConversation(
@@ -464,18 +394,12 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
 
     try {
       showToast.info("Processing file...");
-      
-      // Extract text from file
       const extractedText = await extractTextFromFile(file);
-      
-      // Upload file to storage
       const uploadResult = await uploadFileToStorage(file, currentConversationId);
       if (!uploadResult) return;
 
-      // Determine file type
       const fileType = file.type === "application/pdf" ? "pdf" : "text";
 
-      // Save file metadata
       const fileId = await saveFileMetadata(
         currentConversationId,
         file.name,
@@ -557,147 +481,32 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     sessionStorage.removeItem("clinicalai_draft");
   };
 
-  const wordCount = input.trim().split(/\s+/).filter(Boolean).length;
-  const charCount = input.length;
-  const estimatedTime = wordCount > 0 ? Math.max(5, Math.ceil(wordCount / 50)) : 0;
-
-  const formatTime = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString("en-US", {
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
+  const currentConversation = conversations.find(c => c.id === conversationId);
 
   return (
     <div className="space-y-4">
-      {/* Conversation Actions */}
-      {conversationId && displayMessages.length > 1 && (
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <h3 className="text-lg font-medium text-foreground">{conversationTitle}</h3>
-            {conversations.find(c => c.id === conversationId)?.is_part2_protected && (
-              <Part2Badge consentStatus={conversations.find(c => c.id === conversationId)?.part2_consent_status} />
-            )}
-          </div>
-          <div className="flex gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleExportPDF}>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Download as PDF
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportText}>
-                  <FileText className="w-4 h-4 mr-2" />
-                  Download as Text
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleCopyToClipboard}>
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copy to Clipboard
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+      <ConversationHeader
+        conversationId={conversationId}
+        conversationTitle={conversationTitle}
+        messageCount={displayMessages.length}
+        isPart2Protected={currentConversation?.is_part2_protected || false}
+        part2ConsentStatus={currentConversation?.part2_consent_status}
+        onExportPDF={handleExportPDF}
+        onExportText={handleExportText}
+        onCopyToClipboard={handleCopyToClipboard}
+        onClearConversation={handleClearConversation}
+      />
 
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClearConversation}
-              className="hover:bg-destructive/10 hover:text-destructive"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Clear Conversation
-            </Button>
-          </div>
-        </div>
-      )}
+      <MessageList
+        messages={displayMessages}
+        hasMore={hasMore}
+        onLoadMore={loadOlderMessages}
+        messagesLoading={messagesLoading}
+        conversationId={conversationId}
+        onRegenerate={handleRegenerate}
+        onEditMessage={handleEditMessage}
+      />
 
-      {/* Messages Display - Only show if there are messages */}
-      {displayMessages.length > 0 && (
-        <Card className="h-[500px] overflow-y-auto p-6 shadow-md border-border/50 bg-card/80 backdrop-blur-sm">
-          <div className="space-y-4">
-            {/* Load Older Messages Button */}
-            {hasMore && conversationId && (
-              <div className="flex justify-center pb-4">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={loadOlderMessages}
-                  disabled={messagesLoading}
-                  className="hover:bg-primary/10"
-                  aria-live="polite"
-                >
-                  {messagesLoading ? (
-                    <>Loading...</>
-                  ) : (
-                    <>Load older messages</>
-                  )}
-                </Button>
-              </div>
-            )}
-
-            {displayMessages.map((message) => (
-              <div
-                key={message.id}
-                className={cn(
-                  "flex w-full",
-                  message.role === "user" ? "justify-end" : "justify-start"
-                )}
-              >
-                <div
-                  className={cn(
-                    "max-w-[85%] rounded-lg px-4 py-3 shadow-sm transition-all animate-fade-in",
-                    message.role === "user"
-                      ? "bg-primary/10 text-foreground border border-primary/20"
-                      : "bg-card text-foreground border border-border"
-                  )}
-                >
-                  <div className="flex items-center gap-2 mb-2">
-                    {message.role === "assistant" && (
-                      <Sparkles className="w-4 h-4 text-accent flex-shrink-0" />
-                    )}
-                    <span className="text-xs text-muted-foreground flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {formatTime(message.created_at)}
-                    </span>
-                  </div>
-
-                  {message.role === "assistant" ? (
-                    <>
-                      <StreamingMessage
-                        content={message.content}
-                        isStreaming={message.isStreaming || false}
-                      />
-                      <MessageActions
-                        content={message.content}
-                        isStreaming={message.isStreaming}
-                        onRegenerate={message.isStreaming ? undefined : handleRegenerate}
-                        onEdit={() => handleEditMessage(message)}
-                        showEdit={!message.isStreaming}
-                      />
-                    </>
-                  ) : (
-                    <p className="text-sm leading-relaxed whitespace-pre-wrap">
-                      {message.content}
-                    </p>
-                  )}
-                </div>
-              </div>
-            ))}
-
-            <div ref={messagesEndRef} />
-          </div>
-        </Card>
-      )}
-
-      {/* Disclaimer */}
       {displayMessages.some((m) => m.role === "assistant") && (
         <Card className="p-3 bg-amber-500/5 border-amber-500/20">
           <p className="text-xs text-muted-foreground text-center">
@@ -707,131 +516,21 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         </Card>
       )}
 
-      {/* Quick Actions */}
-      <Card className="p-4 shadow-sm border-border/50 bg-card/80 backdrop-blur-sm">
-        <div className="flex items-center justify-between gap-2 mb-3">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-accent" />
-            <span className="text-sm font-medium text-foreground">Quick Actions</span>
-          </div>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <NoteTemplates onSelectTemplate={handleSelectTemplate} />
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Access pre-formatted note templates</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickAction("soap")}
-                  disabled={loading}
-                  className="transition-all hover:bg-primary/10 hover:border-primary/30"
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  SOAP Note
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Generate structured SOAP note</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+      <QuickActions
+        onAction={handleQuickAction}
+        onSelectTemplate={handleSelectTemplate}
+        loading={loading}
+      />
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickAction("summary")}
-                  disabled={loading}
-                  className="transition-all hover:bg-primary/10 hover:border-primary/30"
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Session Summary
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Create comprehensive session summary</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+      <FileManager
+        uploadedFiles={uploadedFiles}
+        showFileUpload={showFileUpload}
+        loading={loading}
+        onFileSelect={handleFileSelect}
+        onDeleteFile={handleDeleteFile}
+        onAnalyzeFile={handleAnalyzeFile}
+      />
 
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickAction("keypoints")}
-                  disabled={loading}
-                  className="transition-all hover:bg-primary/10 hover:border-primary/30"
-                >
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Key Points
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Extract key clinical insights</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickAction("progress")}
-                  disabled={loading}
-                  className="transition-all hover:bg-primary/10 hover:border-primary/30"
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Progress Report
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Generate detailed progress report</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </Card>
-
-      {/* Uploaded Files */}
-      {uploadedFiles.length > 0 && (
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-foreground flex items-center gap-2">
-            <Paperclip className="w-4 h-4" />
-            Uploaded Documents ({uploadedFiles.length})
-          </p>
-          {uploadedFiles.map((file) => (
-            <FilePreview
-              key={file.id}
-              file={file}
-              onDelete={handleDeleteFile}
-              onAnalyze={handleAnalyzeFile}
-            />
-          ))}
-        </div>
-      )}
-
-      {/* File Upload Zone */}
-      {showFileUpload && (
-        <FileDropZone onFileSelect={handleFileSelect} disabled={loading} />
-      )}
-
-      {/* Input Area with Tabs */}
       <Tabs defaultValue="freeform" className="w-full" data-onboarding="tabs">
         <TabsList className="grid w-full grid-cols-2 mb-4">
           <TabsTrigger value="freeform" className="flex items-center gap-2">
@@ -844,186 +543,36 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
           </TabsTrigger>
         </TabsList>
 
-        {/* Free-form Note Tab */}
         <TabsContent value="freeform">
-          <Card className="p-4 shadow-md border-border/50 bg-card/80 backdrop-blur-sm" onClick={() => inputRef.current?.focus()}>
-            <div className="space-y-3">
-              {/* Example Prompts - Show when no conversation exists */}
-              {!conversationId && displayMessages.length <= 1 && (
-                <ExamplePrompts onSelectExample={handleSelectExample} disabled={loading} />
-              )}
-
-          <Textarea
-            ref={inputRef}
-            autoFocus
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Enter your session notes here...&#10;&#10;Include patient observations, session content, interventions used, and any notable behavioral or emotional changes..."
-            className="min-h-[120px] resize-y transition-all focus:shadow-md"
-            disabled={loading}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && e.ctrlKey) {
-                handleSubmit();
-              }
-            }}
+          <ChatInput
+            ref={chatInputRef}
+            input={input}
+            onInputChange={setInput}
+            onSubmit={() => handleSubmit()}
+            onClear={() => setInput("")}
+            loading={loading}
+            conversationId={conversationId}
+            showExamples={!conversationId && displayMessages.length <= 1}
+            onSelectExample={handleSelectExample}
+            isPart2Protected={isPart2Protected}
+            onPart2Change={setIsPart2Protected}
+            selectedClientId={selectedClientId}
+            onClientChange={setSelectedClientId}
+            showFileUpload={showFileUpload}
+            onToggleFileUpload={() => setShowFileUpload(!showFileUpload)}
+            onStopGeneration={handleStopGeneration}
           />
 
-          {/* Character/Word Count and Estimated Time */}
-          {input && (
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <div className="flex items-center gap-4">
-                <span>{charCount} characters</span>
-                <span>•</span>
-                <span>{wordCount} words</span>
-                {estimatedTime > 0 && (
-                  <>
-                    <span>•</span>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-3 h-3" />
-                            ~{estimatedTime}s processing time
-                          </span>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Estimated time based on content length</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </>
-                )}
-              </div>
-              {!conversationId && (
-                <Badge variant="secondary" className="text-xs">
-                  <Save className="w-3 h-3 mr-1" />
-                  Draft auto-saved
-                </Badge>
-              )}
-            </div>
-          )}
-
-          {/* Client Selection */}
-          {!conversationId && (
-            <ClientSelector
-              value={selectedClientId}
-              onChange={setSelectedClientId}
-            />
-          )}
-
-          {/* Part 2 Classification Checkbox */}
-          {!conversationId && (
-            <div className="flex items-center gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
-              <Checkbox 
-                id="part2-protected"
-                checked={isPart2Protected}
-                onCheckedChange={(checked) => setIsPart2Protected(checked as boolean)}
-                disabled={loading}
+          {input.trim() && (
+            <div data-onboarding="advanced-analysis">
+              <AdvancedAnalysis 
+                noteContent={input} 
+                conversationId={conversationId || "temp"} 
               />
-              <Label 
-                htmlFor="part2-protected"
-                className="text-sm font-medium cursor-pointer flex items-center gap-2"
-              >
-                <Shield className="w-4 h-4 text-primary" />
-                This session involves substance use disorder treatment (42 CFR Part 2)
-              </Label>
             </div>
           )}
-
-          <div className="flex justify-between items-center gap-2">
-            <div className="flex gap-2 flex-wrap">
-              <div data-onboarding="voice-input">
-                <VoiceInput
-                  onResult={(transcript) => {
-                    setInput(prev => prev ? `${prev} ${transcript}` : transcript);
-                  }}
-                  disabled={loading}
-                />
-              </div>
-              
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setShowFileUpload(!showFileUpload)}
-                disabled={loading}
-                className="transition-all"
-              >
-                <Paperclip className="w-4 h-4 mr-2" />
-                {showFileUpload ? "Hide Upload" : "Upload Document"}
-              </Button>
-              
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setInput("")}
-                disabled={loading || !input}
-                className="transition-all"
-              >
-                Clear
-              </Button>
-            </div>
-
-            <div className="flex gap-2 items-center">
-              <div data-onboarding="speak-button">
-                {input && (
-                  <SpeakButton text={input} disabled={loading} />
-                )}
-              </div>
-              
-              <Button
-                onClick={() => handleSubmit()}
-                disabled={loading || !input.trim()}
-                className="bg-primary hover:bg-primary/90 transition-all shadow-sm"
-              >
-                {loading ? (
-                  <>
-                    <Sparkles className="w-4 h-4 mr-2 animate-spin" />
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-4 h-4 mr-2" />
-                    Analyze Notes
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {loading && (
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={handleStopGeneration}
-                className="ml-2"
-                data-testid="stop-generation"
-              >
-                <StopCircle className="w-4 h-4 mr-2" />
-                Stop
-              </Button>
-            )}
-          </div>
-
-          <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-2">
-            <kbd className="px-2 py-0.5 bg-secondary rounded text-xs">Ctrl+Enter</kbd>
-            to submit • Upload PDF or text documents for analysis
-          </p>
-        </div>
-      </Card>
-
-      {/* Advanced Analysis Section - Only for freeform */}
-      {input.trim() && (
-        <div data-onboarding="advanced-analysis">
-          <AdvancedAnalysis 
-            noteContent={input} 
-            conversationId={conversationId || "temp"} 
-          />
-        </div>
-      )}
         </TabsContent>
 
-        {/* Structured Form Tab */}
         <TabsContent value="structured" data-onboarding="structured-form">
           {conversationId ? (
             <StructuredNoteForm conversationId={conversationId} />
@@ -1043,7 +592,6 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         </TabsContent>
       </Tabs>
 
-      {/* Edit Message Dialog */}
       <EditMessageDialog
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
@@ -1052,7 +600,6 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         isLoading={loading}
       />
 
-      {/* Clear Conversation Dialog */}
       <AlertDialog open={clearDialogOpen} onOpenChange={setClearDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

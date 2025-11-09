@@ -1,0 +1,39 @@
+[
+  {
+    "url": "/",
+    "name": "Home",
+    "priority": "critical",
+    "authenticated": false
+  },
+  {
+    "url": "/auth",
+    "name": "Authentication",
+    "priority": "critical",
+    "authenticated": false
+  },
+  {
+    "url": "/settings",
+    "name": "Settings",
+    "priority": "high",
+    "authenticated": true
+  },
+  {
+    "url": "/clients",
+    "name": "Clients",
+    "priority": "high",
+    "authenticated": true
+  },
+  {
+    "url": "/history",
+    "name": "History",
+    "priority": "medium",
+    "authenticated": true
+  },
+  {
+    "url": "/admin",
+    "name": "Admin",
+    "priority": "medium",
+    "authenticated": true,
+    "role": "admin"
+  }
+]

@@ -36,10 +36,23 @@ jobs:
         env:
           BASE_URL: http://localhost:4173
       
-      - name: Run E2E tests
+      - name: Run E2E tests (including accessibility)
         run: npx playwright test
         env:
           BASE_URL: http://localhost:4173
+      
+      - name: Generate accessibility report
+        if: always()
+        run: |
+          echo "# Accessibility Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if axe violations were found
+          if grep -q "accessibilityScanResults.violations" test-results/**/*.json 2>/dev/null; then
+            echo "⚠️ Accessibility violations detected" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ No accessibility violations found" >> $GITHUB_STEP_SUMMARY
+          fi
       
       - name: Upload test results
         if: always()

@@ -1,0 +1,86 @@
+# Gitleaks configuration for Mental Scribe
+# Detects hardcoded secrets, API keys, tokens, and credentials
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Allowlist for known safe patterns"
+regexTarget = "match"
+
+# Allow placeholder/example keys
+regexes = [
+  '''(your|example|sample|demo|test)[-_]?(api[-_]?key|secret|token)''',
+  '''xxx+''',
+  '''yyy+''',
+  '''zzz+''',
+]
+
+# Allow patterns in documentation and test files
+paths = [
+  '''\.md$''',
+  '''\.example$''',
+  '''test/.*''',
+  '''__tests__/.*''',
+  '''\.spec\.(ts|js)$''',
+  '''\.test\.(ts|js)$''',
+  '''CHANGELOG\.md$''',
+  '''\.env\.example$''',
+]
+
+# Additional rules specific to this project
+[[rules]]
+id = "supabase-service-role-key"
+description = "Supabase Service Role Key"
+regex = '''SUPABASE_SERVICE_ROLE_KEY\s*=\s*['"]?eyJ[A-Za-z0-9_-]*\.eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*['"]?'''
+tags = ["key", "supabase", "critical"]
+
+[[rules]]
+id = "supabase-anon-key-in-code"
+description = "Supabase Anon Key hardcoded in source"
+regex = '''['"](eyJ[A-Za-z0-9_-]{30,}\.eyJ[A-Za-z0-9_-]{30,}\.[A-Za-z0-9_-]{30,})['"]'''
+path = '''src/.*\.(ts|tsx|js|jsx)$'''
+tags = ["key", "supabase"]
+
+[[rules]]
+id = "openai-api-key"
+description = "OpenAI API Key"
+regex = '''sk-[a-zA-Z0-9]{48}'''
+tags = ["key", "openai", "critical"]
+
+[[rules]]
+id = "anthropic-api-key"
+description = "Anthropic API Key"
+regex = '''sk-ant-[a-zA-Z0-9\-]{95}'''
+tags = ["key", "anthropic", "critical"]
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key Pattern"
+regex = '''(?i)(api[_-]?key|apikey)\s*[:=]\s*['"][a-zA-Z0-9]{32,}['"]'''
+tags = ["key", "generic"]
+
+[[rules]]
+id = "generic-secret"
+description = "Generic Secret Pattern"
+regex = '''(?i)(secret|password|passwd|pwd)\s*[:=]\s*['"][^$\{][a-zA-Z0-9!@#$%^&*()]{8,}['"]'''
+tags = ["secret", "generic"]
+
+[[rules]]
+id = "jwt-token"
+description = "JWT Token"
+regex = '''eyJ[A-Za-z0-9_-]*\.eyJ[A-Za-z0-9_-]*\.[A-Za-z0-9_-]*'''
+path = '''src/.*\.(ts|tsx|js|jsx)$'''
+tags = ["token", "jwt"]
+
+[[rules]]
+id = "aws-access-key"
+description = "AWS Access Key"
+regex = '''AKIA[0-9A-Z]{16}'''
+tags = ["key", "aws", "critical"]
+
+[[rules]]
+id = "private-key"
+description = "Private Key"
+regex = '''-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----'''
+tags = ["key", "private", "critical"]

@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useAdminAccess } from "@/hooks/useAdminAccess";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/Layout";
+import { AuditVerification } from "@/components/admin/AuditVerification";
 
 interface VerifyResult {
   intact: boolean;
@@ -272,6 +273,11 @@ export default function AuditDashboard() {
             </CardContent>
           </Card>
         )}
+
+        {/* Historical Verification Runs */}
+        <div className="mt-8">
+          <AuditVerification />
+        </div>
 
         {/* Information Card */}
         <Card className="mt-6">

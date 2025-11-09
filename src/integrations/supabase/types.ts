@@ -20,14 +20,17 @@ export type Database = {
           consent_id: string | null
           created_at: string
           data_classification: Database["public"]["Enums"]["data_classification"]
+          hash: string | null
           id: string
           ip_address: string | null
           metadata: Json | null
           part2_disclosure_purpose: string | null
+          prev_hash: string | null
           program_id: string | null
           purpose: string | null
           resource_id: string | null
           resource_type: string
+          secret_version: number
           user_agent: string | null
           user_id: string
         }
@@ -36,14 +39,17 @@ export type Database = {
           consent_id?: string | null
           created_at?: string
           data_classification?: Database["public"]["Enums"]["data_classification"]
+          hash?: string | null
           id?: string
           ip_address?: string | null
           metadata?: Json | null
           part2_disclosure_purpose?: string | null
+          prev_hash?: string | null
           program_id?: string | null
           purpose?: string | null
           resource_id?: string | null
           resource_type: string
+          secret_version?: number
           user_agent?: string | null
           user_id: string
         }
@@ -52,14 +58,17 @@ export type Database = {
           consent_id?: string | null
           created_at?: string
           data_classification?: Database["public"]["Enums"]["data_classification"]
+          hash?: string | null
           id?: string
           ip_address?: string | null
           metadata?: Json | null
           part2_disclosure_purpose?: string | null
+          prev_hash?: string | null
           program_id?: string | null
           purpose?: string | null
           resource_id?: string | null
           resource_type?: string
+          secret_version?: number
           user_agent?: string | null
           user_id?: string
         }
@@ -72,6 +81,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      audit_verify_runs: {
+        Row: {
+          broken_at_id: string | null
+          details: Json | null
+          id: number
+          intact: boolean
+          run_at: string
+          total_entries: number
+          verified_entries: number
+        }
+        Insert: {
+          broken_at_id?: string | null
+          details?: Json | null
+          id?: number
+          intact: boolean
+          run_at?: string
+          total_entries: number
+          verified_entries: number
+        }
+        Update: {
+          broken_at_id?: string | null
+          details?: Json | null
+          id?: number
+          intact?: boolean
+          run_at?: string
+          total_entries?: number
+          verified_entries?: number
+        }
+        Relationships: []
       }
       client_access_logs: {
         Row: {
@@ -985,6 +1024,16 @@ export type Database = {
       }
     }
     Views: {
+      mv_audit_daily_stats: {
+        Row: {
+          action_types: number | null
+          day: string | null
+          resource_types: number | null
+          total_entries: number | null
+          unique_users: number | null
+        }
+        Relationships: []
+      }
       performance_index_usage: {
         Row: {
           index_name: unknown
@@ -1162,6 +1211,17 @@ export type Database = {
           is_valid: boolean
           session_id: string
           user_id: string
+        }[]
+      }
+      verify_audit_chain: {
+        Args: never
+        Returns: {
+          actual: string
+          broken_at_id: string
+          expected: string
+          intact: boolean
+          total_entries: number
+          verified_entries: number
         }[]
       }
     }

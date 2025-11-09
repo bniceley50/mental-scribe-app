@@ -10,45 +10,16 @@ const verifyDuration = new Histogram("audit_verify_duration_seconds");
 const chainIntegrityStatus = new Gauge("audit_chain_integrity");
 const entriesVerified = new Gauge("audit_entries_verified");
 
-interface AuditEntry {
-  id: number
-  timestamp: string
-  actor_id: string | null
-  action: string
-  resource: string
-  resource_id: string | null
-  details: Record<string, unknown>
-  prev_hash: string | null
-  hash: string
-}
-
 interface VerifyResult {
   intact: boolean
   totalEntries: number
   verifiedEntries: number
   error?: string
-  brokenAtEntry?: number
+  brokenAtEntry?: string
   details?: {
     expected: string
     actual: string
   }
-}
-
-async function computeHash(
-  prevHash: string,
-  actorId: string | null,
-  action: string,
-  resource: string,
-  resourceId: string | null,
-  details: Record<string, unknown>,
-  timestamp: string,
-  secret: string,
-): Promise<string> {
-  const payload = `${prevHash}${actorId ?? "null"}${action}${resource}${resourceId ?? "null"}${JSON.stringify(details)}${timestamp}`;
-  const enc = new TextEncoder();
-  const key = await crypto.subtle.importKey("raw", enc.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
-  const sig = await crypto.subtle.sign("HMAC", key, enc.encode(payload));
-  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, "0")).join("");
 }
 
 serve(cors.wrap(async (req) => {
@@ -58,7 +29,6 @@ serve(cors.wrap(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const auditSecret = Deno.env.get("AUDIT_SECRET") || "default-audit-secret-CHANGE";
     const supabase = createClient(supabaseUrl, supabaseKey, { auth: { persistSession: false } });
 
     const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
@@ -75,47 +45,52 @@ serve(cors.wrap(async (req) => {
     
     if (roleErr || !isAdmin) throw new Error("Insufficient permissions - admin role required");
 
-    // Check if audit_chain table exists (blockchain-style audit log)
-    // Current implementation: audit_logs table (standard logging)
-    // TODO: Migrate to audit_chain table with prev_hash/hash columns for true blockchain verification
+    // Call DB-side verifier function
+    const { data: verifyResult, error: verifyErr } = await supabase.rpc("verify_audit_chain");
     
-    const { data: entries, error: fetchErr } = await supabase
-      .from("audit_logs")
-      .select("id, created_at, user_id, action, resource_type")
-      .order("created_at", { ascending: true })
-      .limit(1);
-    
-    if (fetchErr) {
-      // Table doesn't exist or query failed
-      return cors.json({ 
-        intact: true, 
-        totalEntries: 0, 
-        verifiedEntries: 0, 
-        message: "Audit chain verification ready. Blockchain-style audit_chain table will be created in future migration for full cryptographic verification." 
-      } as VerifyResult);
+    if (verifyErr) {
+      throw new Error(`Verification failed: ${verifyErr.message}`);
     }
 
-    // Count total audit entries
-    const { count, error: countErr } = await supabase
-      .from("audit_logs")
-      .select("*", { count: "exact", head: true });
+    // DB function returns array with single result row
+    const result = Array.isArray(verifyResult) ? verifyResult[0] : verifyResult;
     
-    const totalEntries = count || 0;
+    if (!result) {
+      throw new Error("No verification result returned");
+    }
 
-    chainIntegrityStatus.set(1);
-    entriesVerified.set(totalEntries);
+    // Update metrics
+    chainIntegrityStatus.set(result.intact ? 1 : 0);
+    entriesVerified.set(result.verified_entries || 0);
     verifyDuration.observe(end());
     
-    return cors.json({ 
-      intact: true, 
-      totalEntries, 
-      verifiedEntries: totalEntries,
-      message: `Audit logs active. ${totalEntries} entries tracked. Note: Full blockchain verification requires audit_chain table migration.`
-    } as VerifyResult);
+    // Return formatted result
+    const response: VerifyResult = {
+      intact: result.intact,
+      totalEntries: result.total_entries,
+      verifiedEntries: result.verified_entries
+    };
+
+    if (!result.intact && result.broken_at_id) {
+      response.brokenAtEntry = result.broken_at_id;
+      response.details = {
+        expected: result.expected || '',
+        actual: result.actual || ''
+      };
+      response.error = `Chain broken at entry ${result.broken_at_id}`;
+    }
+
+    return cors.json(response);
 
   } catch (e) {
     verifyDuration.observe(end());
+    chainIntegrityStatus.set(0);
     const errorMsg = e instanceof Error ? e.message : String(e);
-    return cors.json({ intact: false, totalEntries: 0, verifiedEntries: 0, error: errorMsg } as VerifyResult, { status: 500 });
+    return cors.json({ 
+      intact: false, 
+      totalEntries: 0, 
+      verifiedEntries: 0, 
+      error: errorMsg 
+    } as VerifyResult, { status: 500 });
   }
 }));

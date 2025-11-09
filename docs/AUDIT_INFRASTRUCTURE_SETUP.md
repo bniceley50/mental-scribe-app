@@ -4,6 +4,17 @@
 
 This document details the audit chain verification and monitoring infrastructure implemented for Mental Scribe's HIPAA compliance requirements.
 
+## Architecture
+
+### Append-Only Hash Chain
+
+The audit_logs table implements a cryptographic hash chain:
+- Each entry contains `prev_hash` (previous entry's hash) and `hash` (current entry's HMAC-SHA256)
+- Hash is computed from: `prev_hash + actor_id + action + resource + resource_id + details + timestamp`
+- Secrets are versioned in `private.audit_secrets` for rotation without breaking old entries
+- Triggers prevent UPDATE/DELETE operations (append-only)
+- Any tampering breaks the chain and is immediately detectable
+
 ## Components Implemented
 
 ### 1. Audit Chain Verification Dashboard
@@ -26,13 +37,13 @@ This document details the audit chain verification and monitoring infrastructure
 
 **Location:** `supabase/functions/audit-verify/index.ts`
 
-**Purpose:** Cryptographically verifies the immutability of the audit log chain using HMAC-SHA256
+**Purpose:** Verifies the immutability of the audit log chain using DB-side HMAC-SHA256 verification
 
 **How it works:**
-1. Fetches all audit entries in order
-2. Recomputes hash for each entry
-3. Verifies prev_hash chain links
-4. Returns verification result with detailed error info if broken
+1. Calls `verify_audit_chain()` PostgreSQL function via RPC
+2. DB function verifies each entry's hash using versioned secrets
+3. Returns verification result with detailed error info if broken
+4. No secrets leave the database - all crypto happens server-side
 
 **Response format:**
 ```typescript
@@ -80,11 +91,15 @@ ORDER BY day DESC;
 ## Deployment Status
 
 ✅ **Completed:**
+- Append-only audit_logs with HMAC-SHA256 hash chain
+- Versioned secret storage in private.audit_secrets
+- DB-side verification function (verify_audit_chain)
 - Audit dashboard UI created
 - Admin-only navigation added
 - Edge function deployed (audit-verify)
-- Materialized views created
-- pg_cron jobs scheduled
+- Materialized views created (mv_audit_daily_stats)
+- pg_cron jobs scheduled (hourly verification + 5min MV refresh)
+- Verification run logging (audit_verify_runs table)
 - Zero-dependency CORS and metrics helpers
 
 ⏸️ **Deferred (awaiting denopkg.com resolution):**
@@ -96,9 +111,12 @@ ORDER BY day DESC;
 ## Security Considerations
 
 1. **Admin Access Only:** Audit verification is restricted to users with admin role
-2. **Immutable Logs:** Audit entries cannot be modified or deleted (enforced by RLS)
-3. **Cryptographic Verification:** HMAC-SHA256 ensures tampering detection
+2. **Immutable Logs:** Audit entries cannot be modified or deleted (enforced by triggers)
+3. **Cryptographic Verification:** HMAC-SHA256 hash chain ensures tampering detection
 4. **Automated Monitoring:** Hourly verification catches issues quickly
+5. **Versioned Secrets:** Supports rotation without breaking existing entries
+6. **DB-Side Crypto:** Secrets never leave the database
+7. **Verification Logging:** All verification runs logged to audit_verify_runs
 
 ## Usage
 
@@ -143,10 +161,26 @@ if (data.intact) {
 
 ### Chain Verification Fails
 
-1. Check `audit_chain` table for tampering
-2. Review database access logs
-3. Verify RLS policies are enabled on audit tables
-4. Check `AUDIT_SECRET` environment variable
+1. Check `audit_verify_runs` for error details:
+```sql
+SELECT * FROM audit_verify_runs 
+WHERE intact = false 
+ORDER BY run_at DESC LIMIT 1;
+```
+
+2. Review the broken entry:
+```sql
+SELECT * FROM audit_logs 
+WHERE id = '<broken_at_id_from_above>';
+```
+
+3. Check secret availability:
+```sql
+SELECT version, created_at FROM private.audit_secrets ORDER BY version;
+```
+
+4. Investigate database access logs for unauthorized modifications
+5. Contact security team immediately if tampering is suspected
 
 ### Cron Jobs Not Running
 
@@ -172,6 +206,23 @@ FROM pg_matviews
 WHERE matviewname = 'mv_audit_daily_stats';
 ```
 
+## Secret Rotation
+
+See [AUDIT_CHAIN_ROTATION.md](./security/AUDIT_CHAIN_ROTATION.md) for complete rotation procedures.
+
+Quick rotation:
+```sql
+-- 1. Add new secret
+INSERT INTO private.audit_secrets (version, secret) 
+VALUES (2, 'NEW-SECURE-RANDOM-SECRET');
+
+-- 2. Update default
+ALTER TABLE audit_logs ALTER COLUMN secret_version SET DEFAULT 2;
+
+-- 3. Verify
+SELECT * FROM verify_audit_chain();
+```
+
 ## Next Steps (Phase 3)
 
 1. **Enable Read Replicas:** Once denopkg.com issue resolved, implement true postgres Pool routing
@@ -179,9 +230,11 @@ WHERE matviewname = 'mv_audit_daily_stats';
 3. **Alert System:** Email/Slack notifications when chain verification fails
 4. **Compliance Reports:** Generate periodic audit compliance reports from materialized views
 5. **Advanced Analytics:** Add more granular materialized views for specific audit patterns
+6. **Secret Rotation Schedule:** Set up automated quarterly rotation reminders
 
 ## References
 
 - [Audit Chain Documentation](./AUDIT_CHAIN.md)
+- [Secret Rotation Guide](./security/AUDIT_CHAIN_ROTATION.md)
 - [SPEC-2 Requirements](./SPEC-2_OPTIMIZE_SUPABASE.md)
 - [SPEC-2 Phase 2 Setup](./SPEC-2_PHASE2_SETUP.md)

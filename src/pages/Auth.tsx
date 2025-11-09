@@ -1,11 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Brain } from "lucide-react";
+import { Brain, Eye, EyeOff, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
@@ -29,6 +29,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [mfaCode, setMfaCode] = useState("");
   const [isMfaRequired, setIsMfaRequired] = useState(false);
   const [useRecoveryCode, setUseRecoveryCode] = useState(false);
@@ -40,8 +41,23 @@ const Auth = () => {
   const [resetSubmitting, setResetSubmitting] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [isResetStage, setIsResetStage] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [lockoutMessage, setLockoutMessage] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
+  const [rateLimitCooldown, setRateLimitCooldown] = useState<number>(0);
   const location = useLocation();
   const navigate = useNavigate();
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const errorSummaryRef = useRef<HTMLDivElement>(null);
+
+  // Set page title dynamically
+  useEffect(() => {
+    document.title = isResetStage 
+      ? "Reset Password – ClinicalAI Assistant"
+      : activeTab === "signin"
+      ? "Sign In – ClinicalAI Assistant"
+      : "Sign Up – ClinicalAI Assistant";
+  }, [activeTab, isResetStage]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
@@ -49,7 +65,22 @@ const Auth = () => {
     const hash = location.hash || "";
     const hashIndicatesRecovery = hash.includes("type=recovery") || hash.includes("access_token");
     setIsResetStage(stageParam || hashIndicatesRecovery);
+    
+    // Handle route-based tab switching
+    if (params.get("mode") === "signup") {
+      setActiveTab("signup");
+    }
   }, [location.search, location.hash]);
+
+  // Rate limit cooldown timer
+  useEffect(() => {
+    if (rateLimitCooldown > 0) {
+      const timer = setInterval(() => {
+        setRateLimitCooldown((prev) => Math.max(0, prev - 1));
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  }, [rateLimitCooldown]);
 
   const strongPassword = (pw: string) =>
     typeof pw === "string" &&
@@ -129,11 +160,22 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    setLockoutMessage(null);
 
     // Validate inputs
     const validation = authSchema.safeParse({ email, password });
     if (!validation.success) {
-      toast.error(validation.error.errors[0].message);
+      const newErrors: Record<string, string> = {};
+      validation.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          newErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(newErrors);
+      
+      // Focus error summary
+      setTimeout(() => errorSummaryRef.current?.focus(), 100);
       return;
     }
 
@@ -167,10 +209,12 @@ const Auth = () => {
     } catch (error: any) {
       const msg = typeof error?.message === 'string' ? error.message : '';
       if (msg.includes('non-2xx') || msg.includes('429')) {
-        toast.error("Too many signup attempts from your network. Please wait ~15 minutes and try again.");
+        setRateLimitCooldown(900); // 15 minutes
+        setErrors({ general: "Too many signup attempts from your network. Please wait and try again." });
       } else {
-        toast.error(msg || "Failed to create account");
+        setErrors({ general: msg || "Failed to create account" });
       }
+      setTimeout(() => errorSummaryRef.current?.focus(), 100);
     } finally {
       setLoading(false);
     }
@@ -178,11 +222,20 @@ const Auth = () => {
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors({});
+    setLockoutMessage(null);
 
     // Validate inputs
     const validation = authSchema.safeParse({ email, password });
     if (!validation.success) {
-      toast.error(validation.error.errors[0].message);
+      const newErrors: Record<string, string> = {};
+      validation.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          newErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(newErrors);
+      setTimeout(() => errorSummaryRef.current?.focus(), 100);
       return;
     }
 
@@ -195,7 +248,7 @@ const Auth = () => {
       });
 
       if (lockoutCheck) {
-        toast.error("Account temporarily locked due to multiple failed login attempts. Please try again in 15 minutes.");
+        setLockoutMessage("Account temporarily locked due to multiple failed login attempts. Please try again in 15 minutes.");
         setLoading(false);
         return;
       }
@@ -232,7 +285,8 @@ const Auth = () => {
       toast.success("Signed in successfully!");
       navigate("/");
     } catch (error: any) {
-      toast.error(error.message || "Failed to sign in");
+      setErrors({ general: error.message || "Failed to sign in" });
+      setTimeout(() => errorSummaryRef.current?.focus(), 100);
     } finally {
       setLoading(false);
     }
@@ -396,26 +450,94 @@ const Auth = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary/30 to-background p-4">
-      <Card className="w-full max-w-md shadow-lg border-border/50">
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md">
+        Skip to content
+      </a>
+      
+      <Card id="main-content" className="w-full max-w-md shadow-lg border-border/50">
         <CardHeader className="space-y-4 text-center">
           <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-md">
-            <Brain className="w-10 h-10 text-white" />
+            <Brain className="w-10 h-10 text-white" aria-hidden="true" />
           </div>
           <div>
             <CardTitle className="text-2xl">ClinicalAI Assistant</CardTitle>
-            <CardDescription className="mt-2">
+            <CardDescription className="mt-2" id="app-description">
               Mental health clinical documentation made simple
             </CardDescription>
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
+          {/* Lockout/MFA warning above form */}
+          {lockoutMessage && (
+            <div role="alert" className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-sm text-destructive">
+              {lockoutMessage}
+            </div>
+          )}
+
+          {/* Rate limit cooldown */}
+          {rateLimitCooldown > 0 && (
+            <div role="alert" className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-sm text-destructive">
+              Too many attempts. Try again in {Math.floor(rateLimitCooldown / 60)}:{String(rateLimitCooldown % 60).padStart(2, '0')}
+            </div>
+          )}
+
+          {/* Error summary */}
+          {Object.keys(errors).length > 0 && (
+            <div 
+              ref={errorSummaryRef}
+              role="alert" 
+              aria-live="assertive"
+              tabIndex={-1}
+              className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md space-y-1"
+            >
+              <p className="font-semibold text-sm text-destructive">Please fix the following errors:</p>
+              <ul className="text-sm text-destructive space-y-1">
+                {Object.entries(errors).map(([field, message]) => (
+                  <li key={field}>
+                    <a href={`#${field}-input`} className="underline hover:no-underline">
+                      {field === 'general' ? message : `${field}: ${message}`}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <Tabs 
+            value={activeTab} 
+            onValueChange={(val) => {
+              setActiveTab(val as "signin" | "signup");
+              setErrors({});
+              setLockoutMessage(null);
+              // Update URL without reload
+              const url = new URL(window.location.href);
+              url.searchParams.set('mode', val);
+              window.history.replaceState({}, '', url.toString());
+              // Focus first field after tab switch
+              setTimeout(() => emailInputRef.current?.focus(), 100);
+            }}
+            className="w-full"
+          >
+            <TabsList role="tablist" className="grid w-full grid-cols-2 mb-6" aria-label="Authentication options">
+              <TabsTrigger 
+                value="signin" 
+                role="tab"
+                aria-selected={activeTab === "signin"}
+                aria-controls="signin-panel"
+              >
+                Sign In
+              </TabsTrigger>
+              <TabsTrigger 
+                value="signup"
+                role="tab"
+                aria-selected={activeTab === "signup"}
+                aria-controls="signup-panel"
+              >
+                Sign Up
+              </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="signin">
+            <TabsContent value="signin" role="tabpanel" id="signin-panel" aria-labelledby="signin-tab">
               {isMfaRequired ? (
                 <form onSubmit={handleMfaVerify} className="space-y-4">
                   {!useRecoveryCode ? (
@@ -547,27 +669,43 @@ const Auth = () => {
                   </Button>
                 </form>
               ) : showResetRequest ? (
-                <form onSubmit={handleResetRequest} className="space-y-4">
+                <form onSubmit={handleResetRequest} className="space-y-4" aria-describedby="app-description">
                   <div className="space-y-2">
-                    <Label htmlFor="reset-email">Email</Label>
+                    <Label htmlFor="reset-email-input">Email Address</Label>
                     <Input
-                      id="reset-email"
+                      ref={emailInputRef}
+                      id="reset-email-input"
+                      name="email"
                       type="email"
-                      placeholder="your.email@example.com"
+                      autoComplete="email"
+                      inputMode="email"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck="false"
+                      placeholder="name@example.com"
                       value={resetEmail}
                       onChange={(e) => setResetEmail(e.target.value)}
                       required
+                      disabled={resetSubmitting}
                     />
                   </div>
                   <Button
                     type="submit"
-                    className="w-full bg-primary hover:bg-primary/90 transition-all"
+                    className="w-full bg-primary hover:bg-primary/90 transition-all focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     disabled={resetSubmitting}
+                    aria-busy={resetSubmitting}
                   >
-                    {resetSubmitting ? "Sending link..." : "Send reset link"}
+                    {resetSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                        Sending...
+                      </>
+                    ) : (
+                      "Send Reset Link"
+                    )}
                   </Button>
-                  {resetError && <p className="text-sm text-destructive">{resetError}</p>}
-                  {resetMessage && <p className="text-sm text-accent-foreground">{resetMessage}</p>}
+                  {resetError && <p className="text-sm text-destructive" role="alert">{resetError}</p>}
+                  {resetMessage && <p className="text-sm text-accent-foreground" role="alert">{resetMessage}</p>}
                   <Button
                     type="button"
                     variant="ghost"
@@ -583,37 +721,83 @@ const Auth = () => {
                   </Button>
                 </form>
               ) : (
-                <form onSubmit={handleSignIn} className="space-y-4">
+                <form onSubmit={handleSignIn} className="space-y-4" aria-describedby="app-description">
                   <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
+                    <Label htmlFor="email-input">Email</Label>
                     <Input
-                      id="signin-email"
+                      ref={emailInputRef}
+                      id="email-input"
+                      name="email"
                       type="email"
-                      placeholder="your.email@example.com"
+                      autoComplete="username"
+                      inputMode="email"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck="false"
+                      placeholder="name@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
-                      className="transition-all"
+                      disabled={loading}
+                      aria-invalid={!!errors.email}
+                      aria-describedby={errors.email ? "email-error" : undefined}
                     />
+                    {errors.email && (
+                      <p id="email-error" className="text-sm text-destructive">{errors.email}</p>
+                    )}
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <Input
-                      id="signin-password"
-                      type="password"
-                      placeholder="••••••••"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="transition-all"
-                    />
+                    <Label htmlFor="password-input">Password</Label>
+                    <div className="relative">
+                      <Input
+                        id="password-input"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        disabled={loading}
+                        autoComplete="current-password"
+                        aria-invalid={!!errors.password}
+                        aria-describedby={errors.password ? "password-error" : undefined}
+                        className="pr-10"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                        onClick={() => setShowPassword(!showPassword)}
+                        aria-pressed={showPassword}
+                        aria-label={showPassword ? "Hide password" : "Show password"}
+                        disabled={loading}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                        ) : (
+                          <Eye className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                        )}
+                      </Button>
+                    </div>
+                    {errors.password && (
+                      <p id="password-error" className="text-sm text-destructive">{errors.password}</p>
+                    )}
                   </div>
                   <Button
                     type="submit"
-                    className="w-full bg-primary hover:bg-primary/90 transition-all"
+                    className="w-full bg-primary hover:bg-primary/90 transition-all focus:ring-2 focus:ring-ring focus:ring-offset-2"
                     disabled={loading}
+                    aria-busy={loading}
                   >
-                    {loading ? "Signing in..." : "Sign In"}
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                        Signing in...
+                      </>
+                    ) : (
+                      "Sign In"
+                    )}
                   </Button>
                   <Button
                     type="button"
@@ -631,40 +815,106 @@ const Auth = () => {
               )}
             </TabsContent>
 
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
+            <TabsContent value="signup" role="tabpanel" id="signup-panel" aria-labelledby="signup-tab">
+              <form onSubmit={handleSignUp} className="space-y-4" aria-describedby="app-description">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
+                  <Label htmlFor="signup-email-input">Email</Label>
                   <Input
-                    id="signup-email"
+                    ref={emailInputRef}
+                    id="signup-email-input"
+                    name="email"
                     type="email"
-                    placeholder="your.email@example.com"
+                    autoComplete="username"
+                    inputMode="email"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    placeholder="name@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="transition-all"
+                    disabled={loading}
+                    aria-invalid={!!errors.email}
+                    aria-describedby={errors.email ? "signup-email-error" : "password-requirements"}
                   />
+                  {errors.email && (
+                    <p id="signup-email-error" className="text-sm text-destructive">{errors.email}</p>
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={6}
-                    className="transition-all"
-                  />
+                  <Label htmlFor="signup-password-input">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="signup-password-input"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      disabled={loading}
+                      autoComplete="new-password"
+                      aria-invalid={!!errors.password}
+                      aria-describedby={errors.password ? "signup-password-error" : "password-requirements"}
+                      className="pr-10"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-pressed={showPassword}
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      disabled={loading}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                      ) : (
+                        <Eye className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                      )}
+                    </Button>
+                  </div>
+                  {errors.password && (
+                    <p id="signup-password-error" className="text-sm text-destructive">{errors.password}</p>
+                  )}
+                  <p id="password-requirements" className="text-xs text-muted-foreground">
+                    Must be at least 8 characters with uppercase, lowercase, number, and special character
+                  </p>
                 </div>
                 <Button
                   type="submit"
-                  className="w-full bg-primary hover:bg-primary/90 transition-all"
+                  className="w-full bg-primary hover:bg-primary/90 transition-all focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   disabled={loading}
+                  aria-busy={loading}
                 >
-                  {loading ? "Creating account..." : "Create Account"}
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
+                      Creating account...
+                    </>
+                  ) : (
+                    "Sign Up"
+                  )}
                 </Button>
+                
+                <p className="text-xs text-center text-muted-foreground mt-6">
+                  By signing up, you agree to our{" "}
+                  <a href="/privacy" className="underline hover:no-underline">Privacy Policy</a>
+                  {" "}and{" "}
+                  <a href="/hipaa" className="underline hover:no-underline">HIPAA Notice</a>
+                </p>
+                
+                <p className="text-xs text-center text-muted-foreground mt-2">
+                  Already have an account?{" "}
+                  <Button
+                    variant="link"
+                    className="p-0 h-auto font-normal underline"
+                    onClick={() => setActiveTab("signin")}
+                  >
+                    Sign in
+                  </Button>
+                </p>
               </form>
             </TabsContent>
           </Tabs>

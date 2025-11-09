@@ -1,10 +1,12 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Authentication', () => {
-  test('displays login form on auth page', async ({ page }) => {
+test.describe('Authentication - Accessibility & Functionality', () => {
+  test.beforeEach(async ({ page }) => {
     await page.goto('/auth');
     await page.waitForLoadState('networkidle');
-    
+  });
+
+  test('displays login form with proper ARIA attributes', async ({ page }) => {
     // Check for email and password inputs
     const emailInput = page.getByLabel(/email/i);
     const passwordInput = page.getByLabel(/password/i);
@@ -13,36 +15,82 @@ test.describe('Authentication', () => {
     await expect(passwordInput).toBeVisible();
     
     // Verify inputs have proper autocomplete attributes
-    await expect(emailInput).toHaveAttribute('autocomplete', 'email');
+    await expect(emailInput).toHaveAttribute('autocomplete', 'username');
     await expect(passwordInput).toHaveAttribute('autocomplete', 'current-password');
     
     // Verify no autocapitalize or spellcheck on email
     await expect(emailInput).toHaveAttribute('autocapitalize', 'none');
     await expect(emailInput).toHaveAttribute('spellcheck', 'false');
+    await expect(emailInput).toHaveAttribute('inputmode', 'email');
+    
+    // Verify password has type="password"
+    await expect(passwordInput).toHaveAttribute('type', 'password');
   });
 
-  test('shows error message for invalid credentials', async ({ page }) => {
-    await page.goto('/auth');
-    await page.waitForLoadState('networkidle');
+  test('tab semantics work correctly with keyboard navigation', async ({ page }) => {
+    const signInTab = page.getByRole('tab', { name: /sign in/i });
+    const signUpTab = page.getByRole('tab', { name: /sign up/i });
+    
+    // Check ARIA attributes
+    await expect(signInTab).toHaveAttribute('aria-selected', 'true');
+    await expect(signUpTab).toHaveAttribute('aria-selected', 'false');
+    
+    // Navigate with keyboard
+    await signInTab.focus();
+    await signInTab.press('ArrowRight');
+    
+    // Sign Up tab should now be selected
+    await expect(signUpTab).toHaveAttribute('aria-selected', 'true');
+    await expect(signInTab).toHaveAttribute('aria-selected', 'false');
+    
+    // Email field should be focused after tab switch
+    await page.waitForTimeout(200);
+    const emailInput = page.getByLabel(/email/i);
+    await expect(emailInput).toBeFocused();
+  });
+
+  test('password visibility toggle works with proper ARIA', async ({ page }) => {
+    const passwordInput = page.getByLabel(/^password$/i).first();
+    const toggleButton = page.getByRole('button', { name: /show password/i });
+    
+    // Initially password is hidden
+    await expect(passwordInput).toHaveAttribute('type', 'password');
+    await expect(toggleButton).toHaveAttribute('aria-pressed', 'false');
+    
+    // Click to show password
+    await toggleButton.click();
+    await expect(passwordInput).toHaveAttribute('type', 'text');
+    await expect(toggleButton).toHaveAttribute('aria-pressed', 'true');
+    
+    // Click to hide password
+    await toggleButton.click();
+    await expect(passwordInput).toHaveAttribute('type', 'password');
+    await expect(toggleButton).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('shows inline error messages with proper focus management', async ({ page }) => {
+    const emailInput = page.getByLabel(/email/i);
+    const passwordInput = page.getByLabel(/^password$/i).first();
+    const signInButton = page.getByRole('button', { name: /^sign in$/i });
     
     // Fill in invalid credentials
-    await page.getByLabel(/email/i).fill('invalid@example.com');
-    await page.getByLabel(/password/i).fill('wrongpassword');
+    await emailInput.fill('invalid-email');
+    await passwordInput.fill('short');
     
     // Submit form
-    const signInButton = page.getByRole('button', { name: /sign in/i });
     await signInButton.click();
     
-    // Wait for and verify error toast or message
-    // Note: This assumes toast notifications are used for errors
-    await page.waitForSelector('[role="status"]', { timeout: 5000 });
+    // Wait for error summary to appear
+    const errorSummary = page.locator('[role="alert"][aria-live="assertive"]');
+    await expect(errorSummary).toBeVisible();
+    await expect(errorSummary).toBeFocused();
+    
+    // Check for specific field errors
+    await expect(page.locator('#email-error')).toBeVisible();
+    await expect(emailInput).toHaveAttribute('aria-invalid', 'true');
   });
 
   test('password reset link is keyboard accessible', async ({ page }) => {
-    await page.goto('/auth');
-    await page.waitForLoadState('networkidle');
-    
-    // Find forgot password link
     const forgotPasswordLink = page.getByText(/forgot.*password/i);
     
     if (await forgotPasswordLink.isVisible()) {
@@ -54,21 +102,76 @@ test.describe('Authentication', () => {
       await forgotPasswordLink.press('Enter');
       
       // Should show password reset UI
-      await expect(page.getByText(/reset.*password/i)).toBeVisible();
+      await expect(page.getByText(/send reset link/i)).toBeVisible();
     }
   });
 
   test('form labels are properly associated with inputs', async ({ page }) => {
-    await page.goto('/auth');
-    await page.waitForLoadState('networkidle');
-    
     // Check email input has associated label
     const emailInput = page.getByLabel(/email/i);
     await expect(emailInput).toHaveAttribute('type', 'email');
+    await expect(emailInput).toHaveAttribute('id', 'email-input');
     
     // Check password input has associated label
-    const passwordInput = page.getByLabel(/password/i);
+    const passwordInput = page.getByLabel(/^password$/i).first();
     await expect(passwordInput).toHaveAttribute('type', 'password');
+    await expect(passwordInput).toHaveAttribute('id', 'password-input');
+  });
+
+  test('sign up form has proper attributes for password managers', async ({ page }) => {
+    const signUpTab = page.getByRole('tab', { name: /sign up/i });
+    await signUpTab.click();
+    
+    const emailInput = page.getByLabel(/email/i);
+    const passwordInput = page.getByLabel(/^password$/i).first();
+    
+    // Check email attributes
+    await expect(emailInput).toHaveAttribute('type', 'email');
+    await expect(emailInput).toHaveAttribute('autocomplete', 'username');
+    await expect(emailInput).toHaveAttribute('inputmode', 'email');
+    
+    // Check password attributes for new password
+    await expect(passwordInput).toHaveAttribute('autocomplete', 'new-password');
+  });
+
+  test('loading states show spinner and aria-busy', async ({ page }) => {
+    const emailInput = page.getByLabel(/email/i);
+    const passwordInput = page.getByLabel(/^password$/i).first();
+    const signInButton = page.getByRole('button', { name: /^sign in$/i });
+    
+    await emailInput.fill('test@example.com');
+    await passwordInput.fill('Test1234!@#$');
+    
+    // Start submission
+    await signInButton.click();
+    
+    // Check for loading state (may be brief)
+    const loadingButton = page.getByRole('button', { name: /signing in/i });
+    if (await loadingButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+      await expect(loadingButton).toHaveAttribute('aria-busy', 'true');
+      await expect(loadingButton).toBeDisabled();
+    }
+  });
+
+  test('skip to content link is keyboard accessible', async ({ page }) => {
+    // Focus the page
+    await page.keyboard.press('Tab');
+    
+    // Skip link should be focused and visible
+    const skipLink = page.getByText(/skip to content/i);
+    await expect(skipLink).toBeFocused();
+  });
+
+  test('page title updates based on tab', async ({ page }) => {
+    // Check initial title
+    await expect(page).toHaveTitle(/sign in.*clinicalai assistant/i);
+    
+    // Switch to sign up
+    const signUpTab = page.getByRole('tab', { name: /sign up/i });
+    await signUpTab.click();
+    
+    // Check updated title
+    await expect(page).toHaveTitle(/sign up.*clinicalai assistant/i);
   });
 
   test('complete signup flow and session persistence', async ({ page, context }) => {

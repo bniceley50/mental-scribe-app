@@ -1169,7 +1169,7 @@ export type Database = {
         Returns: boolean
       }
       check_and_increment_quota: {
-        Args: { _increment?: number; _quota_type: string; _user_id: string }
+        Args: { _increment?: number; _quota_type: string }
         Returns: boolean
       }
       check_password_history: {

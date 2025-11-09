@@ -63,20 +63,18 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
 
   // Auto-save functionality with recording guard
   useEffect(() => {
-    if (isRecording) {
-      console.log("StructuredNoteForm: Skipping auto-save while recording");
-      return;
-    }
+    if (isRecording || saving) return;
+
+    const hasContent = Object.values(formData).some(v => v !== "" && v !== false);
+    if (!conversationId || !hasContent) return;
 
     const autoSaveTimer = setTimeout(() => {
-      if (conversationId && Object.values(formData).some(v => v !== "" && v !== false)) {
-        console.log("StructuredNoteForm: Auto-save triggered");
-        handleSave(true);
-      }
+      console.log("StructuredNoteForm: Auto-save triggered");
+      handleSave(true);
     }, 30000);
 
     return () => clearTimeout(autoSaveTimer);
-  }, [formData, conversationId, isRecording]);
+  }, [formData, conversationId, isRecording, saving]);
 
   // Load existing note if available
   useEffect(() => {
@@ -119,106 +117,42 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
   };
 
   const handleSave = async (autoSave = false) => {
+    if (saving) return;
     setSaving(true);
-
     try {
       const { data: { user }, error: authError } = await supabase.auth.getUser();
-      
-      if (authError) {
-        console.error("Auth error:", authError);
-        throw new Error("Authentication error. Please refresh and log in again.");
-      }
-      
-      if (!user) {
-        throw new Error("You must be logged in to save. Please refresh and log in again.");
-      }
+      if (authError || !user) throw new Error("Please sign in again.");
 
-      // Verify conversation exists and belongs to user
-      const { data: conversation, error: convError } = await supabase
-        .from("conversations")
-        .select("id, user_id")
-        .eq("id", conversationId)
-        .maybeSingle();
-
-      if (convError) {
-        console.error("Error checking conversation:", convError);
-        throw new Error("Could not verify conversation. Please try again.");
-      }
-
-      if (!conversation) {
-        throw new Error("Conversation not found. Please refresh the page.");
-      }
-
-      if (conversation.user_id !== user.id) {
-        throw new Error("You don't have permission to save notes for this conversation.");
-      }
-
-      // Check if note exists
-      const { data: existingNote, error: checkError } = await supabase
+      // Single round-trip with RLS; requires unique index on conversation_id
+      const { data, error } = await supabase
         .from("structured_notes")
-        .select("id")
-        .eq("conversation_id", conversationId)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error("Error checking existing note:", checkError);
-        throw new Error(`Database error: ${checkError.message}`);
-      }
-
-      if (existingNote) {
-        // Update existing note
-        const { error: updateError } = await supabase
-          .from("structured_notes")
-          .update({
-            ...formData,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", existingNote.id);
-
-        if (updateError) {
-          console.error("Update error:", updateError);
-          throw new Error(`Failed to update: ${updateError.message}`);
-        }
-      } else {
-        // Create new note
-        const { error: insertError } = await supabase
-          .from("structured_notes")
-          .insert({
+        .upsert(
+          {
             ...formData,
             conversation_id: conversationId,
             user_id: user.id,
-          });
+          },
+          { onConflict: "conversation_id" }
+        )
+        .select("id, updated_at")
+        .single();
 
-        if (insertError) {
-          console.error("Insert error:", insertError);
-          throw new Error(`Failed to create note: ${insertError.message}`);
-        }
-      }
+      if (error) throw error;
 
-      setLastSaved(new Date());
-      
+      setLastSaved(data?.updated_at ? new Date(data.updated_at) : new Date());
+
       if (!autoSave) {
         toast.success("Progress saved successfully", {
           icon: <CheckCircle2 className="h-4 w-4" />,
         });
         onSave?.();
       }
-    } catch (error: any) {
-      console.error("Error saving structured note - Full error:", error);
-      console.error("Error details:", {
-        message: error?.message,
-        code: error?.code,
-        details: error?.details,
-        hint: error?.hint,
-        conversationId,
-        hasFormData: Object.keys(formData).length > 0
-      });
-      
-      const errorMessage = error?.message || "Failed to save progress";
-      toast.error(errorMessage, {
-        duration: 5000,
-        description: "Check console for details",
-      });
+    } catch (err: any) {
+      const msg = err?.message?.toLowerCase()?.includes("row-level security")
+        ? "You don’t have access to save this note."
+        : err?.message || "Failed to save progress";
+      toast.error(msg, { duration: 5000, description: "Check console for details" });
+      console.error("Save structured note failed:", err);
     } finally {
       setSaving(false);
     }

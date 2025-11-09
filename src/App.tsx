@@ -13,6 +13,7 @@ import History from "./pages/History";
 import Settings from "./pages/Settings";
 import SecuritySettings from "./pages/SecuritySettings";
 import SecurityMonitoring from "./pages/SecurityMonitoring";
+import AuditDashboard from "./pages/AuditDashboard";
 import Clients from "./pages/Clients";
 import ClientProfile from "./pages/ClientProfile";
 import NotFound from "./pages/NotFound";
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/settings/security" element={<ProtectedRoute><SecuritySettings /></ProtectedRoute>} />
             <Route path="/security/monitoring" element={<ProtectedRoute><SecurityMonitoring /></ProtectedRoute>} />
+            <Route path="/security/audit" element={<ProtectedRoute><AuditDashboard /></ProtectedRoute>} />
             
             {/* 404 - Public */}
             <Route path="*" element={<NotFound />} />

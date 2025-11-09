@@ -1,12 +1,13 @@
 import { ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Brain, FileText, History, Settings, LogOut } from "lucide-react";
+import { Brain, FileText, History, Settings, LogOut, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast as showToast } from "sonner";
 import { ConversationSidebar } from "./ConversationSidebar";
 import { PrivacyFooter } from "./PrivacyFooter";
 import { HelpDialog } from "./HelpDialog";
+import { useAdminAccess } from "@/hooks/useAdminAccess";
 
 interface LayoutProps {
   children: ReactNode;
@@ -17,6 +18,7 @@ interface LayoutProps {
 const Layout = ({ children, currentConversationId, onConversationSelect }: LayoutProps) => {
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAdmin } = useAdminAccess();
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -45,6 +47,10 @@ const Layout = ({ children, currentConversationId, onConversationSelect }: Layou
     { path: "/history", icon: History, label: "History" },
     { path: "/settings", icon: Settings, label: "Settings" },
   ];
+
+  const adminNavItems = isAdmin ? [
+    { path: "/security/audit", icon: Shield, label: "Audit Chain" },
+  ] : [];
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -97,6 +103,33 @@ const Layout = ({ children, currentConversationId, onConversationSelect }: Layou
                 </Link>
               );
             })}
+            
+            {/* Admin-only navigation items */}
+            {adminNavItems.length > 0 && (
+              <>
+                <div className="pt-2 pb-1">
+                  <p className="text-xs font-medium text-muted-foreground px-3">Admin</p>
+                </div>
+                {adminNavItems.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link key={item.path} to={item.path}>
+                      <Button
+                        variant={isActive(item.path) ? "secondary" : "ghost"}
+                        className={`w-full justify-start transition-all ${
+                          isActive(item.path)
+                            ? "bg-secondary text-sidebar-accent-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4 mr-3" />
+                        {item.label}
+                      </Button>
+                    </Link>
+                  );
+                })}
+              </>
+            )}
           </nav>
 
           {/* Conversation Sidebar */}

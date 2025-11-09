@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-11-09",
+  "security": {
+    "vulnerabilities": {
+      "critical": 0,
+      "high": 0,
+      "moderate": 0,
+      "low": 0
+    },
+    "secrets": 0,
+    "rlsTables": 0,
+    "anonBlockPolicies": 0,
+    "cspFunctions": 0,
+    "localStorageUsage": 0
+  },
+  "quality": null,
+  "performance": null
+}

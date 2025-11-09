@@ -15,6 +15,7 @@ import SecuritySettings from "./pages/SecuritySettings";
 import SecurityMonitoring from "./pages/SecurityMonitoring";
 import AuditDashboard from "./pages/AuditDashboard";
 import ComplianceReports from "./pages/ComplianceReports";
+import SystemHealth from "./pages/SystemHealth";
 import Clients from "./pages/Clients";
 import ClientProfile from "./pages/ClientProfile";
 import NotFound from "./pages/NotFound";
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/security/monitoring" element={<ProtectedRoute><SecurityMonitoring /></ProtectedRoute>} />
             <Route path="/security/audit" element={<ProtectedRoute><AuditDashboard /></ProtectedRoute>} />
             <Route path="/security/compliance" element={<ProtectedRoute><ComplianceReports /></ProtectedRoute>} />
+            <Route path="/admin/system-health" element={<ProtectedRoute><SystemHealth /></ProtectedRoute>} />
             
             {/* 404 - Public */}
             <Route path="*" element={<NotFound />} />

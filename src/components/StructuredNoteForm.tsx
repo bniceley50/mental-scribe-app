@@ -122,19 +122,52 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
     setSaving(true);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
+      const { data: { user }, error: authError } = await supabase.auth.getUser();
+      
+      if (authError) {
+        console.error("Auth error:", authError);
+        throw new Error("Authentication error. Please refresh and log in again.");
+      }
+      
+      if (!user) {
+        throw new Error("You must be logged in to save. Please refresh and log in again.");
+      }
+
+      // Verify conversation exists and belongs to user
+      const { data: conversation, error: convError } = await supabase
+        .from("conversations")
+        .select("id, user_id")
+        .eq("id", conversationId)
+        .maybeSingle();
+
+      if (convError) {
+        console.error("Error checking conversation:", convError);
+        throw new Error("Could not verify conversation. Please try again.");
+      }
+
+      if (!conversation) {
+        throw new Error("Conversation not found. Please refresh the page.");
+      }
+
+      if (conversation.user_id !== user.id) {
+        throw new Error("You don't have permission to save notes for this conversation.");
+      }
 
       // Check if note exists
-      const { data: existingNote } = await supabase
+      const { data: existingNote, error: checkError } = await supabase
         .from("structured_notes")
         .select("id")
         .eq("conversation_id", conversationId)
         .maybeSingle();
 
+      if (checkError) {
+        console.error("Error checking existing note:", checkError);
+        throw new Error(`Database error: ${checkError.message}`);
+      }
+
       if (existingNote) {
         // Update existing note
-        const { error } = await supabase
+        const { error: updateError } = await supabase
           .from("structured_notes")
           .update({
             ...formData,
@@ -142,10 +175,13 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
           })
           .eq("id", existingNote.id);
 
-        if (error) throw error;
+        if (updateError) {
+          console.error("Update error:", updateError);
+          throw new Error(`Failed to update: ${updateError.message}`);
+        }
       } else {
         // Create new note
-        const { error } = await supabase
+        const { error: insertError } = await supabase
           .from("structured_notes")
           .insert({
             ...formData,
@@ -153,7 +189,10 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
             user_id: user.id,
           });
 
-        if (error) throw error;
+        if (insertError) {
+          console.error("Insert error:", insertError);
+          throw new Error(`Failed to create note: ${insertError.message}`);
+        }
       }
 
       setLastSaved(new Date());
@@ -164,9 +203,13 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
         });
         onSave?.();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error saving structured note:", error);
-      toast.error("Failed to save progress");
+      const errorMessage = error?.message || "Failed to save progress";
+      toast.error(errorMessage, {
+        duration: 5000,
+        description: "If this persists, please contact support.",
+      });
     } finally {
       setSaving(false);
     }

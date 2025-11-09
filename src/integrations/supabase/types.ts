@@ -1311,17 +1311,29 @@ export type Database = {
           user_id: string
         }[]
       }
-      verify_audit_chain: {
-        Args: never
-        Returns: {
-          actual: string
-          broken_at_id: string
-          expected: string
-          intact: boolean
-          total_entries: number
-          verified_entries: number
-        }[]
-      }
+      verify_audit_chain:
+        | {
+            Args: { p_user_id?: string }
+            Returns: {
+              actual: string
+              broken_at_id: string
+              expected: string
+              intact: boolean
+              total_entries: number
+              verified_entries: number
+            }[]
+          }
+        | {
+            Args: never
+            Returns: {
+              actual: string
+              broken_at_id: string
+              expected: string
+              intact: boolean
+              total_entries: number
+              verified_entries: number
+            }[]
+          }
     }
     Enums: {
       app_role: "admin" | "user"

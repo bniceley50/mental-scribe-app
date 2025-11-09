@@ -1,11 +1,9 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0'
 import { Counter, Histogram, Gauge, startTimer } from '../_shared/metrics.ts'
+import { makeCors } from '../_shared/cors.ts'
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+const cors = makeCors()
 
 // Metrics
 const verifyRequestsTotal = new Counter('audit_verify_requests_total', 'Total audit verification requests')
@@ -73,13 +71,10 @@ async function computeHash(
   return hashHex
 }
 
-serve(async (req) => {
+serve(cors.wrap(async (req) => {
   const timer = startTimer()
   
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
-  }
+  // CORS preflight handled by wrapper
 
   try {
     // Initialize Supabase client
@@ -128,18 +123,12 @@ serve(async (req) => {
     }
 
     if (!entries || entries.length === 0) {
-      return new Response(
-        JSON.stringify({
-          intact: true,
-          totalEntries: 0,
-          verifiedEntries: 0,
-          message: 'No audit entries to verify'
-        }),
-        {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          status: 200
-        }
-      )
+      return cors.json({
+        intact: true,
+        totalEntries: 0,
+        verifiedEntries: 0,
+        message: 'No audit entries to verify'
+      })
     }
 
     // Verify the chain
@@ -154,23 +143,17 @@ serve(async (req) => {
         verifyRequestsTotal.inc({ status: 'success', intact: 'false' })
         verifyDuration.observe(timer(), { status: 'success' })
         
-        return new Response(
-          JSON.stringify({
-            intact: false,
-            totalEntries: entries.length,
-            verifiedEntries: verifiedCount,
-            error: 'Chain broken: prev_hash mismatch',
-            brokenAtEntry: entry.id,
-            details: {
-              expected: prevHash,
-              actual: entry.prev_hash || 'null'
-            }
-          } as VerifyResult),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200
+        return cors.json({
+          intact: false,
+          totalEntries: entries.length,
+          verifiedEntries: verifiedCount,
+          error: 'Chain broken: prev_hash mismatch',
+          brokenAtEntry: entry.id,
+          details: {
+            expected: prevHash,
+            actual: entry.prev_hash || 'null'
           }
-        )
+        } as VerifyResult)
       }
 
       // Recompute hash
@@ -192,23 +175,17 @@ serve(async (req) => {
         verifyRequestsTotal.inc({ status: 'success', intact: 'false' })
         verifyDuration.observe(timer(), { status: 'success' })
         
-        return new Response(
-          JSON.stringify({
-            intact: false,
-            totalEntries: entries.length,
-            verifiedEntries: verifiedCount,
-            error: 'Chain broken: hash mismatch',
-            brokenAtEntry: entry.id,
-            details: {
-              expected: computedHash,
-              actual: entry.hash
-            }
-          } as VerifyResult),
-          {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            status: 200
+        return cors.json({
+          intact: false,
+          totalEntries: entries.length,
+          verifiedEntries: verifiedCount,
+          error: 'Chain broken: hash mismatch',
+          brokenAtEntry: entry.id,
+          details: {
+            expected: computedHash,
+            actual: entry.hash
           }
-        )
+        } as VerifyResult)
       }
 
       verifiedCount++
@@ -222,18 +199,12 @@ serve(async (req) => {
     chainIntegrityStatus.set(1, { chain: 'audit' })
     entriesVerified.set(verifiedCount, { chain: 'audit' })
     
-    return new Response(
-      JSON.stringify({
-        intact: true,
-        totalEntries: entries.length,
-        verifiedEntries: verifiedCount,
-        message: 'Audit chain integrity verified successfully'
-      } as VerifyResult),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200
-      }
-    )
+    return cors.json({
+      intact: true,
+      totalEntries: entries.length,
+      verifiedEntries: verifiedCount,
+      message: 'Audit chain integrity verified successfully'
+    } as VerifyResult)
 
   } catch (error) {
     console.error('Error verifying audit chain:', error)
@@ -243,17 +214,11 @@ serve(async (req) => {
     verifyDuration.observe(duration, { status: 'error' })
     chainIntegrityStatus.set(0, { chain: 'audit' })
     
-    return new Response(
-      JSON.stringify({
-        intact: false,
-        totalEntries: 0,
-        verifiedEntries: 0,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      } as VerifyResult),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 500
-      }
-    )
+    return cors.json({
+      intact: false,
+      totalEntries: 0,
+      verifiedEntries: 0,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    } as VerifyResult, { status: 500 })
   }
-})
+}))

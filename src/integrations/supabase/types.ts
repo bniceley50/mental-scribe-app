@@ -458,6 +458,24 @@ export type Database = {
         }
         Relationships: []
       }
+      mv_refresh_log: {
+        Row: {
+          id: number
+          mv_name: string
+          refreshed_at: string
+        }
+        Insert: {
+          id?: number
+          mv_name: string
+          refreshed_at?: string
+        }
+        Update: {
+          id?: number
+          mv_name?: string
+          refreshed_at?: string
+        }
+        Relationships: []
+      }
       part2_consents: {
         Row: {
           consent_type: string
@@ -1100,6 +1118,15 @@ export type Database = {
         }
         Relationships: []
       }
+      mv_refresh_status: {
+        Row: {
+          last_refresh: string | null
+          mv_name: string | null
+          time_since_refresh: unknown
+          total_refreshes: number | null
+        }
+        Relationships: []
+      }
       performance_index_usage: {
         Row: {
           index_name: unknown
@@ -1269,6 +1296,7 @@ export type Database = {
         Args: { _email: string; _ip_address: string; _user_id: string }
         Returns: undefined
       }
+      refresh_mv_and_log: { Args: { _mv: string }; Returns: undefined }
       sanitize_audit_metadata: { Args: { meta: Json }; Returns: Json }
       update_session_activity: {
         Args: { _session_token: string }

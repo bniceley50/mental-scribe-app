@@ -46,9 +46,8 @@ serve(async (req) => {
       throw new Error('Invalid authentication');
     }
 
-    // Check quota
+    // Check quota (function derives user from auth.uid())
     const { data: quotaOk } = await supabase.rpc('check_and_increment_quota', {
-      _user_id: user.id,
       _quota_type: 'llm_tokens',
       _increment: 1500
     });

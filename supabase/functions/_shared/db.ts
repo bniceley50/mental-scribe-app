@@ -1,52 +1,31 @@
 /**
- * Database client routing for read replicas via Supabase REST API
+ * Database routing helper - Supabase client-based (no postgres Pool to avoid denopkg issues)
  * 
- * SETUP REQUIRED:
- * 1. Create read replica in Supabase Dashboard → Database → Read Replicas  
- * 2. No additional secrets needed - uses SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
- * 
- * ROUTING RULES:
- * - Use getWriteClient() for INSERT, UPDATE, DELETE, read-your-writes
- * - Use getReadClient() for safe reads (dashboards, lists, analytics)
- * 
- * NOTE: For Edge Functions, use Supabase client methods, not raw SQL.
- * Read replica routing is configured at the Supabase project level.
+ * SETUP: These use the standard Supabase client. For true read replica routing,
+ * you'll need to set up separate connection strings and use postgres Pool once
+ * the denopkg.com import issue is resolved by Supabase.
  */
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
-const SUPABASE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-if (!SUPABASE_URL || !SUPABASE_KEY) {
-  throw new Error("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY required");
-}
-
-// Create clients for read/write routing
-// Note: Actual replica routing is handled by Supabase's infrastructure
-// when you mark RPC functions as STABLE and use { get: true }
-export function getWriteClient() {
-  return createClient(SUPABASE_URL, SUPABASE_KEY, {
+function getClient() {
+  return createClient(SUPABASE_URL, SERVICE_KEY, {
     auth: { persistSession: false },
   });
 }
 
-export function getReadClient() {
-  return createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: { persistSession: false },
-  });
+// Placeholder for write operations - use standard client
+export async function withWrite<T>(fn: (client: any) => Promise<T>): Promise<T> {
+  const client = getClient();
+  return await fn(client);
 }
 
-// Helper for timing read operations
-export async function withReadTimed<T>(
-  fn: () => Promise<T>,
-  metricName: string
-): Promise<T> {
-  const start = performance.now();
-  try {
-    return await fn();
-  } finally {
-    const duration = performance.now() - start;
-    console.log(`[DB Read] ${metricName}: ${duration.toFixed(2)}ms`);
-  }
+// Placeholder for read operations - use standard client
+// TODO: Once denopkg issue resolved, replace with postgres Pool for true replica routing
+export async function withRead<T>(fn: (client: any) => Promise<T>): Promise<T> {
+  const client = getClient();
+  return await fn(client);
 }

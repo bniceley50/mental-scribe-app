@@ -1313,7 +1313,7 @@ export type Database = {
       }
       verify_audit_chain:
         | {
-            Args: { p_user_id?: string }
+            Args: never
             Returns: {
               actual: string
               broken_at_id: string
@@ -1324,7 +1324,7 @@ export type Database = {
             }[]
           }
         | {
-            Args: never
+            Args: { p_user_id?: string }
             Returns: {
               actual: string
               broken_at_id: string

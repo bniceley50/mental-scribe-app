@@ -47,23 +47,8 @@ const SecuritySettings = () => {
         const qrCodeDataUrl = await QRCode.toDataURL(qrCodeUrl);
         setQrCode(qrCodeDataUrl);
 
-        // Generate recovery codes
-        const codes = Array.from({ length: 10 }, () => 
-          Math.random().toString(36).substring(2, 10).toUpperCase()
-        );
-        setRecoveryCodes(codes);
-
-        // Store hashed recovery codes in database
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          for (const code of codes) {
-            await supabase.from('mfa_recovery_codes').insert({
-              user_id: user.id,
-              code_hash: await hashCode(code)
-            });
-          }
-        }
-
+        // Supabase MFA enrollment doesn't automatically provide recovery codes
+        // We'll generate them after verification is complete
         toast.success("MFA enrollment started. Please scan the QR code.");
       }
     } catch (error: any) {
@@ -91,16 +76,38 @@ const SecuritySettings = () => {
 
       if (error) throw error;
 
+      // Generate recovery codes after successful verification
+      const codes = Array.from({ length: 10 }, () => 
+        Math.random().toString(36).substring(2, 10).toUpperCase()
+      );
+      setRecoveryCodes(codes);
+
+      // Store recovery codes in database for tracking
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        for (const code of codes) {
+          await supabase.from('mfa_recovery_codes').insert({
+            user_id: user.id,
+            code_hash: code, // This will be hashed by the database trigger
+            created_at: new Date().toISOString()
+          });
+        }
+      }
+
       setIsMfaEnrolled(true);
-      setQrCode("");
-      setSecret("");
-      setVerifyCode("");
-      toast.success("MFA successfully enabled!");
+      toast.success("MFA successfully enabled! Save your recovery codes.");
     } catch (error: any) {
       toast.error(error.message);
     } finally {
       setIsVerifying(false);
     }
+  };
+
+  const finishEnrollment = () => {
+    setQrCode("");
+    setSecret("");
+    setVerifyCode("");
+    setRecoveryCodes([]);
   };
 
   const unenrollMfa = async () => {
@@ -190,7 +197,7 @@ const SecuritySettings = () => {
                 {isVerifying ? "Verifying..." : "Verify and Enable"}
               </Button>
 
-              {recoveryCodes.length > 0 && (
+              {recoveryCodes.length > 0 && isMfaEnrolled && (
                 <Card className="bg-amber-50 dark:bg-amber-950 border-amber-200 dark:border-amber-800">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-lg">
@@ -209,10 +216,15 @@ const SecuritySettings = () => {
                         </div>
                       ))}
                     </div>
-                    <Button onClick={downloadRecoveryCodes} variant="outline" size="sm">
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Recovery Codes
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button onClick={downloadRecoveryCodes} variant="outline" size="sm">
+                        <Download className="h-4 w-4 mr-2" />
+                        Download Recovery Codes
+                      </Button>
+                      <Button onClick={finishEnrollment} variant="default" size="sm">
+                        I've Saved My Codes
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               )}

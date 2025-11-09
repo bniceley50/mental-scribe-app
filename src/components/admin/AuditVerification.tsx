@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,38 @@ export function AuditVerification() {
       return data;
     },
   });
+
+  // Subscribe to real-time updates for new verification runs
+  useEffect(() => {
+    const channel = supabase
+      .channel('audit-verify-runs-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'audit_verify_runs'
+        },
+        (payload) => {
+          console.log('New audit verification run:', payload);
+          
+          // Invalidate and refetch the query to show the new run
+          queryClient.invalidateQueries({ queryKey: ['audit-verification-runs'] });
+          
+          // Show a toast notification
+          toast({
+            title: 'New Verification Complete',
+            description: `Audit chain verification ${payload.new.intact ? 'passed' : 'failed'}`,
+            variant: payload.new.intact ? 'default' : 'destructive',
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   // Trigger manual verification
   const verifyMutation = useMutation({

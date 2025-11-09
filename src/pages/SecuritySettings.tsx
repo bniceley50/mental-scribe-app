@@ -16,6 +16,9 @@ const SecuritySettings = () => {
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [isEnrolling, setIsEnrolling] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isRegenerating, setIsRegenerating] = useState(false);
+  const [showRegenerateDialog, setShowRegenerateDialog] = useState(false);
+  const [regenerateVerifyCode, setRegenerateVerifyCode] = useState("");
 
   useEffect(() => {
     checkMfaStatus();
@@ -108,6 +111,63 @@ const SecuritySettings = () => {
     setSecret("");
     setVerifyCode("");
     setRecoveryCodes([]);
+  };
+
+  const regenerateRecoveryCodes = async () => {
+    setIsRegenerating(true);
+    try {
+      // Verify TOTP code first
+      const { data } = await supabase.auth.mfa.listFactors();
+      const factorId = data?.all?.[0]?.id;
+
+      if (!factorId) {
+        toast.error("MFA not properly configured");
+        return;
+      }
+
+      const { error: verifyError } = await supabase.auth.mfa.challengeAndVerify({
+        factorId,
+        code: regenerateVerifyCode,
+      });
+
+      if (verifyError) {
+        toast.error("Invalid verification code. Please try again.");
+        return;
+      }
+
+      // Delete old recovery codes
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      await supabase
+        .from('mfa_recovery_codes')
+        .delete()
+        .eq('user_id', user.id);
+
+      // Generate new recovery codes
+      const codes = Array.from({ length: 10 }, () => 
+        Math.random().toString(36).substring(2, 10).toUpperCase()
+      );
+      setRecoveryCodes(codes);
+
+      // Store new recovery codes
+      for (const code of codes) {
+        await supabase.from('mfa_recovery_codes').insert({
+          user_id: user.id,
+          code_hash: code,
+          created_at: new Date().toISOString()
+        });
+      }
+
+      setShowRegenerateDialog(false);
+      setRegenerateVerifyCode("");
+      toast.success("New recovery codes generated successfully!");
+      toast.warning("Save these new codes securely - old codes are now invalid");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to regenerate recovery codes");
+    } finally {
+      setIsRegenerating(false);
+    }
   };
 
   const unenrollMfa = async () => {
@@ -231,16 +291,64 @@ const SecuritySettings = () => {
             </div>
           )}
 
-          {isMfaEnrolled && (
+          {isMfaEnrolled && !recoveryCodes.length && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                 <Shield className="h-5 w-5" />
                 <span className="font-medium">MFA is enabled</span>
               </div>
-              <Button onClick={unenrollMfa} variant="destructive">
-                Disable MFA
-              </Button>
+              <div className="flex gap-2">
+                <Button onClick={() => setShowRegenerateDialog(true)} variant="outline">
+                  <Key className="h-4 w-4 mr-2" />
+                  Regenerate Recovery Codes
+                </Button>
+                <Button onClick={unenrollMfa} variant="destructive">
+                  Disable MFA
+                </Button>
+              </div>
             </div>
+          )}
+
+          {showRegenerateDialog && (
+            <Card className="border-amber-200 dark:border-amber-800">
+              <CardHeader>
+                <CardTitle className="text-lg">Regenerate Recovery Codes</CardTitle>
+                <CardDescription>
+                  Enter your authenticator code to generate new recovery codes. This will invalidate all existing codes.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="regenerate-verify-code">Verification Code</Label>
+                  <Input
+                    id="regenerate-verify-code"
+                    type="text"
+                    placeholder="Enter 6-digit code"
+                    value={regenerateVerifyCode}
+                    onChange={(e) => setRegenerateVerifyCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                    maxLength={6}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={regenerateRecoveryCodes} 
+                    disabled={isRegenerating || regenerateVerifyCode.length !== 6}
+                  >
+                    {isRegenerating ? "Generating..." : "Regenerate Codes"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowRegenerateDialog(false);
+                      setRegenerateVerifyCode("");
+                    }}
+                    disabled={isRegenerating}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </CardContent>
       </Card>

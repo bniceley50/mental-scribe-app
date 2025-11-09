@@ -104,4 +104,41 @@ test.describe('Multi-Factor Authentication', () => {
     const signInButton = page.getByRole('button', { name: /sign in/i }).first();
     await expect(signInButton).toBeVisible();
   });
+
+  test('regenerate recovery codes requires TOTP verification', async ({ page }) => {
+    // Navigate to security settings
+    await page.goto('/settings/security');
+    await page.waitForLoadState('networkidle');
+    
+    // If MFA is enabled, check for regenerate button
+    const regenerateButton = page.getByRole('button', { name: /regenerate recovery codes/i });
+    
+    if (await regenerateButton.isVisible()) {
+      // Click regenerate button
+      await regenerateButton.click();
+      await page.waitForTimeout(500);
+      
+      // Verification dialog should appear
+      const verifyInput = page.getByLabel(/verification code/i);
+      await expect(verifyInput).toBeVisible();
+      
+      // Verify input has maxLength 6
+      await expect(verifyInput).toHaveAttribute('maxLength', '6');
+      
+      // Cancel button should be present
+      const cancelButton = page.getByRole('button', { name: /cancel/i });
+      await expect(cancelButton).toBeVisible();
+      
+      // Regenerate button should be disabled without code
+      const regenerateSubmitButton = page.getByRole('button', { name: /regenerate codes/i });
+      await expect(regenerateSubmitButton).toBeDisabled();
+      
+      // Test cancel functionality
+      await cancelButton.click();
+      await page.waitForTimeout(200);
+      
+      // Dialog should be closed
+      await expect(verifyInput).not.toBeVisible();
+    }
+  });
 });

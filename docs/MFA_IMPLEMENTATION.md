@@ -296,6 +296,15 @@ npm run test:e2e test/e2e/mfa.spec.ts
 - [ ] MFA is disabled
 - [ ] Can sign in without MFA
 
+**Recovery Code Regeneration:**
+- [ ] Navigate to `/settings/security` (with MFA enabled)
+- [ ] Click "Regenerate Recovery Codes"
+- [ ] Enter current 6-digit TOTP code
+- [ ] Click "Regenerate Codes"
+- [ ] New 10 recovery codes shown
+- [ ] Old codes are invalidated
+- [ ] Download new codes
+
 ## User Documentation
 
 ### For End Users
@@ -351,16 +360,25 @@ npm run test:e2e test/e2e/mfa.spec.ts
 **Recovery code doesn't work:**
 - Make sure you're entering it correctly (8 characters, uppercase)
 - Each code can only be used once
-- If all codes are used, contact your administrator
+- If all codes are used, use the regeneration feature
+- Navigate to Settings → Security and click "Regenerate Recovery Codes"
+
+**Need new recovery codes:**
+- Go to Settings → Security
+- Click "Regenerate Recovery Codes"
+- Enter your current 6-digit authenticator code
+- New codes will be generated and old ones invalidated
+- Save the new codes securely
 
 ## Future Enhancements
 
 ### Potential Improvements
 
-1. **Self-Service Recovery Code Regeneration**
-   - Allow users to regenerate recovery codes while authenticated
-   - Require TOTP verification before regeneration
-   - Automatically invalidate old codes
+1. **Self-Service Recovery Code Regeneration** ✅ IMPLEMENTED
+   - ✅ Allow users to regenerate recovery codes while authenticated
+   - ✅ Require TOTP verification before regeneration
+   - ✅ Automatically invalidate old codes
+   - ✅ Show new codes for download
 
 2. **Multiple TOTP Devices**
    - Support enrolling multiple authenticator devices
@@ -382,6 +400,12 @@ npm run test:e2e test/e2e/mfa.spec.ts
    - Notification emails on MFA changes
    - Require password re-entry for MFA disable
    - Time-based forced re-authentication
+
+6. **Self-Service Recovery Code Regeneration** ✅
+   - Allow users to regenerate recovery codes while authenticated
+   - Require TOTP verification before regeneration
+   - Automatically invalidate old codes
+   - Show new codes for download
 
 ## API Reference
 

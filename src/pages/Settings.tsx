@@ -6,8 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Settings as SettingsIcon, FileText, Palette, Save } from "lucide-react";
+import { Settings as SettingsIcon, FileText, Palette, Save, Lock, Trash2 } from "lucide-react";
 import { toast as showToast } from "sonner";
+import { setProcessingMode } from "@/core/network/guard";
+import { clearLocalCache } from "@/core/storage/database-stub";
+import type { ProcessingMode } from "@/core/processing/types";
+import { LocalModeBadge } from "@/components/LocalModeBadge";
 
 interface UserPreferences {
   defaultAction: string;
@@ -16,6 +20,7 @@ interface UserPreferences {
   fontSize: string;
   autoSave: boolean;
   showTimestamps: boolean;
+  processingMode: ProcessingMode;
 }
 
 const Settings = () => {
@@ -27,19 +32,41 @@ const Settings = () => {
     fontSize: "medium",
     autoSave: true,
     showTimestamps: true,
+    processingMode: "cloud",
   });
+  
+  const [isClearing, setIsClearing] = useState(false);
 
   // Load preferences from localStorage
   useEffect(() => {
     const savedPreferences = localStorage.getItem("clinicalai_preferences");
     if (savedPreferences) {
-      setPreferences(JSON.parse(savedPreferences));
+      const prefs = JSON.parse(savedPreferences);
+      setPreferences(prefs);
+      // Apply processing mode on load
+      if (prefs.processingMode) {
+        setProcessingMode(prefs.processingMode);
+      }
     }
   }, []);
 
   const handleSavePreferences = () => {
     localStorage.setItem("clinicalai_preferences", JSON.stringify(preferences));
+    setProcessingMode(preferences.processingMode);
     showToast.success("Preferences saved successfully!");
+  };
+  
+  const handleClearCache = async () => {
+    setIsClearing(true);
+    try {
+      await clearLocalCache();
+      showToast.success("Local cache and models cleared");
+    } catch (err) {
+      showToast.error("Failed to clear cache");
+      console.error(err);
+    } finally {
+      setIsClearing(false);
+    }
   };
 
   const handleResetPreferences = () => {
@@ -50,9 +77,11 @@ const Settings = () => {
       fontSize: "medium",
       autoSave: true,
       showTimestamps: true,
+      processingMode: "cloud",
     };
     setPreferences(defaultPreferences);
     localStorage.setItem("clinicalai_preferences", JSON.stringify(defaultPreferences));
+    setProcessingMode("cloud");
     showToast.success("Preferences reset to defaults!");
   };
 
@@ -62,10 +91,98 @@ const Settings = () => {
       onConversationSelect={setSelectedConversationId}
     >
       <div className="max-w-4xl mx-auto space-y-6">
-        <div>
-          <h2 className="text-3xl font-semibold text-foreground mb-2">Settings</h2>
-          <p className="text-muted-foreground">Customize your ClinicalAI Assistant experience</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-3xl font-semibold text-foreground mb-2">Settings</h2>
+            <p className="text-muted-foreground">Customize your ClinicalAI Assistant experience</p>
+          </div>
+          <LocalModeBadge />
         </div>
+
+        {/* Processing Mode */}
+        <Card className="shadow-sm border-border/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-primary" />
+              Processing Mode
+            </CardTitle>
+            <CardDescription>Choose where your data is processed</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="processingMode">Processing Location</Label>
+              <Select
+                value={preferences.processingMode}
+                onValueChange={(value: ProcessingMode) =>
+                  setPreferences({ ...preferences, processingMode: value })
+                }
+              >
+                <SelectTrigger id="processingMode">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cloud">
+                    <div className="flex items-center gap-2">
+                      <span>☁️ Cloud</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="local-browser">
+                    <div className="flex items-center gap-2">
+                      <span>🔒 Local (Browser)</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="local-lan">
+                    <div className="flex items-center gap-2">
+                      <span>🏠 Local (LAN Server)</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="text-sm space-y-1 text-muted-foreground">
+                {preferences.processingMode === "cloud" && (
+                  <p>✓ Highest quality AI • Requires internet connection</p>
+                )}
+                {preferences.processingMode === "local-browser" && (
+                  <>
+                    <p>✓ Complete privacy - data never leaves your device</p>
+                    <p>✓ Works offline after initial model download (~140MB)</p>
+                    <p>⚠ Requires 8GB+ RAM with WebGPU for best performance</p>
+                  </>
+                )}
+                {preferences.processingMode === "local-lan" && (
+                  <>
+                    <p>✓ On-premises processing - data stays on your network</p>
+                    <p>✓ Better quality than browser-only</p>
+                    <p>⚠ Requires local server setup (Sprint L2)</p>
+                  </>
+                )}
+              </div>
+            </div>
+            
+            {preferences.processingMode !== "cloud" && (
+              <>
+                <Separator />
+                <div className="flex items-center justify-between p-4 bg-secondary/30 rounded-lg">
+                  <div>
+                    <p className="font-medium text-foreground">Local Cache & Models</p>
+                    <p className="text-sm text-muted-foreground">
+                      Clear IndexedDB cache and downloaded models (~300MB)
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleClearCache}
+                    disabled={isClearing}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    {isClearing ? "Clearing..." : "Clear Cache"}
+                  </Button>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
 
         {/* AI Behavior Settings */}
         <Card className="shadow-sm border-border/50">

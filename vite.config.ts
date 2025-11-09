@@ -10,9 +10,22 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    headers: {
+      // Allow WASM workers for @huggingface/transformers
+      "Cross-Origin-Embedder-Policy": "credentialless",
+      "Cross-Origin-Opener-Policy": "same-origin",
+    },
   },
-  optimizeDeps: { exclude: ['@sentry/react'] },
+  optimizeDeps: { 
+    exclude: ['@sentry/react', '@huggingface/transformers'],
+    esbuildOptions: {
+      target: 'esnext',
+    },
+  },
   ssr: { external: ['@sentry/react'] },
+  worker: {
+    format: 'es',
+  },
   plugins: [
     react(), 
     mode === "development" && componentTagger(),

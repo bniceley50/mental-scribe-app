@@ -196,3 +196,29 @@ export class LocalStorageAdapter {
     await localDb.deleteSession(sessionId);
   }
 }
+
+/**
+ * Clear all local cache and models
+ * Removes Dexie data and transformers models from IndexedDB
+ */
+export async function clearLocalCache(): Promise<void> {
+  console.log("[LocalStorage] Clearing cache...");
+  
+  // Clear stub memory storage
+  await localDb.deleteSession("");
+  
+  // Try to clear transformers cache from IndexedDB
+  try {
+    const dbs = await indexedDB.databases();
+    for (const dbInfo of dbs) {
+      if (dbInfo.name?.includes("transformers") || dbInfo.name?.includes("mental-scribe")) {
+        console.log(`Deleting database: ${dbInfo.name}`);
+        indexedDB.deleteDatabase(dbInfo.name);
+      }
+    }
+    console.log("✅ Local cache cleared");
+  } catch (err) {
+    console.error("Failed to clear model cache:", err);
+    throw err;
+  }
+}

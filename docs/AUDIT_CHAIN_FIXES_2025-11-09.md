@@ -337,31 +337,165 @@ $$;
 
 ---
 
-## Next Steps
+## Ops Runbook
 
-1. **Test in Production**
-   - Call Edge function with admin JWT
-   - Verify results in `audit_verify_runs`
-   - Monitor for false positives (should be none)
+### Secret Rotation (Every 90 Days)
 
-2. **Set Up Monitoring**
-   - Daily verification cron (SQL-based)
-   - Alert on verification failures
-   - Dashboard showing verification history
+```sql
+-- 1. Insert new secret version
+INSERT INTO private.audit_secrets (version, secret)
+VALUES (2, 'NEW-SECRET-GENERATE-WITH-openssl-rand-hex-32');
 
-3. **Document for Team**
-   - How to call Edge function
-   - How to interpret results
-   - What to do if chain breaks
+-- 2. Update default for new entries
+ALTER TABLE public.audit_logs 
+  ALTER COLUMN secret_version SET DEFAULT 2;
 
-4. **Plan Secret Rotation**
-   - Schedule first rotation (90 days)
-   - Document rotation process
-   - Test rotation in staging first
+-- 3. Verify chain integrity (both versions work)
+SELECT * FROM public.verify_audit_chain(NULL);
+```
+
+See `docs/AUDIT_CHAIN_ROTATION.md` and `docs/security/AUDIT_CHAIN_ROTATION.md` for full rotation guides.
+
+### Daily Monitoring Queries
+
+**Last 7 verification runs**:
+```sql
+SELECT 
+  run_at,
+  intact,
+  total_entries,
+  verified_entries,
+  CASE WHEN intact THEN '✅ PASS' ELSE '❌ FAIL' END as status
+FROM public.audit_verify_runs
+ORDER BY run_at DESC
+LIMIT 7;
+```
+
+**MV refresh status**:
+```sql
+SELECT * FROM public.mv_refresh_status 
+WHERE mv_name = 'mv_audit_daily_stats';
+```
+
+**Unhashed audit logs** (should be 0 after backfill):
+```sql
+SELECT COUNT(*) as unhashed_count 
+FROM public.audit_logs 
+WHERE hash IS NULL;
+```
+
+### Alerting Rules
+
+- **CRITICAL**: Page SRE if `intact=false` twice in a row
+- **WARNING**: Alert if `time_since_refresh > 25 hours` for audit MVs
+- **WARNING**: Warn if `verified_entries / total_entries < 0.95`
+- **INFO**: Alert if unhashed_count > 0 (backfill incomplete)
+
+### Incident Drill (Quarterly)
+
+Test chain breakage detection:
+```sql
+-- 1. Create test user and entries
+INSERT INTO public.audit_logs (user_id, action, resource_type, metadata)
+VALUES 
+  (gen_random_uuid(), 'test_action_1', 'test', '{}'),
+  (gen_random_uuid(), 'test_action_2', 'test', '{}'),
+  (gen_random_uuid(), 'test_action_3', 'test', '{}');
+
+-- 2. Note test user_id, then tamper with middle entry
+-- IMPORTANT: Only in test environment!
+ALTER TABLE public.audit_logs DISABLE TRIGGER audit_logs_block_mod;
+UPDATE public.audit_logs 
+SET hash = 'tampered-hash-value'
+WHERE user_id = 'YOUR-TEST-USER-ID' 
+  AND action = 'test_action_2';
+ALTER TABLE public.audit_logs ENABLE TRIGGER audit_logs_block_mod;
+
+-- 3. Verify breakage is detected
+SELECT * FROM public.verify_audit_chain('YOUR-TEST-USER-ID');
+-- Expected: intact=false, broken_at_id=[third entry's id]
+
+-- 4. Cleanup
+DELETE FROM public.audit_logs WHERE user_id = 'YOUR-TEST-USER-ID';
+```
+
+### Backfill Operations
+
+**Check backfill status**:
+```sql
+SELECT 
+  COUNT(*) FILTER (WHERE hash IS NULL) as unhashed,
+  COUNT(*) FILTER (WHERE hash IS NOT NULL) as hashed,
+  COUNT(*) as total
+FROM public.audit_logs;
+```
+
+**Idempotent backfill** (safe to re-run):
+```sql
+-- Already executed in migration 20251109192152
+-- To re-run manually (e.g., after restoring old data):
+-- See migration file for full recursive CTE
+```
+
+**Batch backfill for large tables** (>100k rows):
+```sql
+-- Backfill last 30 days first
+WITH ordered AS (
+  SELECT id, user_id, created_at, action, resource_type, resource_id, metadata,
+    row_number() OVER (PARTITION BY user_id ORDER BY created_at, id) AS rn
+  FROM public.audit_logs
+  WHERE hash IS NULL 
+    AND created_at > now() - interval '30 days'
+),
+-- ... rest of recursive CTE from migration ...
+```
+
+### Performance Tuning
+
+```sql
+-- Check index usage
+SELECT 
+  schemaname, indexname, 
+  idx_scan as scans,
+  idx_tup_read as tuples_read,
+  idx_tup_fetch as tuples_fetched
+FROM pg_stat_user_indexes
+WHERE tablename = 'audit_logs'
+ORDER BY idx_scan DESC;
+
+-- Check table bloat
+SELECT * FROM public.performance_table_bloat
+WHERE table_name = 'audit_logs';
+
+-- Vacuum if bloat > 20%
+VACUUM ANALYZE public.audit_logs;
+
+-- Check slow queries
+SELECT 
+  query,
+  calls,
+  mean_exec_time,
+  max_exec_time
+FROM pg_stat_statements
+WHERE query LIKE '%audit_logs%'
+ORDER BY mean_exec_time DESC
+LIMIT 10;
+```
 
 ---
 
-**Status**: ✅ All Critical Fixes Applied  
+## Next Steps
+
+1. **Monitor First Run**: Watch `audit_verify_runs` for first verification result
+2. **Test Rotation**: When ready, add secret v2 and update default version
+3. **Dashboard Integration**: Build admin UI to display verification status
+4. **Schedule Drills**: Run incident drill quarterly to verify detection
+5. **Archive Strategy**: Plan log retention (e.g., archive after 1 year)
+
+---
+
+**Status**: ✅ All Critical Fixes Applied + Backfill Completed  
 **Production Ready**: Yes  
+**Backfill Status**: ✅ All legacy logs hashed  
 **Last Validated**: 2025-11-09  
-**Next Review**: 2026-02-09 (90 days)
+**Next Secret Rotation**: 2026-02-09 (90 days)

@@ -1312,6 +1312,7 @@ export type Database = {
         Args: { _program_id: string; _user_id: string }
         Returns: boolean
       }
+      is_mfa_enrolled: { Args: { _user_id: string }; Returns: boolean }
       is_program_member: {
         Args: { _program_id: string; _user_id: string }
         Returns: boolean

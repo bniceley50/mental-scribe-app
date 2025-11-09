@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { MfaEnforcementGuard } from "@/components/MfaEnforcementGuard";
 import { LoggerProvider } from "@/lib/logger/LoggerProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -35,16 +36,20 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             
             {/* Protected routes - all require authentication */}
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
-            <Route path="/clients" element={<ProtectedRoute><Clients /></ProtectedRoute>} />
-            <Route path="/client/:id" element={<ProtectedRoute><ClientProfile /></ProtectedRoute>} />
-            <Route path="/history" element={<ProtectedRoute><History /></ProtectedRoute>} />
+            <Route path="/" element={<ProtectedRoute><MfaEnforcementGuard><Index /></MfaEnforcementGuard></ProtectedRoute>} />
+            <Route path="/clients" element={<ProtectedRoute><MfaEnforcementGuard><Clients /></MfaEnforcementGuard></ProtectedRoute>} />
+            <Route path="/client/:id" element={<ProtectedRoute><MfaEnforcementGuard><ClientProfile /></MfaEnforcementGuard></ProtectedRoute>} />
+            <Route path="/history" element={<ProtectedRoute><MfaEnforcementGuard><History /></MfaEnforcementGuard></ProtectedRoute>} />
+            
+            {/* Settings pages - MFA guard excluded to allow enrollment */}
             <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="/settings/security" element={<ProtectedRoute><SecuritySettings /></ProtectedRoute>} />
-            <Route path="/security/monitoring" element={<ProtectedRoute><SecurityMonitoring /></ProtectedRoute>} />
-            <Route path="/security/audit" element={<ProtectedRoute><AuditDashboard /></ProtectedRoute>} />
-            <Route path="/security/compliance" element={<ProtectedRoute><ComplianceReports /></ProtectedRoute>} />
-            <Route path="/admin/system-health" element={<ProtectedRoute><SystemHealth /></ProtectedRoute>} />
+            
+            {/* Admin/Security routes - require MFA for admins */}
+            <Route path="/security/monitoring" element={<ProtectedRoute><MfaEnforcementGuard><SecurityMonitoring /></MfaEnforcementGuard></ProtectedRoute>} />
+            <Route path="/security/audit" element={<ProtectedRoute><MfaEnforcementGuard><AuditDashboard /></MfaEnforcementGuard></ProtectedRoute>} />
+            <Route path="/security/compliance" element={<ProtectedRoute><MfaEnforcementGuard><ComplianceReports /></MfaEnforcementGuard></ProtectedRoute>} />
+            <Route path="/admin/system-health" element={<ProtectedRoute><MfaEnforcementGuard><SystemHealth /></MfaEnforcementGuard></ProtectedRoute>} />
             
             {/* 404 - Public */}
             <Route path="*" element={<NotFound />} />

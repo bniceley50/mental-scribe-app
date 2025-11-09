@@ -204,11 +204,20 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
         onSave?.();
       }
     } catch (error: any) {
-      console.error("Error saving structured note:", error);
+      console.error("Error saving structured note - Full error:", error);
+      console.error("Error details:", {
+        message: error?.message,
+        code: error?.code,
+        details: error?.details,
+        hint: error?.hint,
+        conversationId,
+        hasFormData: Object.keys(formData).length > 0
+      });
+      
       const errorMessage = error?.message || "Failed to save progress";
       toast.error(errorMessage, {
         duration: 5000,
-        description: "If this persists, please contact support.",
+        description: "Check console for details",
       });
     } finally {
       setSaving(false);

@@ -19,6 +19,7 @@ import ComplianceReports from "./pages/ComplianceReports";
 import SystemHealth from "./pages/SystemHealth";
 import Clients from "./pages/Clients";
 import ClientProfile from "./pages/ClientProfile";
+import SecurityAlertHistory from "./pages/SecurityAlertHistory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -48,6 +49,7 @@ const App = () => (
             {/* Admin/Security routes - require MFA for admins */}
             <Route path="/security/monitoring" element={<ProtectedRoute><MfaEnforcementGuard><SecurityMonitoring /></MfaEnforcementGuard></ProtectedRoute>} />
             <Route path="/security/audit" element={<ProtectedRoute><MfaEnforcementGuard><AuditDashboard /></MfaEnforcementGuard></ProtectedRoute>} />
+            <Route path="/security/alerts" element={<ProtectedRoute><MfaEnforcementGuard><SecurityAlertHistory /></MfaEnforcementGuard></ProtectedRoute>} />
             <Route path="/security/compliance" element={<ProtectedRoute><MfaEnforcementGuard><ComplianceReports /></MfaEnforcementGuard></ProtectedRoute>} />
             <Route path="/admin/system-health" element={<ProtectedRoute><MfaEnforcementGuard><SystemHealth /></MfaEnforcementGuard></ProtectedRoute>} />
             

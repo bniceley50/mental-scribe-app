@@ -820,6 +820,50 @@ export type Database = {
           },
         ]
       }
+      security_alert_acknowledgments: {
+        Row: {
+          acknowledged_at: string
+          acknowledged_by: string
+          alert_id: number
+          created_at: string
+          id: string
+          resolution_notes: string | null
+          resolved_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          acknowledged_at?: string
+          acknowledged_by: string
+          alert_id: number
+          created_at?: string
+          id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          acknowledged_at?: string
+          acknowledged_by?: string
+          alert_id?: number
+          created_at?: string
+          id?: string
+          resolution_notes?: string | null
+          resolved_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "security_alert_acknowledgments_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "audit_verify_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       security_fixes: {
         Row: {
           finding: string

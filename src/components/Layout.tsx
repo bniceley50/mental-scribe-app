@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Brain, FileText, History, Settings, LogOut, Shield, ClipboardCheck } from "lucide-react";
+import { Brain, FileText, History, Settings, LogOut, Shield, ClipboardCheck, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast as showToast } from "sonner";
@@ -51,6 +51,7 @@ const Layout = ({ children, currentConversationId, onConversationSelect }: Layou
 
   const adminNavItems = isAdmin ? [
     { path: "/security/audit", icon: Shield, label: "Audit Chain" },
+    { path: "/security/alerts", icon: AlertTriangle, label: "Alert History" },
     { path: "/security/compliance", icon: ClipboardCheck, label: "Compliance Reports" },
   ] : [];
 

@@ -19,7 +19,7 @@ export function SecurityNotificationBell() {
   const navigate = useNavigate();
 
   const handleViewAuditDashboard = () => {
-    navigate('/admin/audit');
+    navigate('/security/alerts');
     markAllAsRead();
   };
 
@@ -130,7 +130,7 @@ export function SecurityNotificationBell() {
               className="justify-center font-medium text-primary cursor-pointer"
               onClick={handleViewAuditDashboard}
             >
-              View Full Audit Dashboard →
+              View Alert History →
             </DropdownMenuItem>
           </>
         )}

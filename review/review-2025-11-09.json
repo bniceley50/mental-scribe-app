@@ -13,6 +13,20 @@
     "cspFunctions": 0,
     "localStorageUsage": 0
   },
-  "quality": null,
-  "performance": null
+  "quality": {
+    "eslint": {
+      "error": "Failed to parse ESLint output"
+    },
+    "typescript": {
+      "errors": 0
+    },
+    "anyTypes": 0,
+    "largeComponents": 6,
+    "todos": 0,
+    "consoleLogs": 0
+  },
+  "performance": {
+    "buildSuccess": false,
+    "potentialN1Queries": 0
+  }
 }

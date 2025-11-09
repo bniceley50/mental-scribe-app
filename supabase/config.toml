@@ -20,3 +20,6 @@ verify_jwt = false  # Called by CI/CD cron with service role
 
 [functions.audit-verify-full]
 verify_jwt = false  # Called by CI/CD cron with service role
+
+[functions.hibp-range]
+verify_jwt = false  # Public HIBP proxy for password breach checking

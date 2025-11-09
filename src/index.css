@@ -40,6 +40,12 @@ All colors MUST be HSL.
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
 
+    --warning: 45 93% 47%;
+    --warning-foreground: 0 0% 7%;
+
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+
     --border: 210 20% 90%;
     --input: 210 20% 92%;
     --ring: 268 56% 38%; /* focus ring uses primary purple */
@@ -101,6 +107,12 @@ All colors MUST be HSL.
 
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
+
+    --warning: 45 93% 50%;
+    --warning-foreground: 0 0% 7%;
+
+    --success: 142 71% 50%;
+    --success-foreground: 0 0% 100%;
 
     --border: 210 20% 20%;
     --input: 210 20% 18%;

@@ -250,4 +250,132 @@ test.describe('Authentication - Accessibility & Functionality', () => {
     expect(finalSessionData.length).toBeGreaterThan(0);
     expect(finalSessionData.some(d => d.hasValue)).toBeTruthy();
   });
+
+  test('password strength meter shows for weak password', async ({ page }) => {
+    const signUpTab = page.getByRole('tab', { name: /sign up/i });
+    await signUpTab.click();
+    
+    const passwordInput = page.getByLabel(/^password$/i).first();
+    
+    // Type weak password
+    await passwordInput.fill('password123');
+    
+    // Wait for strength meter to appear
+    await page.waitForTimeout(100);
+    
+    // Should show weak strength
+    const strengthLabel = page.locator('text=/weak/i');
+    await expect(strengthLabel).toBeVisible();
+    
+    // Progress bar should be visible
+    const progressBar = page.locator('[role="progressbar"][aria-label="Password strength"]');
+    await expect(progressBar).toBeVisible();
+    await expect(progressBar).toHaveAttribute('aria-valuenow', '1');
+  });
+
+  test('password strength meter shows good for strong password', async ({ page }) => {
+    const signUpTab = page.getByRole('tab', { name: /sign up/i });
+    await signUpTab.click();
+    
+    const passwordInput = page.getByLabel(/^password$/i).first();
+    
+    // Type strong password
+    await passwordInput.fill('S3cure!CorrectHorse#2024');
+    
+    // Wait for strength meter
+    await page.waitForTimeout(100);
+    
+    // Should show good/strong strength
+    const strengthLabel = page.locator('text=/(good|strong)/i');
+    await expect(strengthLabel).toBeVisible();
+    
+    // Progress bar should show high value
+    const progressBar = page.locator('[role="progressbar"][aria-label="Password strength"]');
+    const valueNow = await progressBar.getAttribute('aria-valuenow');
+    expect(parseInt(valueNow || '0')).toBeGreaterThanOrEqual(3);
+  });
+
+  test('HIBP breach detection shows for known leaked password', async ({ page }) => {
+    const signUpTab = page.getByRole('tab', { name: /sign up/i });
+    await signUpTab.click();
+    
+    const passwordInput = page.getByLabel(/^password$/i).first();
+    
+    // Type known leaked password
+    await passwordInput.fill('password123');
+    
+    // Wait for HIBP check (debounced 600ms + API call)
+    await page.waitForTimeout(2000);
+    
+    // Should show breach warning
+    const breachWarning = page.locator('text=/known in breaches/i');
+    await expect(breachWarning).toBeVisible();
+  });
+
+  test('HIBP shows not found for strong unique password', async ({ page }) => {
+    const signUpTab = page.getByRole('tab', { name: /sign up/i });
+    await signUpTab.click();
+    
+    const passwordInput = page.getByLabel(/^password$/i).first();
+    
+    // Type very unlikely to be breached password
+    await passwordInput.fill('xK9#mP2$vL8@nQ4!wR7^yT6&uI3*oE5');
+    
+    // Wait for HIBP check
+    await page.waitForTimeout(2000);
+    
+    // Should show not found message
+    const safeMessage = page.locator('text=/not found in known breaches/i');
+    await expect(safeMessage).toBeVisible();
+  });
+
+  test('password strength suggestions appear for weak passwords', async ({ page }) => {
+    const signUpTab = page.getByRole('tab', { name: /sign up/i });
+    await signUpTab.click();
+    
+    const passwordInput = page.getByLabel(/^password$/i).first();
+    
+    // Type weak password
+    await passwordInput.fill('abc');
+    
+    // Wait for analysis
+    await page.waitForTimeout(100);
+    
+    // Should show suggestions list
+    const suggestions = page.locator('ul li');
+    const count = await suggestions.count();
+    expect(count).toBeGreaterThan(0);
+    
+    // Should have helpful text
+    await expect(page.locator('text=/12\\+ characters/i')).toBeVisible();
+  });
+
+  test('keyboard navigation works with password visibility toggle', async ({ page }) => {
+    const signUpTab = page.getByRole('tab', { name: /sign up/i });
+    await signUpTab.click();
+    
+    const passwordInput = page.getByLabel(/^password$/i).first();
+    const toggleButton = page.getByRole('button', { name: /show password/i });
+    
+    // Tab to password input
+    await passwordInput.focus();
+    await expect(passwordInput).toBeFocused();
+    
+    // Type password
+    await passwordInput.fill('TestPassword123!');
+    
+    // Tab to toggle button
+    await page.keyboard.press('Tab');
+    await expect(toggleButton).toBeFocused();
+    
+    // Press space to toggle
+    await page.keyboard.press('Space');
+    await expect(passwordInput).toHaveAttribute('type', 'text');
+    await expect(toggleButton).toHaveAttribute('aria-pressed', 'true');
+    
+    // Press space again to hide
+    await page.keyboard.press('Space');
+    await expect(passwordInput).toHaveAttribute('type', 'password');
+    await expect(toggleButton).toHaveAttribute('aria-pressed', 'false');
+  });
 });

@@ -9,6 +9,7 @@ import { Brain, Eye, EyeOff, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { z } from "zod";
+import PasswordStrength from "@/components/auth/PasswordStrength";
 
 const authSchema = z.object({
   email: z.string()
@@ -878,8 +879,16 @@ const Auth = () => {
                   {errors.password && (
                     <p id="signup-password-error" className="text-sm text-destructive">{errors.password}</p>
                   )}
-                  <p id="password-requirements" className="text-xs text-muted-foreground">
-                    Must be at least 8 characters with uppercase, lowercase, number, and special character
+                  
+                  {/* Password strength meter with HIBP breach checking */}
+                  <PasswordStrength 
+                    password={password} 
+                    className="mt-3" 
+                    hibpEnabled={true}
+                  />
+                  
+                  <p id="password-requirements" className="text-xs text-muted-foreground mt-2">
+                    Use at least 12 characters. Avoid reused passwords.
                   </p>
                 </div>
                 <Button

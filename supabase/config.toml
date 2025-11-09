@@ -12,5 +12,11 @@ verify_jwt = false
 [functions.secure-password-reset]
 verify_jwt = false
 
-[functions.realtime-voice]
-verify_jwt = false
+[functions.audit-verify]
+verify_jwt = true
+
+[functions.audit-verify-incremental]
+verify_jwt = false  # Called by CI/CD cron with service role
+
+[functions.audit-verify-full]
+verify_jwt = false  # Called by CI/CD cron with service role

@@ -14,6 +14,30 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_chain_cursor: {
+        Row: {
+          last_hash: string
+          last_verified_id: string
+          updated_at: string
+          user_id: string
+          verified_at: string
+        }
+        Insert: {
+          last_hash: string
+          last_verified_id: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string
+        }
+        Update: {
+          last_hash?: string
+          last_verified_id?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string
+        }
+        Relationships: []
+      }
       audit_logs: {
         Row: {
           action: string
@@ -1276,6 +1300,7 @@ export type Database = {
         Args: { _identifier: string; _lockout_minutes?: number }
         Returns: boolean
       }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_assigned_to_patient: {
         Args: { _client_id: string; _user_id: string }
         Returns: boolean
@@ -1334,6 +1359,19 @@ export type Database = {
               verified_entries: number
             }[]
           }
+      verify_audit_chain_full_weekly: { Args: never; Returns: undefined }
+      verify_audit_chain_incremental: {
+        Args: { p_user_id: string }
+        Returns: {
+          actual: string
+          broken_at_id: string
+          expected: string
+          intact: boolean
+          new_cursor_hash: string
+          new_cursor_id: string
+          verified_entries: number
+        }[]
+      }
     }
     Enums: {
       app_role: "admin" | "user"

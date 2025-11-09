@@ -27,10 +27,9 @@ Deno.serve(cors.wrap(async (req) => {
     return cors.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
-  // Check admin role using has_role function (DB-backed, not JWT claims)
-  const { data: isAdmin, error: roleErr } = await supabase.rpc("has_role", {
-    _user_id: who.user.id,
-    _role: "admin"
+  // P0 FIX: Check admin using dedicated is_admin() function (read-only membership check)
+  const { data: isAdmin, error: roleErr } = await supabase.rpc("is_admin", {
+    _user_id: who.user.id
   });
   
   if (roleErr || !isAdmin) {

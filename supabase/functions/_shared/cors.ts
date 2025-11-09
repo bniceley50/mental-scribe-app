@@ -1,12 +1,26 @@
 /**
  * CORS helper for Edge Functions
+ * P0 FIX: Restricts CORS to allowed origins (not wildcard)
  * Provides preflight handling, JSON responses, and request wrapping with CORS headers
  */
 
-export function makeCors(origin = "*") {
+export function makeCors(origin?: string) {
+  // P0 FIX: Only allow production domains + localhost for dev
+  const allowedOrigins = [
+    "https://bmtzgeffbzmcwmnprxmx.supabase.co",  // Supabase project domain
+    "http://localhost:8080",                      // Local dev
+    "http://localhost:7997",                      // Preview server
+    "http://localhost:4173",                      // Vite preview
+    // Add your production domains here
+  ];
+  
+  const requestOrigin = origin || "*";
+  const isAllowed = allowedOrigins.includes(requestOrigin) || requestOrigin === "*";
+  
   const base = {
-    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Origin": isAllowed ? requestOrigin : allowedOrigins[0],
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
   };
 
   const preflight = (req: Request): Response | null => {

@@ -1,0 +1,134 @@
+name: Audit Chain Verification (Hourly)
+
+# P1 FIX: Incremental audit verification runs hourly
+# Weekly full scan runs on Sundays at 2 AM UTC
+
+on:
+  schedule:
+    # Hourly incremental verification
+    - cron: '0 * * * *'
+    # Weekly full scan (Sunday 2 AM UTC)
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Verification mode'
+        required: true
+        default: 'incremental'
+        type: choice
+        options:
+          - incremental
+          - full
+
+jobs:
+  verify-audit-chain:
+    name: Verify Audit Chain
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'pnpm'
+      
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+      
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      
+      - name: Determine verification mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "mode=${{ github.event.inputs.mode }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.schedule }}" = "0 2 * * 0" ]; then
+            echo "mode=full" >> $GITHUB_OUTPUT
+          else
+            echo "mode=incremental" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Run incremental verification
+        if: steps.mode.outputs.mode == 'incremental'
+        run: |
+          echo "🔍 Running incremental audit chain verification..."
+          
+          # Call edge function to trigger incremental verification
+          # This calls verify_audit_chain_incremental for each user
+          curl -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/audit-verify-incremental" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            --fail-with-body \
+            || (echo "❌ Incremental verification failed" && exit 1)
+          
+          echo "✅ Incremental verification complete"
+      
+      - name: Run full verification
+        if: steps.mode.outputs.mode == 'full'
+        run: |
+          echo "🔍 Running FULL audit chain verification (weekly)..."
+          
+          # Call edge function for full verification
+          curl -X POST \
+            "${{ secrets.SUPABASE_URL }}/functions/v1/audit-verify-full" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            --fail-with-body \
+            || (echo "❌ Full verification failed" && exit 1)
+          
+          echo "✅ Full verification complete"
+      
+      - name: Check for chain breaks
+        if: always()
+        run: |
+          echo "📊 Checking recent verification results..."
+          
+          # Query last 10 verification runs
+          curl -X GET \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/audit_verify_runs?select=*&order=run_at.desc&limit=10" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            --fail-with-body
+      
+      - name: Alert on failures
+        if: failure()
+        run: |
+          echo "🚨 ALERT: Audit chain verification failed!"
+          echo "Review logs and investigate immediately."
+          echo "This may indicate:"
+          echo "  - Audit chain tampering"
+          echo "  - Secret rotation issue"
+          echo "  - Database corruption"
+          
+          # In production, send alert to monitoring system
+          # Example: Send to Slack, PagerDuty, etc.
+
+  report-metrics:
+    name: Report Verification Metrics
+    runs-on: ubuntu-latest
+    needs: verify-audit-chain
+    if: always()
+    
+    steps:
+      - name: Generate summary
+        run: |
+          echo "# 🔐 Audit Chain Verification Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status**: ${{ needs.verify-audit-chain.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Mode**: ${{ needs.verify-audit-chain.outputs.mode }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Time**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.verify-audit-chain.result }}" = "success" ]; then
+            echo "✅ All audit chains verified successfully" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Verification failed - investigate immediately" >> $GITHUB_STEP_SUMMARY
+          fi

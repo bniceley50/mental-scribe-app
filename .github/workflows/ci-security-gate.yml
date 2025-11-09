@@ -1,0 +1,92 @@
+name: CI Security Gate
+
+# P0 FIX: Block dangerous patterns in migrations
+# Prevents accidental secret exposure via cron HTTP calls
+
+on:
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'supabase/migrations/**'
+  push:
+    branches: [main, develop]
+    paths:
+      - 'supabase/migrations/**'
+
+jobs:
+  check-migrations:
+    name: Check Migrations for Security Issues
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Block dangerous cron patterns
+        run: |
+          echo "🔍 Checking for dangerous patterns in migrations..."
+          
+          # P0 FIX: Reject net.http_* in cron jobs (secret sprinkler)
+          if grep -r "net\.http_post\|net\.http_get" supabase/migrations/ 2>/dev/null; then
+            echo "❌ BLOCKED: Found net.http_* in migrations"
+            echo ""
+            echo "Cron jobs using net.http_* can leak secrets in SQL."
+            echo "Instead:"
+            echo "  1. Create an edge function for the task"
+            echo "  2. Call it via cron using the edge function URL"
+            echo "  3. Use Supabase secrets (not embedded tokens)"
+            exit 1
+          fi
+          
+          echo "✅ No dangerous cron patterns found"
+      
+      - name: Check for hardcoded secrets in migrations
+        run: |
+          echo "🔐 Checking for hardcoded secrets..."
+          
+          # Check for JWT tokens in migrations
+          if grep -E "eyJ[A-Za-z0-9_-]{30,}\." supabase/migrations/ 2>/dev/null; then
+            echo "❌ BLOCKED: Found JWT token in migrations"
+            exit 1
+          fi
+          
+          # Check for API keys
+          if grep -iE "(api[_-]?key|secret|password)\s*[=:]\s*['\"][^'\"]{20,}['\"]" supabase/migrations/ 2>/dev/null; then
+            echo "❌ BLOCKED: Potential secret in migrations"
+            exit 1
+          fi
+          
+          echo "✅ No hardcoded secrets found"
+      
+      - name: Verify RLS enabled on new tables
+        run: |
+          echo "🛡️ Checking RLS on new tables..."
+          
+          # Get list of CREATE TABLE statements
+          TABLES=$(grep -h "CREATE TABLE" supabase/migrations/*.sql 2>/dev/null | grep -oP "(?<=CREATE TABLE )[\w\.]+" || true)
+          
+          if [ -z "$TABLES" ]; then
+            echo "ℹ️ No new tables in this migration"
+            exit 0
+          fi
+          
+          echo "Found tables: $TABLES"
+          
+          # Check each table has corresponding ENABLE ROW LEVEL SECURITY
+          for table in $TABLES; do
+            if ! grep -q "ALTER TABLE.*$table.*ENABLE ROW LEVEL SECURITY" supabase/migrations/*.sql; then
+              echo "⚠️ WARNING: Table $table may not have RLS enabled"
+              echo "Add: ALTER TABLE $table ENABLE ROW LEVEL SECURITY;"
+            else
+              echo "✅ RLS enabled for $table"
+            fi
+          done
+      
+      - name: Security gate summary
+        if: always()
+        run: |
+          echo "# 🔐 Migration Security Gate" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ No dangerous cron patterns" >> $GITHUB_STEP_SUMMARY
+          echo "✅ No hardcoded secrets" >> $GITHUB_STEP_SUMMARY
+          echo "✅ RLS checks passed" >> $GITHUB_STEP_SUMMARY

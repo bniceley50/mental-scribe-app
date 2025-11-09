@@ -28,7 +28,13 @@ This allowed collision attacks where different tuples produce the same byte stre
 concat_ws('|', prev_hash, user_id, action, resource_type, ...)
 ```
 
-**Impact**: Eliminates hash collision vulnerability, making the audit chain cryptographically sound.
+**Backward Compatibility**: The verifier now supports both algorithms:
+- **v2 (new)**: Delimited concatenation with `concat_ws('|', ...)`
+- **v1 (legacy)**: Direct concatenation for existing rows
+
+The verifier tries v2 first, falls back to v1 if that fails. This allows legacy rows to continue verifying while new rows use the secure delimited algorithm.
+
+**Impact**: Eliminates hash collision vulnerability without breaking existing audit chains.
 
 ### 3. Incremental Verifier Correctness (P1)
 
@@ -62,14 +68,15 @@ ALTER TABLE public.audit_chain_cursor
 ### Function Updates
 
 All three verification functions updated:
-1. `_audit_logs_set_hash()` - Trigger function
-2. `verify_audit_chain()` - Full verification
-3. `verify_audit_chain_incremental()` - Delta verification
+1. `_audit_logs_set_hash()` - Trigger function (v2 only for new rows)
+2. `verify_audit_chain()` - Full verification (dual-algo: v2 + v1 fallback)
+3. `verify_audit_chain_incremental()` - Delta verification (dual-algo: v2 + v1 fallback)
 
 Key changes:
 - `ORDER BY created_at, id` everywhere (not just `id`)
-- `concat_ws('|', ...)` for hash payload
-- Advisory locks in incremental verifier
+- `concat_ws('|', ...)` for hash payload (v2)
+- Backward compatibility: v1 algorithm fallback for legacy rows
+- Advisory locks using `hashtextextended()` for collision resistance
 
 ### Cron Job Updates
 
@@ -89,15 +96,18 @@ cron.schedule('audit_verify_weekly_full', '0 3 * * 0',
 
 1. **Admin check parameter fix**:
    ```typescript
-   // Before: _user_id
    const { data: isAdmin } = await supabase.rpc("is_admin", {
      uid: who.user.id  // ✅ Correct parameter name
    });
    ```
 
-2. **CORS origin control**:
+2. **Smart routing**:
+   - `?user_id=xxx` → Calls `verify_audit_chain_incremental()` for single user
+   - No query param → Calls `run_incremental_for_all_users()` for bulk verification
+
+3. **CORS origin control**:
    ```typescript
-   // Now uses CORS_ORIGIN env var
+   // Uses CORS_ORIGIN env var
    const corsOrigin = Deno.env.get("CORS_ORIGIN") || "https://...";
    ```
 
@@ -155,6 +165,9 @@ The incremental verifier only checks entries **after** the cursor position `(cre
 
 ### Clock Skew
 If server clocks are severely out of sync, `created_at` ordering may not match insertion order. This is acceptable for audit purposes as we care about the server's view of time.
+
+### Algorithm Migration
+New rows use v2 (delimited) hashing. Legacy rows continue to verify with v1 (non-delimited). Over time, as old rows age out or are archived, the chain becomes purely v2. There is no need to rehash historical data.
 
 ## Migration Impact
 

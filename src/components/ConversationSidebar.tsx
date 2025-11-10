@@ -128,7 +128,11 @@ export const ConversationSidebar = ({
                   {conversation.title}
                 </p>
                 {conversation.is_part2_protected && (
-                  <Part2Badge consentStatus={conversation.part2_consent_status} size="sm" />
+                  <Part2Badge 
+                    conversationId={conversation.id}
+                    consentStatus={conversation.part2_consent_status} 
+                    size="sm" 
+                  />
                 )}
               </div>
               {lastMessage && (

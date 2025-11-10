@@ -38,8 +38,11 @@ export const ConversationHeader = ({
     <div className="flex justify-between items-center">
       <div className="flex items-center gap-3">
         <h3 className="text-lg font-medium text-foreground">{conversationTitle}</h3>
-        {isPart2Protected && (
-          <Part2Badge consentStatus={part2ConsentStatus} />
+        {isPart2Protected && conversationId && (
+          <Part2Badge 
+            conversationId={conversationId}
+            consentStatus={part2ConsentStatus} 
+          />
         )}
       </div>
       <div className="flex gap-2">

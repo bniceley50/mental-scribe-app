@@ -174,7 +174,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       }
     }
 
-    const userMsg = await addMessage("user", messageContent);
+    const userMsg = await addMessage("user", messageContent, currentConversationId || conversationId || undefined);
     if (!userMsg) return;
 
     setInput("");
@@ -220,7 +220,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         },
         onComplete: async () => {
           showToast.dismiss("streaming-toast");
-          await addMessage("assistant", aiResponse);
+          await addMessage("assistant", aiResponse, currentConversationId || conversationId || undefined);
           setDisplayMessages((prev) =>
             prev.filter((msg) => msg.id !== streamingMessageId)
           );
@@ -330,7 +330,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
           );
         },
         onComplete: async () => {
-          await addMessage("assistant", editedContent);
+          await addMessage("assistant", editedContent, conversationId || undefined);
           setDisplayMessages((prev) =>
             prev.filter((msg) => msg.id !== streamingMessageId)
           );

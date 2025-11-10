@@ -106,13 +106,36 @@ export const useMessages = (conversationId: string | null) => {
     }
   };
 
-  const addMessage = async (role: "user" | "assistant", content: string) => {
-    if (!conversationId) return null;
+  const addMessage = async (role: "user" | "assistant", content: string, targetConversationId?: string) => {
+    const convId = targetConversationId ?? conversationId;
+    if (!convId) {
+      toast.error("No conversation selected");
+      return null;
+    }
 
     try {
+      // Ensure user owns the conversation to avoid RLS errors
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData?.user?.id;
+      if (!userId) {
+        toast.error("Please sign in to send messages");
+        return null;
+      }
+
+      const { data: convo, error: convoErr } = await supabase
+        .from("conversations")
+        .select("user_id")
+        .eq("id", convId)
+        .single();
+      if (convoErr) throw convoErr;
+      if (convo?.user_id !== userId) {
+        toast.error("You don’t have access to this conversation");
+        return null;
+      }
+
       const { data, error } = await supabase
         .from("messages")
-        .insert([{ conversation_id: conversationId, role, content }])
+        .insert([{ conversation_id: convId, role, content }])
         .select()
         .single();
 
@@ -122,16 +145,15 @@ export const useMessages = (conversationId: string | null) => {
       await supabase
         .from("conversations")
         .update({ updated_at: new Date().toISOString() })
-        .eq("id", conversationId);
+        .eq("id", convId);
 
       return data;
     } catch (error: any) {
       console.error("Error adding message:", error);
-      toast.error("Failed to save message");
+      toast.error(error?.message || "Failed to save message");
       return null;
     }
   };
-
   useEffect(() => {
     fetchMessages();
 

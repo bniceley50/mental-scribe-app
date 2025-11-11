@@ -20,8 +20,10 @@ type AnalysisRequest = {
 };
 
 Deno.serve(async (req) => {
+  console.log("[ENTRY] analyze-clinical-notes called", { method: req.method });
+  
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders, status: 200 });
   }
 
   if (req.method !== "POST") {
@@ -53,6 +55,13 @@ Deno.serve(async (req) => {
 
     const body: AnalysisRequest = await req.json();
     const noteText = (body.notes ?? "").trim();
+    
+    console.log("[BODY] Received:", {
+      action: body.action,
+      notesLength: noteText.length,
+      hasHistory: !!body.conversation_history?.length,
+    });
+    
     if (!noteText) {
       return new Response(JSON.stringify({ error: "notes is required" }), {
         status: 400,
@@ -80,6 +89,8 @@ Deno.serve(async (req) => {
     const { redacted, hadPHI } = redactPHI(noteText);
     const payload = BAA_SIGNED ? userPrompt : redacted;
 
+    console.log("[STREAM] Starting SSE relay to OpenAI");
+    
     // Stream response from OpenAI
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -100,12 +111,14 @@ Deno.serve(async (req) => {
 
     if (!response.ok) {
       const text = await response.text().catch(() => "OpenAI call failed");
-      console.error("OpenAI error:", response.status, text);
+      console.error("[ERROR] OpenAI error:", response.status, text);
       return new Response(JSON.stringify({ error: `AI service error: ${response.status}` }), {
         status: 502,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    console.log("[STREAM] OpenAI response OK, relaying to client");
 
     // Log to audit (non-blocking - fire and forget)
     try {
@@ -126,7 +139,7 @@ Deno.serve(async (req) => {
     }
 
     // Stream response back to client
-    return new Response(response.body, {
+    const streamResponse = new Response(response.body, {
       headers: {
         ...corsHeaders,
         'Content-Type': 'text/event-stream',
@@ -134,8 +147,11 @@ Deno.serve(async (req) => {
         'Connection': 'keep-alive',
       },
     });
+    
+    console.log("[STREAM] Completed successfully");
+    return streamResponse;
   } catch (error) {
-    console.error("analyze-clinical-notes error:", error);
+    console.error("[ERROR] analyze-clinical-notes error:", error);
     const errorMessage = error instanceof Error ? error.message : "Internal server error";
     return new Response(JSON.stringify({ error: errorMessage }), {
       status: 500,

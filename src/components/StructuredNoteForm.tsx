@@ -123,6 +123,8 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) throw new Error("Please sign in again.");
 
+      console.log("[SAVE] Upserting structured note:", conversationId);
+      
       // Single round-trip with RLS; requires unique index on conversation_id
       const { data, error } = await supabase
         .from("structured_notes")
@@ -135,10 +137,29 @@ export const StructuredNoteForm = ({ conversationId, onSave }: StructuredNoteFor
           { onConflict: "conversation_id" }
         )
         .select("id, updated_at")
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
+      console.log("[SAVE] Upsert result:", data);
+
+      // Explicit read-back to verify persistence
+      const { data: readBack, error: readError } = await supabase
+        .from("structured_notes")
+        .select("*")
+        .eq("conversation_id", conversationId)
+        .maybeSingle();
+
+      if (readError) {
+        console.error("[SAVE] Read-back error:", readError);
+      }
+
+      if (!readBack) {
+        console.error("[SAVE] Read-back returned null - trigger rollback suspected");
+        throw new Error("Data was not persisted. Check audit triggers.");
+      }
+
+      console.log("[SAVE] Read-back confirmed:", readBack.id);
       setLastSaved(data?.updated_at ? new Date(data.updated_at) : new Date());
 
       if (!autoSave) {

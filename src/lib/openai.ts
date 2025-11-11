@@ -54,6 +54,7 @@ export const analyzeNotesStreaming = async ({
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${session.access_token}`,
+          "apikey": import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
           notes: sanitizedNotes,
@@ -67,11 +68,16 @@ export const analyzeNotesStreaming = async ({
     );
 
     if (!response.ok) {
+      if (response.status === 429) {
+        throw new Error("Rate limit exceeded. Please try again in a moment.");
+      }
+      if (response.status === 402) {
+        throw new Error("AI service credits depleted. Please contact support.");
+      }
       const errorData = await response.json().catch(() => ({}));
-      // Avoid exposing internal error details in production
       const errorMessage = response.status >= 500 
-        ? "Service temporarily unavailable. Please try again." 
-        : (errorData.error || "Failed to process request");
+        ? `Service error (${response.status}). Please try again.` 
+        : (errorData.error || `Request failed: ${response.status}`);
       throw new Error(errorMessage);
     }
 
@@ -91,9 +97,19 @@ export const analyzeNotesStreaming = async ({
       const lines = buffer.split("\n");
       buffer = lines.pop() || "";
 
-      for (const line of lines) {
+      for (let line of lines) {
+        // Handle CRLF line endings
+        if (line.endsWith("\r")) {
+          line = line.slice(0, -1);
+        }
+        
+        // Skip SSE comments and empty lines
+        if (line.startsWith(":") || line.trim() === "") {
+          continue;
+        }
+        
         if (line.startsWith("data: ")) {
-          const data = line.slice(6);
+          const data = line.slice(6).trim();
           
           if (data === "[DONE]") {
             onComplete();
@@ -107,7 +123,7 @@ export const analyzeNotesStreaming = async ({
               onChunk(content);
             }
           } catch (e) {
-            // Skip malformed JSON
+            // Skip malformed JSON - may be partial chunk
             console.warn("Failed to parse SSE data:", e);
           }
         }

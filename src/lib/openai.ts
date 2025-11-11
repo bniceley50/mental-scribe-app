@@ -47,8 +47,11 @@ export const analyzeNotesStreaming = async ({
       throw new Error("User not authenticated");
     }
 
+    console.log("[OPENAI_LIB] Invoking analyze-clinical-notes", { action, notesLength: sanitizedNotes.length });
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-clinical-notes`;
+    console.log("[OPENAI_LIB] POST", { url });
     const response = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-clinical-notes`,
+      url,
       {
         method: "POST",
         headers: {
@@ -66,6 +69,7 @@ export const analyzeNotesStreaming = async ({
         }),
       }
     );
+    console.log("[OPENAI_LIB] Response", { status: response.status, contentType: response.headers.get('content-type') });
 
     if (!response.ok) {
       if (response.status === 429) {
@@ -130,6 +134,7 @@ export const analyzeNotesStreaming = async ({
       }
     }
 
+    console.log("[OPENAI_LIB] Stream complete");
     onComplete();
   } catch (error: any) {
     // Log error internally but don't expose details to user in production

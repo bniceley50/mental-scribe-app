@@ -68,8 +68,11 @@ export const AdvancedAnalysis = ({ noteContent, conversationId }: AdvancedAnalys
       }
 
       // Use fetch directly for streaming responses
+      console.log("[ANALYZE] Starting request", { analysisType, notesLength: noteContent.length });
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-clinical-notes`;
+      console.log("[ANALYZE] POST", { url, hasToken: Boolean(session.access_token), hasApiKey: Boolean(import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY) });
       const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-clinical-notes`,
+        url,
         {
           method: "POST",
           headers: {
@@ -85,6 +88,7 @@ export const AdvancedAnalysis = ({ noteContent, conversationId }: AdvancedAnalys
           }),
         }
       );
+      console.log("[ANALYZE] Response", { status: response.status, contentType: response.headers.get('content-type') });
 
       if (!response.ok) {
         if (response.status === 429) {

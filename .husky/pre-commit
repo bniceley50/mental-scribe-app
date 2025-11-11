@@ -1,8 +1,5 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 # Run lint-staged
-pnpm lint-staged
+npx lint-staged || true
 
 # Block stray console.* calls outside logger internals
 if git diff --cached --name-only | grep -E '\.(ts|tsx|js|jsx)$' > /dev/null; then

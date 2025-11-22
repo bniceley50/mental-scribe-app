@@ -64,20 +64,20 @@ export const useMessages = (conversationId: string | null) => {
       const { data, error } = await query;
 
       if (error) throw error;
-      
+
       // Check if there are more messages
       const hasMoreMessages = (data?.length || 0) > PAGE_SIZE;
       const messagesToDisplay = hasMoreMessages ? data!.slice(0, PAGE_SIZE) : (data || []);
-      
+
       // Cast the data to Message[] type
       const typedMessages = messagesToDisplay.map(msg => ({
         ...msg,
         role: msg.role as "user" | "assistant"
       }));
-      
+
       // Reverse to show oldest first (since we fetched newest first for pagination)
       const reversedMessages = [...typedMessages].reverse();
-      
+
       if (loadMore) {
         // Prepend older messages
         setMessages(prev => [...reversedMessages, ...prev]);
@@ -85,9 +85,9 @@ export const useMessages = (conversationId: string | null) => {
         // Initial load
         setMessages(reversedMessages);
       }
-      
+
       setHasMore(hasMoreMessages);
-      
+
       // Update the oldest timestamp for next pagination
       if (reversedMessages.length > 0) {
         setOldestMessageTimestamp(reversedMessages[0].created_at);
@@ -124,7 +124,7 @@ export const useMessages = (conversationId: string | null) => {
 
       const { data: convo, error: convoErr } = await supabase
         .from("conversations")
-        .select("user_id")
+        .select("user_id, data_classification, is_part2_protected")
         .eq("id", convId)
         .single();
       if (convoErr) throw convoErr;
@@ -135,7 +135,13 @@ export const useMessages = (conversationId: string | null) => {
 
       const { data, error } = await supabase
         .from("messages")
-        .insert([{ conversation_id: convId, role, content }])
+        .insert([{
+          conversation_id: convId,
+          role,
+          content,
+          data_classification: convo.data_classification || 'standard_phi',
+          is_part2_protected: convo.is_part2_protected || false
+        }])
         .select()
         .single();
 

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -7,16 +8,10 @@ import { toast as showToast } from "sonner";
 import { logger } from "@/lib/logger";
 import { useMessages, Message as DBMessage } from "@/hooks/useMessages";
 import { useConversations } from "@/hooks/useConversations";
+import { useFileManagement } from "@/hooks/useFileManagement";
 import { AdvancedAnalysis } from "./AdvancedAnalysis";
 import { StructuredNoteForm } from "./StructuredNoteForm";
 import { EditMessageDialog } from "./EditMessageDialog";
-import {
-  extractTextFromFile,
-  uploadFileToStorage,
-  saveFileMetadata,
-  getConversationFiles,
-  deleteFile,
-} from "@/lib/fileUpload";
 import { analyzeNotesStreaming } from "@/lib/openai";
 import { exportConversationToPDF, exportConversationToText, copyConversationToClipboard } from "@/lib/exportUtils";
 import { supabase } from "@/integrations/supabase/client";
@@ -36,14 +31,6 @@ import { ConversationHeader } from "./chat/ConversationHeader";
 import { QuickActions } from "./chat/QuickActions";
 import { FileManager } from "./chat/FileManager";
 
-interface UploadedFile {
-  id: string;
-  file_name: string;
-  file_type: string;
-  file_url: string;
-  processed_content: string;
-}
-
 interface ChatInterfaceProps {
   conversationId: string | null;
   onConversationCreated?: (id: string) => void;
@@ -52,8 +39,6 @@ interface ChatInterfaceProps {
 const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceProps) => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
-  const [showFileUpload, setShowFileUpload] = useState(false);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [lastUserMessage, setLastUserMessage] = useState<string>("");
   const [lastAction, setLastAction] = useState<string>("session_summary");
@@ -65,9 +50,26 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingMessage, setEditingMessage] = useState<DBMessage | null>(null);
   const chatInputRef = useRef<ChatInputRef>(null);
-  
+  const navigate = useNavigate();
+
   const { messages: dbMessages, addMessage, hasMore, loadOlderMessages, loading: messagesLoading } = useMessages(conversationId);
   const { createConversation, conversations } = useConversations();
+
+  const {
+    uploadedFiles,
+    isUploading,
+    showFileUpload,
+    setShowFileUpload,
+    handleFileSelect,
+    handleDeleteFile,
+    clearFiles
+  } = useFileManagement({
+    conversationId,
+    onConversationCreated,
+    createConversation,
+    isPart2Protected,
+    selectedClientId
+  });
 
   const [displayMessages, setDisplayMessages] = useState<Array<DBMessage & { isStreaming?: boolean }>>([]);
 
@@ -121,22 +123,14 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
 
   useEffect(() => {
     if (conversationId) {
-      loadConversationFiles();
       const conversation = conversations.find((c) => c.id === conversationId);
       if (conversation) {
         setConversationTitle(conversation.title);
       }
     } else {
-      setUploadedFiles([]);
       setConversationTitle("");
     }
   }, [conversationId, conversations]);
-
-  const loadConversationFiles = async () => {
-    if (!conversationId) return;
-    const files = await getConversationFiles(conversationId);
-    setUploadedFiles(files);
-  };
 
   const generateTitle = (content: string): string => {
     const firstLine = content.split("\n")[0];
@@ -155,23 +149,26 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     if (!currentConversationId) {
       const title = generateTitle(messageContent);
       currentConversationId = await createConversation(
-        title, 
+        title,
         isPart2Protected,
         selectedClientId
       );
-      
+
       if (!currentConversationId) {
         showToast.error("Failed to create conversation");
         return;
       }
-      
+
       onConversationCreated?.(currentConversationId);
-      
+
       if (isPart2Protected) {
         showToast.info("Session marked as 42 CFR Part 2 protected", {
           description: "All access to this conversation will be audited"
         });
       }
+
+      // Update URL to the new conversation
+      navigate(`/chat/${currentConversationId}`);
     }
 
     const userMsg = await addMessage("user", messageContent, currentConversationId || conversationId || undefined);
@@ -187,7 +184,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
 
     let aiResponse = "";
     const streamingMessageId = `streaming-${Date.now()}`;
-    
+
     setDisplayMessages((prev) => [
       ...prev,
       {
@@ -233,12 +230,12 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         onError: (error) => {
           logger.error("Streaming error", new Error(error), { conversationId, action: lastAction });
           showToast.dismiss("streaming-toast");
-          
+
           if (controller.signal.aborted) {
             showToast.info("Response generation stopped by user");
           } else {
             let errorMessage = "Failed to generate response. Please try again.";
-            
+
             if (error.includes("rate limit") || error.includes("429")) {
               errorMessage = "Too many requests. Please wait a moment and try again.";
             } else if (error.includes("network") || error.includes("fetch")) {
@@ -248,13 +245,13 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
             } else if (error.includes("402") || error.includes("payment")) {
               errorMessage = "AI service temporarily unavailable. Please contact support.";
             }
-            
+
             showToast.error(errorMessage, {
               description: "If this persists, please contact support.",
               duration: 5000
             });
           }
-          
+
           setDisplayMessages((prev) =>
             prev.filter((msg) => msg.id !== streamingMessageId)
           );
@@ -263,7 +260,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
         },
       });
 
-      controller.signal.addEventListener("abort", () => {});
+      controller.signal.addEventListener("abort", () => { });
     } catch (error: any) {
       logger.error("Error during analysis", error, { conversationId });
       showToast.error("Failed to analyze notes");
@@ -298,10 +295,10 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     if (!editingMessage || !conversationId) return;
 
     setLoading(true);
-    
+
     let editedContent = "";
     const streamingMessageId = `editing-${Date.now()}`;
-    
+
     setDisplayMessages((prev) => [
       ...prev,
       {
@@ -373,63 +370,6 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
     handleSubmit(prompts[action], actionMap[action]);
   };
 
-  const handleFileSelect = async (file: File) => {
-    let currentConversationId = conversationId;
-
-    if (!currentConversationId) {
-      const title = `Document Analysis: ${file.name}`;
-      currentConversationId = await createConversation(
-        title, 
-        isPart2Protected,
-        selectedClientId
-      );
-      
-      if (!currentConversationId) {
-        showToast.error("Failed to create conversation");
-        return;
-      }
-      
-      onConversationCreated?.(currentConversationId);
-    }
-
-    try {
-      showToast.info("Processing file...");
-      const extractedText = await extractTextFromFile(file);
-      const uploadResult = await uploadFileToStorage(file, currentConversationId);
-      if (!uploadResult) return;
-
-      const fileType = file.type === "application/pdf" ? "pdf" : "text";
-
-      const fileId = await saveFileMetadata(
-        currentConversationId,
-        file.name,
-        fileType,
-        uploadResult.url,
-        extractedText
-      );
-
-      if (fileId) {
-        showToast.success("File uploaded successfully!");
-        await loadConversationFiles();
-        setShowFileUpload(false);
-      }
-    } catch (error: any) {
-      logger.error("Error processing file", error, { fileName: file.name });
-      showToast.error(error.message || "Failed to process file");
-    }
-  };
-
-  const handleDeleteFile = async (fileId: string) => {
-    const file = uploadedFiles.find((f) => f.id === fileId);
-    if (!file) return;
-
-    const filePath = file.file_url.split("/clinical-documents/")[1];
-    const success = await deleteFile(fileId, filePath);
-    if (success) {
-      await loadConversationFiles();
-    }
-  };
-
   const handleAnalyzeFile = (content: string, fileName: string) => {
     const prompt = `Please analyze the following document content from "${fileName}":\n\n${content.substring(0, 3000)}${content.length > 3000 ? "..." : ""}`;
     handleSubmit(prompt, "session_summary");
@@ -440,6 +380,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
   };
 
   const handleConfirmClear = () => {
+    clearFiles();
     if (onConversationCreated) {
       onConversationCreated("");
     }
@@ -525,7 +466,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
       <FileManager
         uploadedFiles={uploadedFiles}
         showFileUpload={showFileUpload}
-        loading={loading}
+        loading={loading || isUploading}
         onFileSelect={handleFileSelect}
         onDeleteFile={handleDeleteFile}
         onAnalyzeFile={handleAnalyzeFile}
@@ -565,9 +506,9 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
 
           {input.trim() && (
             <div data-onboarding="advanced-analysis">
-              <AdvancedAnalysis 
-                noteContent={input} 
-                conversationId={conversationId || "temp"} 
+              <AdvancedAnalysis
+                noteContent={input}
+                conversationId={conversationId || "temp"}
               />
             </div>
           )}
@@ -581,7 +522,7 @@ const ChatInterface = ({ conversationId, onConversationCreated }: ChatInterfaceP
               <p className="text-muted-foreground">
                 Please start a conversation first to use the structured note form.
               </p>
-              <Button 
+              <Button
                 onClick={() => handleSubmit("Started new session", "session_summary")}
                 className="mt-4"
               >

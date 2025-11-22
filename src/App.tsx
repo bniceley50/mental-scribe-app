@@ -33,29 +33,30 @@ const App = () => (
         <BrowserRouter>
           <LoggerProvider>
             <Routes>
-            {/* Public routes */}
-            <Route path="/auth" element={<Auth />} />
-            
-            {/* Protected routes - all require authentication */}
-            <Route path="/" element={<ProtectedRoute><MfaEnforcementGuard><Index /></MfaEnforcementGuard></ProtectedRoute>} />
-            <Route path="/clients" element={<ProtectedRoute><MfaEnforcementGuard><Clients /></MfaEnforcementGuard></ProtectedRoute>} />
-            <Route path="/client/:id" element={<ProtectedRoute><MfaEnforcementGuard><ClientProfile /></MfaEnforcementGuard></ProtectedRoute>} />
-            <Route path="/history" element={<ProtectedRoute><MfaEnforcementGuard><History /></MfaEnforcementGuard></ProtectedRoute>} />
-            
-            {/* Settings pages - MFA guard excluded to allow enrollment */}
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="/settings/security" element={<ProtectedRoute><SecuritySettings /></ProtectedRoute>} />
-            
-            {/* Admin/Security routes - require MFA for admins */}
-            <Route path="/security/monitoring" element={<ProtectedRoute><MfaEnforcementGuard><SecurityMonitoring /></MfaEnforcementGuard></ProtectedRoute>} />
-            <Route path="/security/audit" element={<ProtectedRoute><MfaEnforcementGuard><AuditDashboard /></MfaEnforcementGuard></ProtectedRoute>} />
-            <Route path="/security/alerts" element={<ProtectedRoute><MfaEnforcementGuard><SecurityAlertHistory /></MfaEnforcementGuard></ProtectedRoute>} />
-            <Route path="/security/compliance" element={<ProtectedRoute><MfaEnforcementGuard><ComplianceReports /></MfaEnforcementGuard></ProtectedRoute>} />
-            <Route path="/admin/system-health" element={<ProtectedRoute><MfaEnforcementGuard><SystemHealth /></MfaEnforcementGuard></ProtectedRoute>} />
-            
-            {/* 404 - Public */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+              {/* Public routes */}
+              <Route path="/auth" element={<Auth />} />
+
+              {/* Protected routes - all require authentication */}
+              <Route path="/" element={<ProtectedRoute><MfaEnforcementGuard><Index /></MfaEnforcementGuard></ProtectedRoute>} />
+              <Route path="/chat/:id" element={<ProtectedRoute><MfaEnforcementGuard><Index /></MfaEnforcementGuard></ProtectedRoute>} />
+              <Route path="/clients" element={<ProtectedRoute><MfaEnforcementGuard><Clients /></MfaEnforcementGuard></ProtectedRoute>} />
+              <Route path="/client/:id" element={<ProtectedRoute><MfaEnforcementGuard><ClientProfile /></MfaEnforcementGuard></ProtectedRoute>} />
+              <Route path="/history" element={<ProtectedRoute><MfaEnforcementGuard><History /></MfaEnforcementGuard></ProtectedRoute>} />
+
+              {/* Settings pages - MFA guard excluded to allow enrollment */}
+              <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+              <Route path="/settings/security" element={<ProtectedRoute><SecuritySettings /></ProtectedRoute>} />
+
+              {/* Admin/Security routes - require MFA for admins */}
+              <Route path="/security/monitoring" element={<ProtectedRoute><MfaEnforcementGuard><SecurityMonitoring /></MfaEnforcementGuard></ProtectedRoute>} />
+              <Route path="/security/audit" element={<ProtectedRoute><MfaEnforcementGuard><AuditDashboard /></MfaEnforcementGuard></ProtectedRoute>} />
+              <Route path="/security/alerts" element={<ProtectedRoute><MfaEnforcementGuard><SecurityAlertHistory /></MfaEnforcementGuard></ProtectedRoute>} />
+              <Route path="/security/compliance" element={<ProtectedRoute><MfaEnforcementGuard><ComplianceReports /></MfaEnforcementGuard></ProtectedRoute>} />
+              <Route path="/admin/system-health" element={<ProtectedRoute><MfaEnforcementGuard><SystemHealth /></MfaEnforcementGuard></ProtectedRoute>} />
+
+              {/* 404 - Public */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
           </LoggerProvider>
         </BrowserRouter>
       </TooltipProvider>

@@ -35,7 +35,7 @@ export default function AuditChainStatus({ baseUrl, functionPrefix, refreshTrigg
         // In a real implementation, you'd include auth tokens
         const response = await fetch(url, {
           headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY || ''}`,
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || ''}`,
           },
         });
         
@@ -75,7 +75,7 @@ export default function AuditChainStatus({ baseUrl, functionPrefix, refreshTrigg
         <h2>🔐 Audit Chain Status</h2>
         <div className="error-message">{error}</div>
         <p style={{ marginTop: '1rem', fontSize: '0.875rem', color: '#94a3b8' }}>
-          Configure VITE_SUPABASE_ANON_KEY in .env to enable audit verification
+          Configure VITE_SUPABASE_PUBLISHABLE_KEY in .env to enable audit verification
         </p>
       </div>
     );

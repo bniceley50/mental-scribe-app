@@ -13,101 +13,82 @@
  */
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { makeCors } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const { json, wrap, headers: corsBase } = makeCors("POST,OPTIONS");
 
 interface RequestBody {
   prefix: string;
 }
 
-serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+serve(
+  wrap(async (req) => {
+    try {
+      if (req.method !== "POST") {
+        return json(
+          { error: "Method not allowed" },
+          { status: 405 }
+        );
+      }
 
-  try {
-    // Parse and validate request
-    const body: RequestBody = await req.json();
-    const { prefix } = body;
+      const body: RequestBody = await req.json();
+      const { prefix } = body;
 
-    // SECURITY: Validate prefix format (must be exactly 5 hex chars)
-    if (!prefix || typeof prefix !== "string") {
-      console.error("HIBP proxy: Missing prefix parameter");
-      return new Response(
-        JSON.stringify({ error: "Missing required parameter: prefix" }),
+      if (!prefix || typeof prefix !== "string") {
+        console.error("HIBP proxy: Missing prefix parameter");
+        return json(
+          { error: "Missing required parameter: prefix" },
+          { status: 400 }
+        );
+      }
+
+      if (!/^[A-F0-9]{5}$/i.test(prefix)) {
+        console.error("HIBP proxy: Invalid prefix format");
+        return json(
+          { error: "Invalid prefix format. Must be 5 hex characters." },
+          { status: 400 }
+        );
+      }
+
+      console.log(`HIBP proxy: Checking range for prefix ${prefix}`);
+
+      const hibpResponse = await fetch(
+        `https://api.pwnedpasswords.com/range/${prefix.toUpperCase()}`,
         {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          method: "GET",
+          headers: {
+            "Add-Padding": "true",
+            "User-Agent": "Mental-Scribe-HIBP-Proxy/1.0",
+          },
         }
       );
-    }
 
-    if (!/^[A-F0-9]{5}$/i.test(prefix)) {
-      console.error("HIBP proxy: Invalid prefix format");
-      return new Response(
-        JSON.stringify({ error: "Invalid prefix format. Must be 5 hex characters." }),
+      if (!hibpResponse.ok) {
+        console.error(`HIBP API error: ${hibpResponse.status}`);
+        return json(
+          {
+            error: "HIBP service unavailable",
+            failClosed: true,
+          },
+          { status: 503 }
+        );
+      }
+
+      const rangeData = await hibpResponse.text();
+
+      return new Response(rangeData, {
+        status: 200,
+        headers: { ...corsBase, "Content-Type": "text/plain" },
+      });
+    } catch (error) {
+      console.error("HIBP proxy error:", error);
+      return json(
         {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
-    }
-
-    // Call HIBP API with k-anonymity model
-    console.log(`HIBP proxy: Checking range for prefix ${prefix}`);
-    
-    const hibpResponse = await fetch(
-      `https://api.pwnedpasswords.com/range/${prefix.toUpperCase()}`,
-      {
-        method: "GET",
-        headers: {
-          "Add-Padding": "true", // Additional privacy protection
-          "User-Agent": "Mental-Scribe-HIBP-Proxy/1.0",
+          error: "Internal server error",
+          failClosed: true,
         },
-      }
-    );
-
-    if (!hibpResponse.ok) {
-      console.error(`HIBP API error: ${hibpResponse.status}`);
-      
-      // Fail closed: treat as potentially leaked
-      return new Response(
-        JSON.stringify({ 
-          error: "HIBP service unavailable",
-          failClosed: true 
-        }),
-        {
-          status: 503,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        { status: 500 }
       );
     }
-
-    // Return raw range data (format: SUFFIX:COUNT per line)
-    const rangeData = await hibpResponse.text();
-    
-    return new Response(rangeData, {
-      status: 200,
-      headers: { ...corsHeaders, "Content-Type": "text/plain" },
-    });
-
-  } catch (error) {
-    console.error("HIBP proxy error:", error);
-    
-    // Fail closed on errors
-    return new Response(
-      JSON.stringify({ 
-        error: "Internal server error",
-        failClosed: true 
-      }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
-    );
-  }
-});
+  })
+);

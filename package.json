@@ -95,6 +95,8 @@
     "@eslint/js": "^9.38.0",
     "@originjs/vite-plugin-federation": "^1.4.1",
     "@playwright/test": "^1.56.1",
+    "@rollup/rollup-win32-x64-msvc": "^4.53.3",
+    "@swc/core-win32-x64-msvc": "^1.15.3",
     "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^22.16.5",
     "@types/react": "^18.3.23",

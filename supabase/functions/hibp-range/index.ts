@@ -12,83 +12,81 @@
  * - Rate limiting via HIBP API
  */
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { makeCors } from "../_shared/cors.ts";
 
-const { json, wrap, headers: corsBase } = makeCors("POST,OPTIONS");
+const cors = makeCors("POST,OPTIONS");
 
 interface RequestBody {
   prefix: string;
 }
 
-serve(
-  wrap(async (req) => {
-    try {
-      if (req.method !== "POST") {
-        return json(
-          { error: "Method not allowed" },
-          { status: 405 }
-        );
-      }
+Deno.serve(cors.wrap(async (req) => {
+  const preflight = cors.preflight(req);
+  if (preflight) return preflight;
 
-      const body: RequestBody = await req.json();
-      const { prefix } = body;
+  try {
+    // Parse and validate request
+    const body: RequestBody = await req.json();
+    const { prefix } = body;
 
-      if (!prefix || typeof prefix !== "string") {
-        console.error("HIBP proxy: Missing prefix parameter");
-        return json(
-          { error: "Missing required parameter: prefix" },
-          { status: 400 }
-        );
-      }
-
-      if (!/^[A-F0-9]{5}$/i.test(prefix)) {
-        console.error("HIBP proxy: Invalid prefix format");
-        return json(
-          { error: "Invalid prefix format. Must be 5 hex characters." },
-          { status: 400 }
-        );
-      }
-
-      console.log(`HIBP proxy: Checking range for prefix ${prefix}`);
-
-      const hibpResponse = await fetch(
-        `https://api.pwnedpasswords.com/range/${prefix.toUpperCase()}`,
-        {
-          method: "GET",
-          headers: {
-            "Add-Padding": "true",
-            "User-Agent": "Mental-Scribe-HIBP-Proxy/1.0",
-          },
-        }
-      );
-
-      if (!hibpResponse.ok) {
-        console.error(`HIBP API error: ${hibpResponse.status}`);
-        return json(
-          {
-            error: "HIBP service unavailable",
-            failClosed: true,
-          },
-          { status: 503 }
-        );
-      }
-
-      const rangeData = await hibpResponse.text();
-
-      return new Response(rangeData, {
-        status: 200,
-        headers: { ...corsBase, "Content-Type": "text/plain" },
+    // SECURITY: Validate prefix format (must be exactly 5 hex chars)
+    if (!prefix || typeof prefix !== "string") {
+      console.error("HIBP proxy: Missing prefix parameter");
+      return cors.json({ error: "Missing required parameter: prefix" }, {
+        status: 400
       });
-    } catch (error) {
-      console.error("HIBP proxy error:", error);
-      return json(
-        {
-          error: "Internal server error",
-          failClosed: true,
-        },
-        { status: 500 }
-      );
     }
-  })
-);
+
+    if (!/^[A-F0-9]{5}$/i.test(prefix)) {
+      console.error("HIBP proxy: Invalid prefix format");
+      return cors.json({ error: "Invalid prefix format. Must be 5 hex characters." }, {
+        status: 400
+      });
+    }
+
+    // Call HIBP API with k-anonymity model
+    console.log(`HIBP proxy: Checking range for prefix ${prefix}`);
+    
+    const hibpResponse = await fetch(
+      `https://api.pwnedpasswords.com/range/${prefix.toUpperCase()}`,
+      {
+        method: "GET",
+        headers: {
+          "Add-Padding": "true", // Additional privacy protection
+          "User-Agent": "Mental-Scribe-HIBP-Proxy/1.0",
+        },
+      }
+    );
+
+    if (!hibpResponse.ok) {
+      console.error(`HIBP API error: ${hibpResponse.status}`);
+      
+      // Fail closed: treat as potentially leaked
+      return cors.json({ 
+        error: "HIBP service unavailable",
+        failClosed: true 
+      }, {
+        status: 503
+      });
+    }
+
+    // Return raw range data (format: SUFFIX:COUNT per line)
+    const rangeData = await hibpResponse.text();
+    
+    return new Response(rangeData, {
+      status: 200,
+      headers: { "Content-Type": "text/plain" },
+    });
+
+  } catch (error) {
+    console.error("HIBP proxy error:", error);
+    
+    // Fail closed on errors
+    return cors.json({ 
+      error: "Internal server error",
+      failClosed: true 
+    }, {
+      status: 500
+    });
+  }
+}));

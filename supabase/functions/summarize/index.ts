@@ -1,18 +1,13 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { makeCors } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { redactPHI } from "../_shared/phi-redactor.ts";
-import { makeCors } from "../_shared/cors.ts";
 
 const cors = makeCors("POST,OPTIONS");
 
-serve(cors.wrap(async (req) => {
-  if (req.method !== 'POST') {
-    return new Response('data: {"error": "Method not allowed"}\n\n', {
-      status: 405,
-      headers: { ...cors.headers, 'Content-Type': 'text/event-stream' }
-    });
-  }
+Deno.serve(cors.wrap(async (req) => {
+  const preflight = cors.preflight(req);
+  if (preflight) return preflight;
 
   try {
     const supabase = createClient(
@@ -42,7 +37,7 @@ serve(cors.wrap(async (req) => {
     if (!quotaOk) {
       return new Response('data: {"error": "Quota exceeded"}\n\n', {
         status: 429,
-        headers: { ...cors.headers, 'Content-Type': 'text/event-stream' }
+        headers: { 'Content-Type': 'text/event-stream' }
       });
     }
 
@@ -145,7 +140,6 @@ serve(cors.wrap(async (req) => {
 
     return new Response(readableStream, {
       headers: {
-        ...cors.headers,
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
@@ -156,7 +150,7 @@ serve(cors.wrap(async (req) => {
     console.error('Error in summarize:', error);
     return new Response(`data: ${JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' })}\n\n`, {
       status: 500,
-      headers: { ...cors.headers, 'Content-Type': 'text/event-stream' }
+      headers: { 'Content-Type': 'text/event-stream' }
     });
   }
 }));

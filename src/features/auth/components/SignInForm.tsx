@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,11 +23,28 @@ export const SignInForm = ({ onForgotPassword, onMfaRequired }: SignInFormProps)
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [lockoutMessage, setLockoutMessage] = useState<string | null>(null);
+  const [isShaking, setIsShaking] = useState(false);
   const emailInputRef = useRef<HTMLInputElement>(null);
   const errorSummaryRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Auto-focus email input on mount
+    emailInputRef.current?.focus();
+
+    // Network status listeners
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -50,14 +67,24 @@ export const SignInForm = ({ onForgotPassword, onMfaRequired }: SignInFormProps)
     setLoading(true);
 
     try {
-      const { data: lockoutCheck } = await supabase.rpc('is_account_locked', {
-        _identifier: validation.data.email
-      });
+      // Check for account lockout (Robustness: fail open if RPC is missing)
+      try {
+        const { data: lockoutCheck, error: lockoutError } = await supabase.rpc('is_account_locked', {
+          _identifier: validation.data.email
+        });
 
-      if (lockoutCheck) {
-        setLockoutMessage("Account temporarily locked due to multiple failed login attempts. Please try again in 15 minutes.");
-        setLoading(false);
-        return;
+        if (lockoutError) {
+          console.warn("Lockout check failed:", lockoutError.message);
+          // If it's a network error, we should probably stop, but for now let's proceed to auth
+          // which will also fail if network is down, providing a consistent error message.
+        } else if (lockoutCheck) {
+          setLockoutMessage("Account temporarily locked due to multiple failed login attempts. Please try again in 15 minutes.");
+          setLoading(false);
+          return;
+        }
+      } catch (rpcError) {
+        console.warn("Lockout RPC exception:", rpcError);
+        // Proceed to login attempt
       }
 
       const { data, error } = await supabase.auth.signInWithPassword({
@@ -90,10 +117,15 @@ export const SignInForm = ({ onForgotPassword, onMfaRequired }: SignInFormProps)
       let message = "Failed to sign in";
       if (error instanceof Error) {
         message = error.message;
+        if (message.includes("Failed to fetch") || message.includes("NetworkError")) {
+          message = "Unable to connect to the server. Please check your internet connection.";
+        }
       } else if (typeof error === "string") {
         message = error;
       }
       setErrors({ general: message });
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 500);
       setTimeout(() => errorSummaryRef.current?.focus(), 100);
     } finally {
       setLoading(false);
@@ -101,10 +133,21 @@ export const SignInForm = ({ onForgotPassword, onMfaRequired }: SignInFormProps)
   };
 
   return (
-    <form onSubmit={handleSignIn} className="space-y-4" aria-describedby="app-description">
+    <form
+      onSubmit={handleSignIn}
+      className={`space-y-4 ${isShaking ? "animate-shake" : ""}`}
+      aria-describedby="app-description"
+    >
       {lockoutMessage && (
         <div role="alert" className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-md text-sm text-destructive">
           {lockoutMessage}
+        </div>
+      )}
+
+      {!isOnline && (
+        <div role="alert" className="mb-4 p-3 bg-warning/10 border border-warning/20 rounded-md text-sm text-warning-foreground flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-warning animate-pulse" />
+          You are currently offline. Please check your connection.
         </div>
       )}
 

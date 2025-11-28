@@ -1,0 +1,96 @@
+﻿**********************
+Windows PowerShell transcript start
+Start time: 20251124200650
+Username: BRIAN\brian
+RunAs User: BRIAN\brian
+Configuration Name: 
+Machine: BRIAN (Microsoft Windows NT 10.0.26200.0)
+Host Application: C:\WINDOWS\System32\WindowsPowerShell\v1.0\powershell.exe -ExecutionPolicy Bypass -Command Start-Transcript -Path diagnostic_log.txt; .\scripts\network_zombie_hunter.ps1; Stop-Transcript
+Process ID: 17824
+PSVersion: 5.1.26100.7019
+PSEdition: Desktop
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1.26100.7019
+BuildVersion: 10.0.26100.7019
+CLRVersion: 4.0.30319.42000
+WSManStackVersion: 3.0
+PSRemotingProtocolVersion: 2.3
+SerializationVersion: 1.1.0.1
+**********************
+Transcript started, output file is diagnostic_log.txt
+
+============================================================
+  PHASE 1: HOSTS FILE CHECK
+============================================================
+[OK] Hosts file clean
+
+============================================================
+  PHASE 2: ZOMBIE ADAPTER DETECTION
+============================================================
+
+Name
+----
+Wi-Fi
+Ethernet
+Bluetooth Network C...
+
+
+
+============================================================
+  PHASE 3: DNS PER ADAPTER
+============================================================
+[Ethernet] DNS: 8.8.8.8, 8.8.8.8
+
+============================================================
+  PHASE 4: NORDVPN REMNANTS
+============================================================
+[OK] No Nord services
+
+============================================================
+  PHASE 5: DNS RESOLUTION TESTS
+============================================================
+[Test 1] System resolver...
+PS>TerminatingError(Resolve-DnsName): "The running command stopped because the preference variable "ErrorActionPreference" or common parameter is set to Stop: hsmfjazaucoihbfuvksh.supabase.co : DNS name does not exist"
+ FAIL
+[Test 2] Google 8.8.8.8...
+PS>TerminatingError(Resolve-DnsName): "The running command stopped because the preference variable "ErrorActionPreference" or common parameter is set to Stop: hsmfjazaucoihbfuvksh.supabase.co : DNS name does not exist"
+ FAIL
+[Test 3] Cloudflare 1.1.1.1...
+PS>TerminatingError(Resolve-DnsName): "The running command stopped because the preference variable "ErrorActionPreference" or common parameter is set to Stop: hsmfjazaucoihbfuvksh.supabase.co : DNS name does not exist"
+ FAIL
+
+============================================================
+  PHASE 6: NRPT CHECK (MOST LIKELY CULPRIT!)
+============================================================
+[OK] No NRPT rules
+
+============================================================
+  PHASE 7: FIREWALL CHECK
+============================================================
+[OK] No Nord firewall rules
+
+============================================================
+  RECOMMENDED FIXES
+============================================================
+
+[1] REMOVE NRPT RULES (if found above):
+   Get-DnsClientNrptRule | Remove-DnsClientNrptRule -Force
+
+[2] DISABLE ZOMBIE ADAPTERS:
+   Get-NetAdapter | Where-Object {$_.InterfaceDescription -match 'TAP|VPN'} | Disable-NetAdapter
+
+[3] NUCLEAR DNS RESET:
+   ipconfig /release && ipconfig /flushdns && ipconfig /renew
+   netsh int ip reset && netsh winsock reset
+   (Then REBOOT)
+
+[4] FORCE CLOUDFLARE DNS:
+   Set-DnsClientServerAddress -InterfaceAlias "Wi-Fi" -ServerAddresses ("1.1.1.1","8.8.8.8")
+
+[5] MANUAL HOSTS BYPASS (if IP resolved above):
+   Add to C:\Windows\System32\drivers\etc\hosts:
+
+============================================================
+**********************
+Windows PowerShell transcript end
+End time: 20251124200657
+**********************

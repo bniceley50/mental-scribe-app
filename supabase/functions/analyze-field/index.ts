@@ -1,13 +1,11 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { makeCors } from "../_shared/cors.ts";
 
-const { json, wrap } = makeCors("POST,OPTIONS");
+const cors = makeCors("POST,OPTIONS");
 
-serve(wrap(async (req) => {
-  if (req.method !== 'POST') {
-    return json({ error: 'Method not allowed' }, { status: 405 });
-  }
+Deno.serve(cors.wrap(async (req) => {
+  const preflight = cors.preflight(req);
+  if (preflight) return preflight;
 
   try {
     const { fieldName, fieldLabel, currentValue, conversationContext } = await req.json();
@@ -71,11 +69,15 @@ Task: ${fieldPrompts[fieldName] || 'Generate appropriate clinical documentation 
       console.error('AI gateway error:', response.status, errorText);
       
       if (response.status === 429) {
-        return json({ error: 'Rate limit exceeded. Please try again in a moment.' }, { status: 429 });
+        return cors.json({ error: 'Rate limit exceeded. Please try again in a moment.' }, {
+          status: 429
+        });
       }
       
       if (response.status === 402) {
-        return json({ error: 'AI usage limit reached. Please contact support.' }, { status: 402 });
+        return cors.json({ error: 'AI usage limit reached. Please contact support.' }, {
+          status: 402
+        });
       }
       
       throw new Error(`AI gateway error: ${errorText}`);
@@ -88,10 +90,14 @@ Task: ${fieldPrompts[fieldName] || 'Generate appropriate clinical documentation 
       throw new Error('No suggestion generated');
     }
 
-    return json({ suggestion });
+    return cors.json({ suggestion });
 
   } catch (error) {
     console.error('Error in analyze-field function:', error);
-    return json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
+    return cors.json({ 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    }, {
+      status: 500
+    });
   }
 }));

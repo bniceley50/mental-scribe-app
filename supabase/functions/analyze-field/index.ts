@@ -1,14 +1,12 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { makeCors } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const { json, wrap } = makeCors("POST,OPTIONS");
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+serve(wrap(async (req) => {
+  if (req.method !== 'POST') {
+    return json({ error: 'Method not allowed' }, { status: 405 });
   }
 
   try {
@@ -73,17 +71,11 @@ Task: ${fieldPrompts[fieldName] || 'Generate appropriate clinical documentation 
       console.error('AI gateway error:', response.status, errorText);
       
       if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ error: 'Rate limit exceeded. Please try again in a moment.' }, { status: 429 });
       }
       
       if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'AI usage limit reached. Please contact support.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+        return json({ error: 'AI usage limit reached. Please contact support.' }, { status: 402 });
       }
       
       throw new Error(`AI gateway error: ${errorText}`);
@@ -96,16 +88,10 @@ Task: ${fieldPrompts[fieldName] || 'Generate appropriate clinical documentation 
       throw new Error('No suggestion generated');
     }
 
-    return new Response(
-      JSON.stringify({ suggestion }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return json({ suggestion });
 
   } catch (error) {
     console.error('Error in analyze-field function:', error);
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    return json({ error: error instanceof Error ? error.message : 'Unknown error' }, { status: 500 });
   }
-});
+}));

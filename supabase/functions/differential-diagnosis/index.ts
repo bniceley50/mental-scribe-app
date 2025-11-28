@@ -2,11 +2,9 @@ import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { redactPHI } from "../_shared/phi-redactor.ts";
+import { makeCors } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+const { json, wrap } = makeCors("POST,OPTIONS");
 
 // Zod-like validation
 interface DifferentialDiagnosisItem {
@@ -22,9 +20,9 @@ interface DiagnosisRequest {
   symptoms?: string[];
 }
 
-serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+serve(wrap(async (req) => {
+  if (req.method !== 'POST') {
+    return json({ error: 'Method not allowed' }, { status: 405 });
   }
 
   try {
@@ -53,10 +51,7 @@ serve(async (req) => {
     });
 
     if (!quotaOk) {
-      return new Response(JSON.stringify({ error: 'Quota exceeded' }), {
-        status: 429,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-      });
+      return json({ error: 'Quota exceeded' }, { status: 429 });
     }
 
     const body: DiagnosisRequest = await req.json();
@@ -144,23 +139,18 @@ Generate differential diagnoses.`;
       }
     });
 
-    return new Response(JSON.stringify({ 
+    return json({ 
       diagnoses,
       metadata: {
         redacted: presentationPHI || historyPHI,
         model: 'gpt-4o-mini'
       }
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
     console.error('Error in differential-diagnosis:', error);
-    return new Response(JSON.stringify({ 
+    return json({ 
       error: error instanceof Error ? error.message : 'Unknown error' 
-    }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-    });
+    }, { status: 500 });
   }
-});
+}));

@@ -1,12 +1,9 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { makeCors } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-  'Content-Security-Policy': "default-src 'self'; script-src 'self'; object-src 'none';",
-};
+const { json, wrap } = makeCors("POST,OPTIONS");
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -86,19 +83,11 @@ function validatePasswordStrength(password: string): { valid: boolean; error?: s
   return { valid: true };
 }
 
-serve(async (req) => {
-  // Handle CORS preflight
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
+serve(wrap(async (req) => {
   try {
     // Validate request method
     if (req.method !== 'POST') {
-      return new Response(
-        JSON.stringify({ error: 'Method not allowed' }),
-        { status: 405, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ error: 'Method not allowed' }, { status: 405 });
     }
 
     // Get client IP for rate limiting
@@ -123,42 +112,30 @@ serve(async (req) => {
 
     if (rateLimitError || !rateLimitOk) {
       console.warn('Rate limit exceeded for password reset:', ipAddress);
-      return new Response(
-        JSON.stringify({ error: 'Too many password reset attempts. Please try again later.' }),
-        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ error: 'Too many password reset attempts. Please try again later.' }, { status: 429 });
     }
 
     // Parse request body
     const { token, newPassword } = await req.json();
 
     if (!token || !newPassword) {
-      return new Response(
-        JSON.stringify({ error: 'Missing required fields: token and newPassword' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ error: 'Missing required fields: token and newPassword' }, { status: 400 });
     }
 
     // SECURITY: Validate password strength
     const strengthCheck = validatePasswordStrength(newPassword);
     if (!strengthCheck.valid) {
-      return new Response(
-        JSON.stringify({ error: strengthCheck.error }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ error: strengthCheck.error }, { status: 400 });
     }
 
     // SECURITY: Check if password has been leaked (HIBP)
     console.log('Checking password against HIBP database...');
     const leaked = await isPasswordLeaked(newPassword);
     if (leaked) {
-      return new Response(
-        JSON.stringify({ 
-          error: 'This password has appeared in a data breach and cannot be used. Please choose a different password.',
-          code: 'PASSWORD_LEAKED'
-        }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ 
+        error: 'This password has appeared in a data breach and cannot be used. Please choose a different password.',
+        code: 'PASSWORD_LEAKED'
+      }, { status: 400 });
     }
 
     // Verify reset token and update password
@@ -170,10 +147,7 @@ serve(async (req) => {
 
     if (verifyError || !user) {
       console.error('Invalid or expired reset token:', verifyError);
-      return new Response(
-        JSON.stringify({ error: 'Invalid or expired reset token' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ error: 'Invalid or expired reset token' }, { status: 400 });
     }
 
     // Update the user's password
@@ -184,10 +158,7 @@ serve(async (req) => {
 
     if (updateError) {
       console.error('Failed to update password:', updateError);
-      return new Response(
-        JSON.stringify({ error: 'Failed to update password. Please try again.' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+      return json({ error: 'Failed to update password. Please try again.' }, { status: 500 });
     }
 
     // SECURITY: Log successful password reset in audit log
@@ -205,28 +176,16 @@ serve(async (req) => {
 
     console.log('Password reset successful for user:', user.id);
 
-    return new Response(
-      JSON.stringify({ 
-        success: true,
-        message: 'Password has been reset successfully. You can now sign in with your new password.' 
-      }),
-      { 
-        status: 200, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    return json({ 
+      success: true,
+      message: 'Password has been reset successfully. You can now sign in with your new password.' 
+    });
 
   } catch (error) {
     console.error('Unexpected error in secure-password-reset:', error);
-    return new Response(
-      JSON.stringify({ 
-        error: 'An unexpected error occurred. Please try again later.',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      }),
-      { 
-        status: 500, 
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
-      }
-    );
+    return json({ 
+      error: 'An unexpected error occurred. Please try again later.',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
-});
+}));

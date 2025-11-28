@@ -1,11 +1,10 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { redactPHI } from "../_shared/phi-redactor.ts";
+import { makeCors } from "../_shared/cors.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// SEC-HIGH-002: Use strict CORS helper instead of wildcard
+const cors = makeCors("POST,OPTIONS");
 
 const BAA_SIGNED = (Deno.env.get("BAA_SIGNED") ?? "false").toLowerCase() === "true";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -19,27 +18,17 @@ type AnalysisRequest = {
   conversation_history?: Array<{ role: string; content: string }>;
 };
 
-Deno.serve(async (req) => {
+Deno.serve(cors.wrap(async (req) => {
   console.log("[ENTRY] analyze-clinical-notes called", { method: req.method });
   
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders, status: 200 });
-  }
-
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return cors.json({ error: "Method not allowed" }, { status: 405 });
   }
 
   try {
     const authHeader = req.headers.get("authorization") ?? "";
     if (!authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return cors.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const admin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -47,26 +36,32 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userErr } = await admin.auth.getUser(token);
     
     if (userErr || !user?.id) {
-      return new Response(JSON.stringify({ error: "Invalid session" }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return cors.json({ error: "Invalid session" }, { status: 401 });
     }
 
     const body: AnalysisRequest = await req.json();
     const noteText = (body.notes ?? "").trim();
     
+    // SEC-MED-001: Enforce maximum note size to prevent resource exhaustion
+    const MAX_NOTE_SIZE = 100 * 1024; // 100 KB
+    const noteSize = new TextEncoder().encode(noteText).length;
+    
+    if (noteSize > MAX_NOTE_SIZE) {
+      console.warn(`[SIZE_LIMIT] Note too large: ${noteSize} bytes (max: ${MAX_NOTE_SIZE})`);
+      return cors.json({ 
+        error: `Note size exceeds maximum limit of ${MAX_NOTE_SIZE / 1024}KB. Current size: ${(noteSize / 1024).toFixed(2)}KB` 
+      }, { status: 413 });
+    }
+    
     console.log("[BODY] Received:", {
       action: body.action,
       notesLength: noteText.length,
+      noteSize: `${(noteSize / 1024).toFixed(2)}KB`,
       hasHistory: !!body.conversation_history?.length,
     });
     
     if (!noteText) {
-      return new Response(JSON.stringify({ error: "notes is required" }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return cors.json({ error: "notes is required" }, { status: 400 });
     }
 
     const action = body.action ?? "clinical_summary";
@@ -112,10 +107,7 @@ Deno.serve(async (req) => {
     if (!response.ok) {
       const text = await response.text().catch(() => "OpenAI call failed");
       console.error("[ERROR] OpenAI error:", response.status, text);
-      return new Response(JSON.stringify({ error: `AI service error: ${response.status}` }), {
-        status: 502,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return cors.json({ error: `AI service error: ${response.status}` }, { status: 502 });
     }
 
     console.log("[STREAM] OpenAI response OK, relaying to client");
@@ -138,10 +130,10 @@ Deno.serve(async (req) => {
       console.error("Audit log failed (non-blocking):", auditError);
     }
 
-    // Stream response back to client
+    // Stream response back to client with CORS headers
     const streamResponse = new Response(response.body, {
       headers: {
-        ...corsHeaders,
+        ...cors.headers,
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
@@ -153,9 +145,6 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error("[ERROR] analyze-clinical-notes error:", error);
     const errorMessage = error instanceof Error ? error.message : "Internal server error";
-    return new Response(JSON.stringify({ error: errorMessage }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    return cors.json({ error: errorMessage }, { status: 500 });
   }
-});
+}));

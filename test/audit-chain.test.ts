@@ -9,7 +9,7 @@ describe('Audit Chain - Tamper-Evident Logging', () => {
     // Initialize Supabase client
     supabase = createClient(
       process.env.VITE_SUPABASE_URL!,
-      process.env.VITE_SUPABASE_ANON_KEY!
+      process.env.VITE_SUPABASE_PUBLISHABLE_KEY!
     )
 
     // Create a test user/actor
@@ -292,7 +292,7 @@ describe('Audit Chain Hash Functions', () => {
   beforeEach(() => {
     supabase = createClient(
       process.env.VITE_SUPABASE_URL!,
-      process.env.VITE_SUPABASE_ANON_KEY!
+      process.env.VITE_SUPABASE_PUBLISHABLE_KEY!
     )
   })
 

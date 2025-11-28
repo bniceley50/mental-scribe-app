@@ -1,10 +1,13 @@
 /**
- * P1 FIX: Incremental Audit Chain Verification
+ * P0 FIX: Incremental Audit Chain Verification
  * 
  * Runs hourly to verify only new audit entries since last cursor.
  * Much faster than full scan for large audit logs.
  * 
- * SECURITY: Service role only (called by CI/CD cron)
+ * SECURITY FIX (SEC-HIGH-001): 
+ * - Requires AUDIT_CRON_SECRET header for authentication
+ * - Called by CI/CD cron jobs only
+ * - Returns 403 if secret missing or invalid
  */
 
 import { makeCors } from "../_shared/cors.ts";
@@ -12,10 +15,24 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
 import { safeLog, safeError } from "../_shared/phi-redactor.ts";
 
 const cors = makeCors();
+const AUDIT_CRON_SECRET = Deno.env.get("AUDIT_CRON_SECRET");
 
 Deno.serve(cors.wrap(async (req) => {
   if (req.method !== "POST" && req.method !== "OPTIONS") {
     return cors.json({ ok: false, error: "Method Not Allowed" }, { status: 405 });
+  }
+
+  // SEC-HIGH-001: Validate shared secret for cron authentication
+  const providedSecret = req.headers.get("x-audit-secret");
+  if (!AUDIT_CRON_SECRET || !providedSecret || providedSecret !== AUDIT_CRON_SECRET) {
+    safeLog.warn("Unauthorized audit verification attempt", { 
+      hasSecret: !!providedSecret,
+      secretConfigured: !!AUDIT_CRON_SECRET 
+    });
+    return cors.json({ 
+      ok: false, 
+      error: "Unauthorized: Invalid or missing x-audit-secret header" 
+    }, { status: 403 });
   }
 
   const supabase = createClient(

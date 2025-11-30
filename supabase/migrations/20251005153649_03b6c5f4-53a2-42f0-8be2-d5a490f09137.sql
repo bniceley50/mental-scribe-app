@@ -228,9 +228,9 @@ ADD COLUMN IF NOT EXISTS salt text;
 CREATE OR REPLACE FUNCTION public.generate_salt()
 RETURNS text
 LANGUAGE sql
-IMMUTABLE
+VOLATILE
 AS $$
-  SELECT encode(gen_random_bytes(32), 'hex');
+  SELECT encode(extensions.gen_random_bytes(32), 'hex');
 $$;
 
 -- Create function to hash recovery code with salt using PBKDF2-equivalent

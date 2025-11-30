@@ -78,10 +78,31 @@ WITH CHECK (
 -- =========================
 DROP POLICY IF EXISTS "conversations_owner_select" ON public.conversations;
 DROP POLICY IF EXISTS "conversations_clinical_staff_select_with_consent" ON public.conversations;
+DROP POLICY IF EXISTS "Users can create their own conversations" ON public.conversations;
+DROP POLICY IF EXISTS "Users can update their own conversations" ON public.conversations;
+DROP POLICY IF EXISTS "Users can delete their own conversations" ON public.conversations;
 
 CREATE POLICY "conversations_owner_select"
 ON public.conversations
 FOR SELECT
+TO authenticated
+USING ((SELECT auth.uid()) = user_id);
+
+CREATE POLICY "Users can create their own conversations"
+ON public.conversations
+FOR INSERT
+TO authenticated
+WITH CHECK ((SELECT auth.uid()) = user_id);
+
+CREATE POLICY "Users can update their own conversations"
+ON public.conversations
+FOR UPDATE
+TO authenticated
+USING ((SELECT auth.uid()) = user_id);
+
+CREATE POLICY "Users can delete their own conversations"
+ON public.conversations
+FOR DELETE
 TO authenticated
 USING ((SELECT auth.uid()) = user_id);
 
@@ -107,6 +128,9 @@ USING (
 -- UPLOADED FILES (auth.* -> SELECT pattern)
 -- =========================
 DROP POLICY IF EXISTS "uploaded_files_clinical_staff_part2" ON public.uploaded_files;
+DROP POLICY IF EXISTS "Users can view files in their conversations" ON public.uploaded_files;
+DROP POLICY IF EXISTS "Users can create files in their conversations" ON public.uploaded_files;
+DROP POLICY IF EXISTS "Users can delete files in their conversations" ON public.uploaded_files;
 
 CREATE POLICY "uploaded_files_clinical_staff_part2"
 ON public.uploaded_files
@@ -133,6 +157,32 @@ USING (
         )
       )
     )
+  )
+);
+
+CREATE POLICY "Users can create files in their conversations"
+ON public.uploaded_files
+FOR INSERT
+TO authenticated
+WITH CHECK (
+  (SELECT auth.uid()) IS NOT NULL
+  AND EXISTS (
+    SELECT 1 FROM public.conversations c
+    WHERE c.id = uploaded_files.conversation_id
+      AND c.user_id = (SELECT auth.uid())
+  )
+);
+
+CREATE POLICY "Users can delete files in their conversations"
+ON public.uploaded_files
+FOR DELETE
+TO authenticated
+USING (
+  (SELECT auth.uid()) IS NOT NULL
+  AND EXISTS (
+    SELECT 1 FROM public.conversations c
+    WHERE c.id = uploaded_files.conversation_id
+      AND c.user_id = (SELECT auth.uid())
   )
 );
 

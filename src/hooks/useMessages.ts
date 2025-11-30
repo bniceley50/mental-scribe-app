@@ -115,8 +115,17 @@ export const useMessages = (conversationId: string | null) => {
 
     try {
       // Ensure user owns the conversation to avoid RLS errors
-      const { data: authData } = await supabase.auth.getUser();
-      const userId = authData?.user?.id;
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      console.log("DEBUG addMessage auth state", {
+        userId: user?.id ?? null,
+        hasError: !!userError,
+      });
+
+      const userId = user?.id;
       if (!userId) {
         toast.error("Please sign in to send messages");
         return null;

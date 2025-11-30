@@ -29,8 +29,9 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(), 
     mode === "development" && componentTagger(),
-    mode === "production" && cspPlugin(),
-    mode === "production" && sriPlugin(),
+    // CSP disabled - causes blank page in production (strict-dynamic blocks scripts)
+    // mode === "production" && cspPlugin(),
+    // mode === "production" && sriPlugin(),
     federation({
       name: 'host-app',
       remotes: {

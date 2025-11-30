@@ -186,6 +186,34 @@ npm run test:ui
 npm run test:coverage
 ```
 
+## Code Review & Quality Assurance
+
+This project includes comprehensive code review tools to ensure security, quality, and performance:
+
+```bash
+# Run full comprehensive review (security + quality + performance)
+npm run review:full
+
+# Run specific reviews
+npm run review:security      # Security vulnerabilities and compliance
+npm run review:quality       # Code quality and best practices
+npm run review:performance   # Performance and optimization
+```
+
+**Review Documentation**:
+- 📋 **[Quick Start Guide](CODE_REVIEW_GUIDE.md)** - How to run reviews and interpret results
+- 📚 **[Comprehensive Review Prompt](COMPREHENSIVE_CODE_REVIEW_PROMPT.md)** - Complete checklist for manual reviews
+- ✅ **[PR Review Checklist](PR_REVIEW_CHECKLIST.md)** - Pull request review template
+
+The automated review checks:
+- 🔒 Security vulnerabilities and HIPAA compliance
+- 📦 Dependency security and licensing
+- 🎯 Code quality (ESLint, TypeScript)
+- ⚡ Performance and bundle size
+- 🔍 Best practices and technical debt
+
+Results are saved to `review/` with detailed reports and actionable recommendations.
+
 ## How can I deploy this project?
 
 Simply open [Lovable](https://lovable.dev/projects/b290dcd4-80b3-4d0e-a9ae-3d208a63c988) and click on Share -> Publish.

@@ -1,9 +1,5 @@
 {
-  "installCommand": "rm -rf node_modules package-lock.json && npm install --include=optional",
+  "installCommand": "npm install",
   "buildCommand": "npm run build",
-  "build": {
-    "env": {
-      "NPM_CONFIG_IGNORE_OPTIONAL": "false"
-    }
-  }
+  "outputDirectory": "dist"
 }

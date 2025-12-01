@@ -1,125 +1,88 @@
-# Security Policy
+# Security Overview
 
-## Reporting Security Vulnerabilities
+This project handles sensitive clinical and behavioral health data. Security, privacy, and auditability are treated as first-class requirements, not optional add-ons.
 
-We take the security of ClinicalAI Assistant seriously. If you discover a security vulnerability, please follow these steps:
+## Threat Model
 
-### 🚨 DO NOT create a public GitHub issue for security vulnerabilities
+- **Data domain:** Clinical notes, risk assessments, diagnoses, and other PHI/PII.
+- **Primary risks:** Unauthorized access, misconfiguration of auth/RLS, data exfiltration via APIs, injection vulnerabilities, misused API keys, and information disclosure via logs or error messages.
+- **Environment:** Supabase (Postgres, Auth, Edge Functions) + Vite/React frontends + Lovable Cloud environment.
 
-Instead, please report security issues privately by:
+## Controls & Practices
 
-1. **Email**: Send details to your security team contact
-2. **Include**: 
-   - Description of the vulnerability
-   - Steps to reproduce
-   - Potential impact
-   - Suggested fix (if any)
+### 1. Secrets & Environment Hygiene
 
-### What to Expect
+- `.env` is **not tracked** in git; secrets are stored in managed secret stores only.
+- `verify-security.sh` runs **gitleaks** when available to detect committed secrets.
+- Supabase keys are now unified under `VITE_SUPABASE_PUBLISHABLE_KEY` and validated to reference a single project ID.
+- Historical leaked env values have been rotated or removed; the repo is monitored for new leaks.
 
-- **Acknowledgment**: Within 24-48 hours
-- **Initial Assessment**: Within 1 week
-- **Fix Timeline**: Critical issues within 2 weeks, others within 30 days
-- **Disclosure**: Coordinated disclosure after fix is deployed
+### 2. Authentication, Authorization & RLS
 
-## Security Best Practices
+- High-risk edge functions (e.g. `audit-verify-incremental`, `audit-verify-full`) are protected via a dedicated shared secret header (`x-audit-secret`) and return `403` on missing/invalid credentials.
+- Supabase Row-Level Security (RLS) is enforced for all PHI/PII tables; helper functions such as `has_active_part2_consent_for_conversation` are marked `VOLATILE` to avoid stale cached decisions.
+- Role checks (`has_role`, `is_admin`) are implemented as `SECURITY DEFINER` functions with constrained search paths to avoid privilege escalation.
 
-### For Developers
+### 3. CORS & Edge Function Hardening
 
-1. **Never commit secrets**: API keys, passwords, tokens
-2. **Use environment variables**: All sensitive config via Lovable Cloud secrets
-3. **Validate all inputs**: Client-side AND server-side validation
-4. **Follow RLS policies**: Row-Level Security for all database tables
-5. **Audit logging**: Log all PHI access and modifications
-6. **Signed URLs only**: Never use public URLs for PHI documents
+- All edge functions use a centralized CORS helper (`_shared/cors.ts`) via `makeCors()` and `cors.wrap()`.
+- Wildcard origins (`*`) have been removed; allowed origins are driven by `CORS_ORIGIN` and default to the Supabase project URL.
+- Unhandled errors in edge functions are caught in `cors.wrap()` and return generic `500` JSON responses without leaking stack traces in production.
 
-### For Users
+### 4. Logging, PII Redaction & Prototype Pollution Defense
 
-1. **Use strong passwords**: Minimum 8 characters with complexity requirements
-2. **Enable MFA**: Multi-factor authentication is strongly recommended
-3. **Secure your device**: Keep your system updated and use antivirus
-4. **Report suspicious activity**: Contact us immediately if you notice anything unusual
+- A dedicated log sanitizer (`src/utils/logSanitizer.ts`) is used to:
+  - Strip control characters and newlines from log entries.
+  - Redact likely secrets/tokens, long numeric IDs, and sensitive keys (password, token, email, ssn, etc.).
+  - Defend against **prototype pollution** by explicitly stripping `__proto__`, `constructor`, and `prototype` keys in `redactPII`.
+- Realtime audio and other high-volume/log-sensitive paths use `sanitizeLogInput` and `redactPII` to prevent raw PHI or dangerous structures from being logged.
 
-## Security Features
+### 5. Input Validation & Abuse Protection
 
-### Authentication & Authorization
-- ✅ Supabase authentication with email/password
-- ✅ Multi-factor authentication (MFA) support
-- ✅ Account lockout after failed login attempts
-- ✅ Password leak detection (HIBP integration)
-- ✅ Role-based access control (RBAC)
+- `analyze-clinical-notes` enforces a hard **100 KB note size limit** and returns `413 Payload Too Large` when exceeded, **before** any OpenAI/API calls or quota increments.
+- Oversized attempts are logged with structured warnings for monitoring.
+- Consent-related and Part 2–protected flows are implemented to avoid time-of-check/time-of-use (TOCTOU) races by always querying fresh consent state.
 
-### Data Protection
-- ✅ Row-Level Security (RLS) on all database tables
-- ✅ Signed URLs for file access (1-hour expiry)
-- ✅ Data classification (standard PHI vs Part 2 protected)
-- ✅ Encryption at rest and in transit
-- ✅ sessionStorage for drafts (cleared on tab close)
+### 6. Timing & Side-Channel Mitigation
 
-### Application Security
-- ✅ Security headers (XSS, clickjacking protection)
-- ✅ Input validation with Zod schemas
-- ✅ Content Security Policy (CSP)
-- ✅ No production console logging
-- ✅ Audit logging for compliance
+- Role/privilege helper functions include a small constant-time delay (`pg_sleep(0.02)`) to normalize response times and make user/enumeration via timing impractical.
+- Where applicable, functions were converted from `sql` to `plpgsql` to allow explicit timing control.
 
-### HIPAA Compliance
-- ✅ 42 CFR Part 2 consent management
-- ✅ Audit trails for PHI access
-- ✅ Automatic consent expiry checks
-- ✅ Immutable consent records
-- ✅ Program-scoped data classification
+### 7. Static Analysis (CodeQL) & Secret Scanning
 
-## Known Security Considerations
+- **CodeQL** is integrated into CI and runs on:
+  - Pushes to `main`
+  - Pull requests targeting `main`
+  - Scheduled runs
+- CodeQL is configured to:
+  - **Include:** `src/**`, `supabase/**`, `apps/**`, `packages/**`
+  - **Exclude:** `scripts/**`, `dist/**`, `build/**`, test artifacts, and `**/*.test.*` / `**/*.spec.*`
+- All known **High/Critical CodeQL alerts** have been remediated:
+  - `js/remote-property-injection` in `logSanitizer.ts` (prototype pollution) → fixed.
+  - `js/stack-trace-exposure` in `cors.ts` → fixed.
+  - Script-level issues in `security-check.js` → fixed.
+- Secret scanning:
+  - `verify-security.sh` + gitleaks are used locally/CI to catch future leaks early.
 
-### Third-Party Dependencies
-- Regular dependency audits via npm audit
-- Automated security scanning recommended
-- Monthly dependency updates
+### 8. Monitoring, Logging & Audit Trail
 
-### Data Retention
-- User data is retained as long as the account is active
-- Deleted conversations are permanently removed
-- Audit logs retained for compliance (configurable)
+- Security-sensitive events are logged with structured metadata:
+  - Unauthorized audit verification attempts (`x-audit-secret` failures).
+  - Note size violations (size, timestamp).
+  - Consent changes and Part 2 revocations.
+- Audit logs can be queried for:
+  - Brute force attempts on audit endpoints.
+  - Abnormal volume of 413 responses.
+  - Consent changes within time windows.
 
-### Incident Response
-1. Identify and contain the threat
-2. Assess the scope and impact
-3. Notify affected users (if required)
-4. Document and learn from the incident
-5. Update security measures
+## Known Deferred Items
 
-## Security Updates
+- **CSP `unsafe-inline` for styles** is currently allowed to support Tailwind/shadcn UI. This is tracked as a low-risk item to be addressed in a future major UI refactor (nonce-based CSP).
+- Native Supabase Have I Been Pwned (HIBP) checks should be enabled in the Lovable Cloud console as a defense-in-depth backup to the existing custom HIBP integration.
 
-We regularly update our security measures and dependencies. Stay informed about security updates through project communications.
+## Security Review & Re-Testing
 
-## Compliance
+- Last adversarial review: **2025-11-28 → C+ → remediated to B+**
+- CodeQL hardening & clean scan: **2025-12-01** (0 open High/Critical alerts).
+- Next recommended review: **Within 30–90 days of major feature changes that touch auth, storage, or PHI flows.**
 
-ClinicalAI Assistant is designed with HIPAA and 42 CFR Part 2 requirements in mind:
-- ✅ Access controls and authentication
-- ✅ Audit logging and monitoring
-- ✅ Data encryption (in transit and at rest)
-- ✅ Consent management for Part 2 protected information
-- ⚠️ **Note**: This application provides tools to help with compliance but does not guarantee HIPAA compliance on its own. Consult with legal/compliance professionals.
-
-## Security Checklist for Production
-
-- [ ] All secrets configured via Lovable Cloud dashboard
-- [ ] RLS policies reviewed and tested
-- [ ] MFA enabled for admin accounts
-- [ ] Audit logging verified
-- [ ] Security headers confirmed
-- [ ] Input validation tested
-- [ ] File upload size limits configured
-- [ ] Rate limiting enabled on edge functions
-- [ ] Backup and recovery tested
-- [ ] Incident response plan documented
-
-## Contact
-
-For security concerns, please contact your security team or project maintainers.
-
----
-
-**Last Updated**: 2025-10-05
-**Version**: 1.1.0

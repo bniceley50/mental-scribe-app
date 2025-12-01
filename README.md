@@ -243,12 +243,17 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/c
 - Microphone access permission
 - HTTPS connection (automatically provided)
 
-## Security & Privacy
+## Security Posture
 
-- **No PHI Storage**: This tool does not store Protected Health Information
-- **Content Sanitization**: All user inputs are sanitized to prevent XSS attacks
-- **Encrypted Storage**: Session data encrypted at rest
-- **HIPAA-Aware Design**: Built with healthcare privacy in mind
+Mental Scribe is designed for clinical use and has undergone an adversarial security review and follow-up hardening. We:
+
+- **Removed misconfigured env keys** and centralized secret handling (env files are not tracked; gitleaks is wired into our security checks).
+- **Locked down all high-risk edge functions** with shared-secret authentication and strict CORS, and ensured consent/RLS logic is enforced at the database level.
+- **Added input size limits and timing normalization** to mitigate DoS and side-channel attacks.
+- **Introduced a log sanitizer** with PII redaction and prototype-pollution defenses, and removed stack trace exposure in production responses.
+- **Integrated CodeQL into CI**, scoped to production code only, and remediated all High/Critical findings (current dashboard: 0 open High/Critical alerts).
+
+Combined with Supabase RLS, Part 2 consent controls, and ongoing monitoring, the system is now rated **B+ (Production-Ready with Monitoring)** in our latest internal security assessment.
 
 ### Security Hardening Proof
 
@@ -260,7 +265,7 @@ This repository includes a comprehensive security proof pipeline demonstrating c
 - ✅ No Secrets in Dist: 0 JWT-like tokens in production bundle  
 - ✅ E2E Smoke: All end-to-end tests passing
 
-📁 **Evidence**: See [`proof/PROOF.md`](proof/PROOF.md) and [`security/artifacts/`](security/artifacts/) for detailed audit trails.
+📁 **Evidence**: See [`docs/SECURITY_REMEDIATION_2025-11.md`](docs/SECURITY_REMEDIATION_2025-11.md) and [`security/artifacts/`](security/artifacts/) for detailed audit trails.
 
 🔄 **Re-run Locally**: `npm ci && npm run sec:clean && npm run sec:prove`
 

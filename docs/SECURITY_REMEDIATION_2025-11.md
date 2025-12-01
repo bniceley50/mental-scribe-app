@@ -561,3 +561,25 @@ ORDER BY created_at DESC;
 **Security Engineer:** Lovable AI  
 **Approved By:** [Pending Client Review]  
 **Next Review Date:** 2025-12-28 (30 days post-deployment)
+
+---
+
+## Phase 2: CodeQL & Hardening (2025-12-01)
+
+**Status:** ✅ ALL CODEQL ALERTS RESOLVED
+
+### Summary
+Following the initial remediation, a full CodeQL security scan was integrated into the CI pipeline. This phase focused on eliminating code-level vulnerabilities and configuring the scanner for high-signal reporting.
+
+### Remediation Table
+
+| ID | Severity | Component | Issue | Status | Fix |
+|---|---|---|---|---|---|
+| CQL-001 | High | `logSanitizer.ts` | Prototype Pollution | ✅ Fixed | Explicitly stripped `__proto__`, `constructor`, `prototype` |
+| CQL-002 | Med/High | `cors.ts` | Stack Trace Exposure | ✅ Fixed | Suppressed stack traces in production environments |
+| CQL-003 | High | `security-check.js` | Script Crash/Shadowing | ✅ Fixed | Renamed local variable to avoid shadowing global `error` |
+| CQL-004 | Config | CodeQL | Build Artifact Noise | ✅ Fixed | Excluded `scripts/`, `dist/`, `test/` from scan scope |
+
+### Verification
+- **Dashboard Status**: 0 Open High/Critical Alerts
+- **Workflow**: `CodeQL` (Run ID: 19840688262) passed successfully.

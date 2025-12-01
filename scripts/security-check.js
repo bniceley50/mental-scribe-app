@@ -111,9 +111,9 @@ async function checkRLSPolicies() {
   
   for (const table of tablesToCheck) {
     try {
-      const { data, error } = await supabase.from(table).select('id').limit(1);
+      const { data, error: queryError } = await supabase.from(table).select('id').limit(1);
       
-      if (error) {
+      if (queryError) {
         success(`${table}: Anonymous access blocked ✓`);
       } else if (data && data.length === 0) {
         success(`${table}: Anonymous access blocked (empty) ✓`);

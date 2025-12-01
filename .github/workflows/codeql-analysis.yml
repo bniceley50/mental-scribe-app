@@ -31,8 +31,7 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: javascript, typescript
-          # If we add a config file later, we will reference it here:
-          # config-file: ./.github/codeql/codeql-config.yml
+          config-file: ./.github/codeql/codeql-config.yml
 
       - name: Autobuild
         uses: github/codeql-action/autobuild@v3

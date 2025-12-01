@@ -1,0 +1,10 @@
+name: "Mental Scribe CodeQL Config"
+
+paths-ignore:
+  - scripts
+  - dist
+  - build
+  - test-results
+  - node_modules
+  - "**/*.test.ts"
+  - "**/*.spec.ts"

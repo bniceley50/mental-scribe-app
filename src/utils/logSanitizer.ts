@@ -75,9 +75,17 @@ export function redactPII<T>(obj: T): T {
   }
 
   try {
-    const clone: any = Array.isArray(obj) ? [...(obj as any[])] : { ...(obj as any) };
+    const clone: any = Array.isArray(obj)
+      ? [...(obj as any[])]
+      : { ...(obj as any) };
 
     for (const key of Object.keys(clone)) {
+      // Prevent prototype pollution / remote property injection
+      if (key === "__proto__" || key === "constructor" || key === "prototype") {
+        delete clone[key];
+        continue;
+      }
+
       const lower = key.toLowerCase();
 
       if (SENSITIVE_KEYS.some((k) => lower.includes(k))) {
@@ -90,7 +98,7 @@ export function redactPII<T>(obj: T): T {
       }
     }
 
-    return clone;
+    return clone as T;
   } catch {
     return "[unserializable]" as unknown as T;
   }

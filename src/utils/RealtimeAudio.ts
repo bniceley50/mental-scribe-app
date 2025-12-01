@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { sanitizeLogInput, redactPII } from "./logSanitizer";
 
 export class AudioRecorder {
   private stream: MediaStream | null = null;
@@ -35,7 +36,9 @@ export class AudioRecorder {
       this.source.connect(this.processor);
       this.processor.connect(this.audioContext.destination);
     } catch (error: unknown) {
-      console.error('Error accessing microphone:', error);
+      console.error('Error accessing microphone:', {
+        error: sanitizeLogInput(error instanceof Error ? error.message : error)
+      });
       throw error;
     }
   }
@@ -157,7 +160,9 @@ class AudioQueue {
       source.onended = () => this.playNext();
       source.start(0);
     } catch (error: unknown) {
-      console.error('Error playing audio:', error);
+      console.error('Error playing audio:', {
+        error: sanitizeLogInput(error instanceof Error ? error.message : error)
+      });
       this.playNext();
     }
   }
@@ -201,7 +206,7 @@ export class RealtimeChat {
       this.ws.onmessage = async (event) => {
         try {
           const data = JSON.parse(event.data);
-          console.log('Received event:', data.type);
+          console.log('Received event:', { type: sanitizeLogInput(data.type) });
 
           if (data.type === 'response.audio.delta' && data.delta) {
             const binaryString = atob(data.delta);
@@ -214,14 +219,18 @@ export class RealtimeChat {
             }
           }
 
-          this.onMessage(data);
+          this.onMessage(redactPII(data));
         } catch (error: unknown) {
-          console.error('Error processing message:', error);
+          console.error('Error processing message:', {
+            error: sanitizeLogInput(error instanceof Error ? error.message : error)
+          });
         }
       };
 
       this.ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
+        console.error('WebSocket error:', {
+          error: sanitizeLogInput(error instanceof Event ? "WebSocket Error Event" : error)
+        });
       };
 
       this.ws.onclose = () => {
@@ -230,7 +239,9 @@ export class RealtimeChat {
         this.stopRecording();
       };
     } catch (error: unknown) {
-      console.error('Error initializing realtime chat:', error);
+      console.error('Error initializing realtime chat:', {
+        error: sanitizeLogInput(error instanceof Error ? error.message : error)
+      });
       throw error;
     }
   }
@@ -248,7 +259,9 @@ export class RealtimeChat {
       });
       await this.recorder.start();
     } catch (error: unknown) {
-      console.error('Error starting recording:', error);
+      console.error('Error starting recording:', {
+        error: sanitizeLogInput(error instanceof Error ? error.message : error)
+      });
     }
   }
 

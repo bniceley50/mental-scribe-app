@@ -1,0 +1,43 @@
+name: CodeQL
+
+on:
+  push:
+    branches: [ main ]
+    paths-ignore:
+      - "scripts/**"
+      - "dist/**"
+      - "build/**"
+      - "test-results/**"
+      - "node_modules/**"
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: "0 3 * * *"
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript, typescript
+          # If we add a config file later, we will reference it here:
+          # config-file: ./.github/codeql/codeql-config.yml
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:typescript"

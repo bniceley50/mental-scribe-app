@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { redactCtx } from './redact';
 import { consoleSink } from './sinks/console';
 import { httpSink } from './sinks/http';

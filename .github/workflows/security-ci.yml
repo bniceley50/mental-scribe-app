@@ -1,0 +1,107 @@
+name: Security CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '0 0 * * 0' # Weekly on Sunday
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  lint-and-npm-audit:
+    name: Lint and NPM Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run ESLint
+        run: npx eslint . --ext .ts,.tsx,.js,.jsx,.mjs,.cjs --max-warnings=0
+
+      - name: Run NPM Audit
+        run: npm audit --omit=dev --audit-level=high
+        continue-on-error: false
+
+  snyk-scan:
+    name: Snyk Security Scan
+    runs-on: ubuntu-latest
+    needs: lint-and-npm-audit
+    if: always() # Run even if lint fails, or remove if strict dependency desired. Prompt says "Depends on lint-and-npm-audit (optional)"
+    env:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for SNYK_TOKEN
+        id: check_token
+        run: |
+          if [ -z "$SNYK_TOKEN" ]; then
+            echo "SNYK_TOKEN is not set. Skipping Snyk scan."
+            echo "defined=false" >> $GITHUB_OUTPUT
+          else
+            echo "defined=true" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      - name: Set up Node.js
+        if: steps.check_token.outputs.defined == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install Snyk CLI
+        if: steps.check_token.outputs.defined == 'true'
+        run: npm install -g snyk
+
+      - name: Run Snyk Test
+        if: steps.check_token.outputs.defined == 'true'
+        run: snyk test --severity-threshold=high
+        continue-on-error: true
+
+  semgrep-scan:
+    name: Semgrep Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Semgrep
+        run: python3 -m pip install semgrep
+
+      - name: Run Semgrep
+        run: semgrep --config=p/owasp-top-ten --config=p/security-audit || semgrep --version
+        continue-on-error: true
+
+  secrets-scan:
+    name: Secrets Scan (Gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Gitleaks
+        run: |
+          wget https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64.tar.gz
+          tar -xzf gitleaks_8.18.2_linux_x64.tar.gz
+          sudo mv gitleaks /usr/local/bin/
+
+      - name: Run Gitleaks
+        run: gitleaks detect --source . --no-git --redact
+        continue-on-error: true

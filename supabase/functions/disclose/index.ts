@@ -2,6 +2,7 @@
 // Supabase Edge Function: Consent-validated disclosures (Part 2 aware)
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import { safeLog } from "../_shared/phi-redactor.ts";
 
 type UUID = string;
 
@@ -62,14 +63,15 @@ function sanitizeErr(status: number, message: string) {
 }
 
 // Basic schema check (avoid external deps)
-function parsePayload(obj: any): DisclosurePayload | null {
+function parsePayload(obj: unknown): DisclosurePayload | null {
   if (typeof obj !== "object" || obj === null) return null;
+  const record = obj as Record<string, unknown>;
   const p: DisclosurePayload = {};
-  if (obj.consentId !== undefined && typeof obj.consentId === "string") p.consentId = obj.consentId;
+  if (record.consentId !== undefined && typeof record.consentId === "string") p.consentId = record.consentId;
   for (const key of ["conversationIds", "noteIds", "fileIds"] as const) {
-    if (obj[key] !== undefined) {
-      if (!Array.isArray(obj[key]) || !obj[key].every((v: any) => typeof v === "string")) return null;
-      (p as any)[key] = obj[key];
+    if (record[key] !== undefined) {
+      if (!Array.isArray(record[key]) || !record[key].every((v: unknown) => typeof v === "string")) return null;
+      p[key] = record[key] as string[];
     }
   }
   return p;
@@ -89,7 +91,7 @@ function getAdmin() {
 
 function getIp(req: Request) {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-      || (req as any).ip
+      || (req as unknown as { ip?: string }).ip
       || undefined;
 }
 
@@ -111,7 +113,7 @@ async function checkRateLimit(userId: string): Promise<boolean> {
   });
   
   if (error) {
-    console.error('Rate limit check failed:', error);
+    safeLog.error('Rate limit check failed:', error);
     return false; // Fail closed
   }
   
@@ -162,21 +164,22 @@ type ConsentRow = {
   revoked_at: string | null;
 };
 
-function idsCovered(scope: any, allIds: UUID[]) {
+function idsCovered(scope: Record<string, unknown>, allIds: UUID[]) {
   // Supports scope like: { conversation_ids:[], note_ids:[], file_ids:[], program_id:"..." }
   if (!scope || typeof scope !== "object") return false;
 
   const byList = ["conversation_ids", "note_ids", "file_ids"].some((k) => {
-    const arr = Array.isArray((scope as any)[k]) ? (scope as any)[k] as string[] : [];
+    const val = scope[k];
+    const arr = Array.isArray(val) ? val as string[] : [];
     return allIds.every((id) => arr.includes(id));
   });
 
   return byList;
 }
 
-function programsCovered(scope: any, programs: (UUID | null)[]) {
+function programsCovered(scope: Record<string, unknown>, programs: (UUID | null)[]) {
   if (!scope || typeof scope !== "object") return false;
-  const programId = (scope as any)["program_id"];
+  const programId = scope["program_id"];
   if (typeof programId !== "string") return false;
   // All part2 rows must be from that program
   return programs.every((p) => p === programId);
@@ -196,6 +199,7 @@ async function writeAudit(
   admin: ReturnType<typeof getAdmin>,
   log: {
     user_id: string;
+    session_id: string | null;
     action: "disclosure_denied" | "disclosure_export";
     resource_ids: UUID[];
     data_classification: "standard_phi" | "part2_protected";
@@ -204,6 +208,8 @@ async function writeAudit(
     purpose: string | null;
     ip: string | undefined;
     ua: string | null;
+    outcome: "success" | "failure" | "denied";
+    phi_accessed: boolean;
     meta?: Record<string, unknown>;
   },
 ) {
@@ -212,22 +218,30 @@ async function writeAudit(
     await admin.rpc('sanitize_audit_metadata', { meta: log.meta }).then(r => r.data || {}) :
     {};
 
+  // Fix: resource_id is a single UUID column. If multiple resources, store in metadata.
+  const singleResourceId = log.resource_ids.length === 1 ? log.resource_ids[0] : null;
+  const finalMeta = { ...sanitizedMeta, resource_ids: log.resource_ids };
+
   const { error } = await admin.from("audit_logs").insert([{
     user_id: log.user_id,
+    session_id: log.session_id,
     action: log.action,
     resource_type: "mixed",
-    resource_id: log.resource_ids,
+    resource_id: singleResourceId,
     data_classification: log.data_classification,
     program_id: log.program_id,
     consent_id: log.consent_id,
     purpose: log.purpose,
     ip_address: log.ip,
+    client_ip: log.ip, // Populate new field
     user_agent: log.ua,
-    metadata: sanitizedMeta,
+    metadata: finalMeta,
+    outcome: log.outcome,
+    phi_accessed: log.phi_accessed,
   }]);
   if (error) {
     // Sanitize: don't bubble details
-    console.error("audit_insert_failed", { status: error.code });
+    safeLog.error("audit_insert_failed", { status: error.code, error });
   }
 }
 
@@ -249,6 +263,20 @@ serve(async (req) => {
     const allowed = await checkRateLimit(user.id);
     if (!allowed) {
       return allowCors(req, sanitizeErr(429, "Too many requests"));
+    }
+
+    // Get session ID
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const token = authHeader.replace("Bearer ", "").trim();
+    let sessionId: string | null = null;
+    
+    if (token) {
+        // Try to validate and get session_id
+        const admin = getAdmin(); 
+        const { data: sessionData, error: sessionError } = await admin.rpc('validate_session_token', { _session_token: token });
+        if (!sessionError && sessionData && sessionData.length > 0) {
+            sessionId = sessionData[0].session_id;
+        }
     }
 
     // Purpose header (optional but recommended)
@@ -293,6 +321,7 @@ serve(async (req) => {
       if (!payload.consentId) {
         await writeAudit(admin, {
           user_id: user.id,
+          session_id: sessionId,
           action: "disclosure_denied",
           resource_ids: idsAll,
           data_classification: "part2_protected",
@@ -301,6 +330,8 @@ serve(async (req) => {
           purpose,
           ip: getIp(req),
           ua: req.headers.get("user-agent"),
+          outcome: "denied",
+          phi_accessed: true,
           meta: { reason: "missing_consent" },
         });
         return allowCors(req, sanitizeErr(403, "Valid consent required for Part 2 disclosures"));
@@ -316,6 +347,7 @@ serve(async (req) => {
       if (error || !data || !isWithinWindow(data)) {
         await writeAudit(admin, {
           user_id: user.id,
+          session_id: sessionId,
           action: "disclosure_denied",
           resource_ids: idsAll,
           data_classification: "part2_protected",
@@ -324,6 +356,8 @@ serve(async (req) => {
           purpose,
           ip: getIp(req),
           ua: req.headers.get("user-agent"),
+          outcome: "denied",
+          phi_accessed: true,
           meta: { reason: "invalid_or_expired_consent" },
         });
         return allowCors(req, sanitizeErr(403, "Consent is invalid, expired, or revoked"));
@@ -336,6 +370,7 @@ serve(async (req) => {
       if (!covered) {
         await writeAudit(admin, {
           user_id: user.id,
+          session_id: sessionId,
           action: "disclosure_denied",
           resource_ids: idsAll,
           data_classification: "part2_protected",
@@ -344,6 +379,8 @@ serve(async (req) => {
           purpose,
           ip: getIp(req),
           ua: req.headers.get("user-agent"),
+          outcome: "denied",
+          phi_accessed: true,
           meta: { reason: "scope_not_covered" },
         });
         return allowCors(req, sanitizeErr(403, "Consent scope does not cover requested records"));
@@ -356,6 +393,7 @@ serve(async (req) => {
     const overallClass: "standard_phi" | "part2_protected" = anyPart2 ? "part2_protected" : "standard_phi";
     await writeAudit(getAdmin(), {
       user_id: user.id,
+      session_id: sessionId,
       action: "disclosure_export",
       resource_ids: idsAll,
       data_classification: overallClass,
@@ -364,6 +402,8 @@ serve(async (req) => {
       purpose,
       ip: getIp(req),
       ua: req.headers.get("user-agent"),
+      outcome: "success",
+      phi_accessed: true,
       meta: {
         counts: { conversations: (payload.conversationIds ?? []).length, notes: (payload.noteIds ?? []).length, files: (payload.fileIds ?? []).length },
       },
@@ -386,7 +426,7 @@ serve(async (req) => {
       return allowCors(req, sanitizeErr(401, "Unauthorized"));
     }
     // Sanitized server log
-    console.error("disclose_unhandled", { msg: (e as Error).message });
+    safeLog.error("disclose_unhandled", { msg: (e as Error).message });
     return allowCors(req, sanitizeErr(500, "Unexpected error"));
   }
 });

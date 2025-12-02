@@ -44,6 +44,7 @@ export type Database = {
       audit_logs: {
         Row: {
           action: string
+          client_ip: string | null
           consent_id: string | null
           created_at: string
           data_classification: Database["public"]["Enums"]["data_classification"]
@@ -51,7 +52,9 @@ export type Database = {
           id: string
           ip_address: string | null
           metadata: Json | null
+          outcome: string | null
           part2_disclosure_purpose: string | null
+          phi_accessed: boolean | null
           pii_redacted: boolean | null
           prev_hash: string | null
           program_id: string | null
@@ -60,11 +63,13 @@ export type Database = {
           resource_id: string | null
           resource_type: string
           secret_version: number
+          session_id: string | null
           user_agent: string | null
           user_id: string
         }
         Insert: {
           action: string
+          client_ip?: string | null
           consent_id?: string | null
           created_at?: string
           data_classification?: Database["public"]["Enums"]["data_classification"]
@@ -72,7 +77,9 @@ export type Database = {
           id?: string
           ip_address?: string | null
           metadata?: Json | null
+          outcome?: string | null
           part2_disclosure_purpose?: string | null
+          phi_accessed?: boolean | null
           pii_redacted?: boolean | null
           prev_hash?: string | null
           program_id?: string | null
@@ -81,11 +88,13 @@ export type Database = {
           resource_id?: string | null
           resource_type: string
           secret_version?: number
+          session_id?: string | null
           user_agent?: string | null
           user_id: string
         }
         Update: {
           action?: string
+          client_ip?: string | null
           consent_id?: string | null
           created_at?: string
           data_classification?: Database["public"]["Enums"]["data_classification"]
@@ -93,7 +102,9 @@ export type Database = {
           id?: string
           ip_address?: string | null
           metadata?: Json | null
+          outcome?: string | null
           part2_disclosure_purpose?: string | null
+          phi_accessed?: boolean | null
           pii_redacted?: boolean | null
           prev_hash?: string | null
           program_id?: string | null
@@ -102,6 +113,7 @@ export type Database = {
           resource_id?: string | null
           resource_type?: string
           secret_version?: number
+          session_id?: string | null
           user_agent?: string | null
           user_id?: string
         }

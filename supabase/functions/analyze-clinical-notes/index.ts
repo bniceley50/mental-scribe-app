@@ -1,6 +1,6 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { redactPHI } from "../_shared/phi-redactor.ts";
+import { redactPHI, safeLog } from "../_shared/phi-redactor.ts";
 import { makeCors } from "../_shared/cors.ts";
 
 const cors = makeCors("POST,OPTIONS");
@@ -21,7 +21,7 @@ Deno.serve(cors.wrap(async (req) => {
   const preflight = cors.preflight(req);
   if (preflight) return preflight;
 
-  console.log("[ENTRY] analyze-clinical-notes called", { method: req.method });
+  safeLog.info("[ENTRY] analyze-clinical-notes called", { method: req.method });
 
   if (req.method !== "POST") {
     return cors.json({ error: "Method not allowed" }, { status: 405 });
@@ -41,10 +41,21 @@ Deno.serve(cors.wrap(async (req) => {
       return cors.json({ error: "Invalid session" }, { status: 401 });
     }
 
+    // Get session ID for audit
+    let sessionId: string | null = null;
+    try {
+        const { data: sessionData } = await admin.rpc('validate_session_token', { _session_token: token });
+        if (sessionData && sessionData.length > 0) {
+            sessionId = sessionData[0].session_id;
+        }
+    } catch (e) {
+        safeLog.warn('Failed to resolve session_id', e);
+    }
+
     const body: AnalysisRequest = await req.json();
     const noteText = (body.notes ?? "").trim();
     
-    console.log("[BODY] Received:", {
+    safeLog.info("[BODY] Received:", {
       action: body.action,
       notesLength: noteText.length,
       hasHistory: !!body.conversation_history?.length,
@@ -74,7 +85,7 @@ Deno.serve(cors.wrap(async (req) => {
     const { redacted, hadPHI } = redactPHI(noteText);
     const payload = BAA_SIGNED ? userPrompt : redacted;
 
-    console.log("[STREAM] Starting SSE relay to OpenAI");
+    safeLog.info("[STREAM] Starting SSE relay to OpenAI");
 
     // Stream response from OpenAI
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -96,19 +107,28 @@ Deno.serve(cors.wrap(async (req) => {
 
     if (!response.ok) {
       const text = await response.text().catch(() => "OpenAI call failed");
-      console.error("[ERROR] OpenAI error:", response.status, text);
+      safeLog.error("[ERROR] OpenAI error:", response.status, text);
       return cors.json({ error: `AI service error: ${response.status}` }, { status: 502 });
     }
 
-    console.log("[STREAM] OpenAI response OK, relaying to client");
+    safeLog.info("[STREAM] OpenAI response OK, relaying to client");
 
     // Log to audit (non-blocking - fire and forget)
     try {
+      const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined;
+      const phiAccessed = !BAA_SIGNED && hadPHI; // If BAA signed, we don't consider it "accessed" in a risky way? Or maybe we do.
+      // Actually, if hadPHI is true, PHI was accessed/processed.
+      // The prompt says "phi_accessed" boolean.
+      
       await admin.from("audit_logs").insert({
         user_id: user.id,
+        session_id: sessionId,
         action: "ai_clinical_analysis",
         resource_type: "clinical_note",
         resource_id: crypto.randomUUID(),
+        phi_accessed: hadPHI,
+        outcome: 'success',
+        client_ip: clientIp,
         metadata: { 
           analysis_type: action,
           hadPHI, 
@@ -117,7 +137,7 @@ Deno.serve(cors.wrap(async (req) => {
         },
       });
     } catch (auditError) {
-      console.error("Audit log failed (non-blocking):", auditError);
+      safeLog.error("Audit log failed (non-blocking):", auditError);
     }
 
 
@@ -131,10 +151,10 @@ Deno.serve(cors.wrap(async (req) => {
       },
     });
     
-    console.log("[STREAM] Completed successfully");
+    safeLog.info("[STREAM] Completed successfully");
     return streamResponse;
   } catch (error) {
-    console.error("[ERROR] analyze-clinical-notes error:", error);
+    safeLog.error("[ERROR] analyze-clinical-notes error:", error);
     const errorMessage = error instanceof Error ? error.message : "Internal server error";
     return cors.json({ error: errorMessage }, { status: 500 });
   }

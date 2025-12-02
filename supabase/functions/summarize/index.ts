@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { makeCors } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
-import { redactPHI } from "../_shared/phi-redactor.ts";
+import { redactPHI, safeLog } from "../_shared/phi-redactor.ts";
 
 const cors = makeCors("POST,OPTIONS");
 
@@ -26,6 +26,17 @@ Deno.serve(cors.wrap(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
       throw new Error('Invalid authentication');
+    }
+
+    // Get session ID for audit
+    let sessionId: string | null = null;
+    try {
+        const { data: sessionData } = await supabase.rpc('validate_session_token', { _session_token: token });
+        if (sessionData && sessionData.length > 0) {
+            sessionId = sessionData[0].session_id;
+        }
+    } catch (e) {
+        safeLog.warn('Failed to resolve session_id', e);
     }
 
     // Check quota (function derives user from auth.uid())
@@ -118,12 +129,18 @@ Deno.serve(cors.wrap(async (req) => {
           }
 
           // Log to audit
+          const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined;
+          
           await supabase.from('audit_logs').insert({
             user_id: user.id,
+            session_id: sessionId,
             action: 'content_summarized',
             resource_type: 'ai_analysis',
             data_classification: 'standard_phi',
             pii_redacted: hadPHI,
+            phi_accessed: hadPHI, // New field
+            outcome: 'success',   // New field
+            client_ip: clientIp,  // New field
             metadata: {
               summary_type: type,
               model: 'gpt-4o-mini'
@@ -132,7 +149,7 @@ Deno.serve(cors.wrap(async (req) => {
 
           controller.close();
         } catch (error) {
-          console.error('Streaming error:', error);
+          safeLog.error('Streaming error:', error);
           controller.error(error);
         }
       },
@@ -147,7 +164,7 @@ Deno.serve(cors.wrap(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error in summarize:', error);
+    safeLog.error('Error in summarize:', error);
     return new Response(`data: ${JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' })}\n\n`, {
       status: 500,
       headers: { 'Content-Type': 'text/event-stream' }

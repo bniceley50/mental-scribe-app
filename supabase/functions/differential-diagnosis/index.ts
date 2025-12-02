@@ -1,7 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { makeCors } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.0";
-import { redactPHI } from "../_shared/phi-redactor.ts";
+import { redactPHI, safeLog } from "../_shared/phi-redactor.ts";
 
 const cors = makeCors("POST,OPTIONS");
 
@@ -40,6 +40,17 @@ Deno.serve(cors.wrap(async (req) => {
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
     if (authError || !user) {
       throw new Error('Invalid authentication');
+    }
+
+    // Get session ID for audit
+    let sessionId: string | null = null;
+    try {
+        const { data: sessionData } = await supabase.rpc('validate_session_token', { _session_token: token });
+        if (sessionData && sessionData.length > 0) {
+            sessionId = sessionData[0].session_id;
+        }
+    } catch (e) {
+        safeLog.warn('Failed to resolve session_id', e);
     }
 
     // Check quota (function derives user from auth.uid())
@@ -96,7 +107,7 @@ Generate differential diagnoses.`;
 
     if (!openAIResponse.ok) {
       const errorText = await openAIResponse.text();
-      console.error('OpenAI API error:', errorText);
+      safeLog.error('OpenAI API error:', errorText);
       throw new Error(`OpenAI API error: ${errorText}`);
     }
 
@@ -122,18 +133,25 @@ Generate differential diagnoses.`;
         }
       });
     } catch (parseError) {
-      console.error('Failed to parse AI response:', content);
+      safeLog.error('Failed to parse AI response:', content);
       throw new Error('AI returned invalid JSON format');
     }
 
     // Log to audit
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || undefined;
+    const hadPhi = presentationPHI || historyPHI;
+
     await supabase.from('audit_logs').insert({
       user_id: user.id,
+      session_id: sessionId,
       action: 'differential_diagnosis_generated',
       resource_type: 'ai_analysis',
       data_classification: 'standard_phi',
+      phi_accessed: hadPhi,
+      outcome: 'success',
+      client_ip: clientIp,
       metadata: {
-        had_phi: presentationPHI || historyPHI,
+        had_phi: hadPhi,
         diagnosis_count: diagnoses.length,
         model: 'gpt-4o-mini'
       }
@@ -148,7 +166,7 @@ Generate differential diagnoses.`;
     });
 
   } catch (error) {
-    console.error('Error in differential-diagnosis:', error);
+    safeLog.error('Error in differential-diagnosis:', error);
     return cors.json({ 
       error: error instanceof Error ? error.message : 'Unknown error' 
     }, {

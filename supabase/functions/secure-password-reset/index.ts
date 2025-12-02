@@ -1,6 +1,7 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { makeCors } from "../_shared/cors.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { safeLog } from "../_shared/phi-redactor.ts";
 
 const securityHeaders = {
   'Content-Security-Policy': "default-src 'self'; script-src 'self'; object-src 'none';",
@@ -35,7 +36,7 @@ async function isPasswordLeaked(password: string): Promise<boolean> {
     });
     
     if (!response.ok) {
-      console.error('HIBP API unavailable, failing closed for security');
+      safeLog.error('HIBP API unavailable, failing closed for security');
       return true; // Fail closed - treat as leaked if API down
     }
     
@@ -48,7 +49,7 @@ async function isPasswordLeaked(password: string): Promise<boolean> {
       return hashSuffix === suffix;
     });
   } catch (error) {
-    console.error('Password leak check failed:', error);
+    safeLog.error('Password leak check failed:', error);
     return true; // Fail closed on error
   }
 }
@@ -120,7 +121,7 @@ Deno.serve(cors.wrap(async (req) => {
     });
 
     if (rateLimitError || !rateLimitOk) {
-      console.warn('Rate limit exceeded for password reset:', ipAddress);
+      safeLog.warn('Rate limit exceeded for password reset:', ipAddress);
       return cors.json({ 
         error: 'Too many password reset attempts. Please try again later.' 
       }, {
@@ -151,7 +152,7 @@ Deno.serve(cors.wrap(async (req) => {
     }
 
     // SECURITY: Check if password has been leaked (HIBP)
-    console.log('Checking password against HIBP database...');
+    safeLog.info('Checking password against HIBP database...');
     const leaked = await isPasswordLeaked(newPassword);
     if (leaked) {
       return cors.json({ 
@@ -165,13 +166,13 @@ Deno.serve(cors.wrap(async (req) => {
 
     // Verify reset token and update password
     // This uses Supabase's built-in password reset mechanism with our additional checks
-    const { data: { user }, error: verifyError } = await supabaseAdmin.auth.verifyOtp({
+    const { data: { user, session }, error: verifyError } = await supabaseAdmin.auth.verifyOtp({
       token_hash: token,
       type: 'recovery'
     });
 
     if (verifyError || !user) {
-      console.error('Invalid or expired reset token:', verifyError);
+      safeLog.error('Invalid or expired reset token:', verifyError);
       return cors.json({ error: 'Invalid or expired reset token' }, {
         status: 400,
         headers: securityHeaders
@@ -185,7 +186,7 @@ Deno.serve(cors.wrap(async (req) => {
     );
 
     if (updateError) {
-      console.error('Failed to update password:', updateError);
+      safeLog.error('Failed to update password:', updateError);
       return cors.json({ 
         error: 'Failed to update password. Please try again.' 
       }, {
@@ -197,9 +198,19 @@ Deno.serve(cors.wrap(async (req) => {
     // SECURITY: Log successful password reset in audit log
     await supabaseAdmin.from('audit_logs').insert({
       user_id: user.id,
+      session_id: session?.access_token ? null : null, // verifyOtp might not return a full session object with ID we can use directly if we are admin? 
+      // Actually session object has .access_token, .refresh_token, .user. 
+      // It doesn't always have a .id property for the session itself in the JS client type definition?
+      // Usually it's just the token. But we need the session UUID from the database.
+      // If we can't get it easily, we leave it null.
+      // However, verifyOtp logs the user in.
+      // Let's assume null for now as this is a reset flow.
       action: 'password_reset',
       resource_type: 'user_account',
       resource_id: user.id,
+      phi_accessed: false,
+      outcome: 'success',
+      client_ip: ipAddress,
       metadata: {
         ip_address: ipAddress,
         user_agent: req.headers.get('user-agent'),
@@ -207,7 +218,7 @@ Deno.serve(cors.wrap(async (req) => {
       }
     });
 
-    console.log('Password reset successful for user:', user.id);
+    safeLog.info('Password reset successful for user:', user.id);
 
     return cors.json({ 
       success: true,
@@ -218,7 +229,7 @@ Deno.serve(cors.wrap(async (req) => {
     });
 
   } catch (error) {
-    console.error('Unexpected error in secure-password-reset:', error);
+    safeLog.error('Unexpected error in secure-password-reset:', error);
     return cors.json({ 
       error: 'An unexpected error occurred. Please try again later.',
       details: error instanceof Error ? error.message : 'Unknown error'

@@ -6,12 +6,12 @@ export function cspPlugin(): Plugin {
   return {
     name: 'vite-plugin-csp-strict',
     apply: 'build',
-    transformIndexHtml(html) {
+    transformIndexHtml(html: string) {
       const nonce = crypto.randomBytes(16).toString('base64');
 
       const withNonces = html.replace(
         /<script(?![^>]*\bnonce=)([^>]*)>/g,
-        (_m, attrs) => `<script nonce="${nonce}"${attrs}>`
+        (_m: string, attrs: string) => `<script nonce="${nonce}"${attrs}>`
       );
 
       const csp = [
@@ -23,7 +23,7 @@ export function cspPlugin(): Plugin {
         `img-src 'self' data: https:`,
         `font-src 'self' https://fonts.gstatic.com`,
         `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
-        `script-src 'nonce-${nonce}' 'strict-dynamic' https:`,
+        `script-src 'nonce-${nonce}' 'strict-dynamic'`,
         `connect-src 'self' https://*.supabase.co https://*.supabase.io https://api.openai.com`,
         `upgrade-insecure-requests`,
         `block-all-mixed-content`
@@ -41,7 +41,7 @@ export function sriPlugin(): Plugin {
   return {
     name: 'vite-plugin-sri',
     apply: 'build',
-    transformIndexHtml(html) {
+    transformIndexHtml(html: string) {
       return html;
     }
   };

@@ -61,6 +61,8 @@ This project handles sensitive clinical and behavioral health data. Security, pr
   - `js/remote-property-injection` in `logSanitizer.ts` (prototype pollution) → fixed.
   - `js/stack-trace-exposure` in `cors.ts` → fixed.
   - Script-level issues in `security-check.js` → fixed.
+- CSP Hardening:
+  - `script-src` wildcard (`https:`) removed; policy is now strict `'nonce-...' 'strict-dynamic'`.
 - Secret scanning:
   - `verify-security.sh` + gitleaks are used locally/CI to catch future leaks early.
 

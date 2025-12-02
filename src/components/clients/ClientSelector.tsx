@@ -79,7 +79,7 @@ export function ClientSelector({ value, onChange, className }: ClientSelectorPro
                   {client.last_name}, {client.first_name}
                   {client.preferred_name && ` (${client.preferred_name})`}
                 </span>
-                {client.programs?.is_part2 && (
+                {client.programs?.[0]?.is_part2 && (
                   <Badge variant="destructive" className="text-xs">
                     Part 2
                   </Badge>

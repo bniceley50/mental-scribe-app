@@ -19,6 +19,17 @@
 
 ## 📋 Complete Documentation Library
 
+### Coding Agent Protocol (CLAUDE.MD)
+
+| Document | Purpose | Length | Audience | Best For |
+|----------|---------|--------|----------|----------|
+| **[CLAUDE.MD](CLAUDE.MD)** | Core coding protocol for AI agents | 2 pages | AI agents, developers | Safety net for AI-assisted coding |
+| **[docs/CLAUDE_PROTOCOL_USAGE.md](docs/CLAUDE_PROTOCOL_USAGE.md)** | How to use the protocol | 10 pages | Developers | Practical implementation guide |
+| **[docs/CLAUDE_PROTOCOL_EXAMPLES.md](docs/CLAUDE_PROTOCOL_EXAMPLES.md)** | Real code examples | 12 pages | Developers | See protocol in action |
+| **[docs/CLAUDE_PROTOCOL_INTEGRATION.md](docs/CLAUDE_PROTOCOL_INTEGRATION.md)** | Platform integration guide | 8 pages | Developers | Setup for Claude/GPT/Cursor/etc. |
+
+**Quick Start**: Add `CLAUDE.MD` to your AI agent's system prompt. The protocol prevents catastrophic failures (data loss, security breaks, scope creep) while enabling fast shipping of working code.
+
 ### Ship Plans & Checklists
 
 | Document | Purpose | Length | Audience | Best For |
@@ -71,6 +82,18 @@
 ---
 
 ## 🎯 Usage Scenarios
+
+### Scenario 0: "I'm setting up an AI coding agent"
+
+**Path**: CLAUDE.MD protocol integration
+1. Read: [`CLAUDE.MD`](CLAUDE.MD) (5 minutes)
+2. Choose platform: [`docs/CLAUDE_PROTOCOL_INTEGRATION.md`](docs/CLAUDE_PROTOCOL_INTEGRATION.md)
+3. Integrate: Add protocol to your AI agent's system prompt
+4. Verify: Test with example task (see Usage guide)
+
+**Total time**: ~15 minutes setup
+
+---
 
 ### Scenario 1: "I need to ship this PR right now"
 
@@ -142,14 +165,16 @@
 
 ## 📊 Documentation Statistics
 
-**Total Documents**: 15+  
-**Total Pages**: ~30 pages  
-**Total Lines of Code**: ~2,000+ lines  
-**Automation Scripts**: 3  
-**Templates**: 7 ready-to-use  
-**Evidence Files**: 6+ artifacts  
+**Total Documents**: 19+
+**Total Pages**: ~62 pages
+**Total Lines of Code**: ~3,500+ lines
+**Automation Scripts**: 3
+**Templates**: 7 ready-to-use
+**Evidence Files**: 6+ artifacts
+**AI Agent Protocol**: 4 comprehensive guides
 
 **Coverage**:
+- ✅ AI coding agent protocol (4 documents)
 - ✅ Ship workflows (4 documents)
 - ✅ Code review (4 documents)
 - ✅ Communication (2 documents)
@@ -176,6 +201,10 @@
 
 **Looking for...**
 
+- **AI coding agent protocol** → `CLAUDE.MD`
+- **How to use the protocol** → `docs/CLAUDE_PROTOCOL_USAGE.md`
+- **Protocol code examples** → `docs/CLAUDE_PROTOCOL_EXAMPLES.md`
+- **Platform integration (Claude/GPT/Cursor)** → `docs/CLAUDE_PROTOCOL_INTEGRATION.md`
 - **Quick ship commands** → `docs/planning/SHIP_PLAN.md`
 - **Windows PowerShell** → `docs/planning/WINDOWS_SHIP_CHECKLIST.md`
 - **Go/no-go decision** → `docs/planning/GO_NO_GO_CHECKLIST.md`
@@ -190,6 +219,12 @@
 ---
 
 ## 🎯 Recommended Reading Order
+
+**For AI Coding Agents**:
+1. `CLAUDE.MD` (core protocol - 5 minutes)
+2. `docs/CLAUDE_PROTOCOL_USAGE.md` (how to use - 10 minutes)
+3. `docs/CLAUDE_PROTOCOL_EXAMPLES.md` (see it in action - 15 minutes)
+4. `docs/CLAUDE_PROTOCOL_INTEGRATION.md` (platform setup - 10 minutes)
 
 **For First-Time Ship**:
 1. `docs/planning/SHIP_PLAN.md` (overview)

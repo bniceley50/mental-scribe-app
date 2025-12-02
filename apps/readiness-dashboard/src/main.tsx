@@ -5,8 +5,7 @@ import './index.css';
 
 // Suppress React DevTools message in production
 if (import.meta.env.PROD) {
-  // eslint-disable-next-line no-console
-  console.log = () => {};
+  // React DevTools suppression removed to satisfy no-console rule
 }
 
 createRoot(document.getElementById('root')!).render(

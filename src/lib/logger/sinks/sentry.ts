@@ -13,7 +13,6 @@ export const sentrySink = (): LogSink | null => {
   if (!DSN) return null;
 
   let inited = false;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let SentryMod: any | null = null;
 
   async function ensureInit() {

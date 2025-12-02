@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import { LogEvent, LogSink } from '../types';
 import { safeStringify } from '../redact';
 

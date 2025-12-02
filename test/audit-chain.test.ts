@@ -353,4 +353,24 @@ describe('Audit Chain Hash Functions', () => {
 
     expect(hash1).not.toBe(hash2)
   })
+
+  it('should compute a valid hash when the audit secret is provisioned', async () => {
+    const baseData = {
+      prev_hash: '',
+      actor_id: crypto.randomUUID(),
+      action: 'TEST_SECRET_VALIDATION',
+      resource: 'test',
+      resource_id: 'test-1',
+      details: {},
+      timestamp: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase.rpc('compute_audit_hash', baseData);
+
+    // If the audit secret is missing or still a placeholder, the SQL will now throw.
+    // Success here means we have a real, provisioned secret and the function works.
+    expect(error).toBeNull();
+    expect(typeof data).toBe('string');
+    expect((data as string).length).toBe(64);
+  });
 })

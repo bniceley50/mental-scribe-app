@@ -1,821 +1,655 @@
-# Using the CLAUDE.MD Coding Agent Protocol
+# Using the CLAUDE.MD Protocol: Epistemic Discipline for Coding Agents
 
-**Companion guide to CLAUDE.MD**
+**Companion guide to CLAUDE.MD v2.0**
 
-This document explains how to effectively use the CLAUDE.MD protocol with AI coding agents.
+This document explains how to apply epistemic rationality principles when working with AI coding agents.
 
 ---
 
 ## Table of Contents
 
 1. [Quick Start](#quick-start)
-2. [Integration Guide](#integration-guide)
-3. [Practical Examples](#practical-examples)
-4. [Decision Trees](#decision-trees)
-5. [Measuring Effectiveness](#measuring-effectiveness)
-6. [Evolution Guide](#evolution-guide)
+2. [The Prediction Loop](#the-prediction-loop)
+3. [Stop → Words → Wait](#stop--words--wait)
+4. [Practical Examples](#practical-examples)
+5. [Common Patterns](#common-patterns)
+6. [Integration Guide](#integration-guide)
 7. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Quick Start
 
-### For Humans: First-Time Setup
+### The Core Pattern
 
-**1. Add CLAUDE.MD to your repository root**
-```bash
-# Already done if you're reading this!
-# The file is at: /CLAUDE.MD
+```
+DOING: [specific action you're about to take]
+EXPECT: [falsifiable prediction of what will happen]
+
+[execute action]
+
+RESULT: [what actually happened]
+MATCHES: [yes/no]
+→ [if no: STOP, theorize, propose, wait for confirmation]
 ```
 
-**2. Reference it in your AI agent instructions**
+### Example in Practice
 
-Add to your AI agent's system prompt or initial context:
+**Bad (theater prediction):**
 ```
-Before you begin coding, read and follow the protocol in CLAUDE.MD.
-This document defines how you should approach code changes safely.
+DOING: Run the tests
+EXPECT: They will do something
+
+[runs tests]
+
+RESULT: 3 tests failed
+MATCHES: Yes (something happened) ✗ WORTHLESS
 ```
 
-**3. First task: Have the agent read it**
+**Good (falsifiable prediction):**
 ```
-"Please read CLAUDE.MD and confirm you understand the core loop and hard stops."
+DOING: Run the tests
+EXPECT: All 15 tests pass with exit code 0
+
+[runs tests]
+
+RESULT: Exit code 1, 3 tests failed with "undefined is not a function"
+MATCHES: No ✓ USEFUL INFORMATION
+
+STOP. Theory: I broke something in the refactor.
+Checking which tests failed... [investigates]
+Theory: Removed a helper function that tests depend on.
+Want to restore the helper function, expecting tests to pass.
+Proceed?
 ```
-
-### For AI Agents: Quick Reference Card
-
-**Before any code change:**
-- [ ] Read the files you'll change
-- [ ] Understand the requirement (ask if unclear)
-- [ ] Will this touch >3 files? → ASK
-- [ ] Will this delete data? → ASK
-- [ ] Will this change security/auth/API? → ASK
-
-**During changes:**
-- [ ] Do the minimum viable change
-- [ ] Inline code until 3rd use (no premature abstraction)
-- [ ] One file is better than three files
-
-**After changes:**
-- [ ] Run what you changed
-- [ ] Run tests if they exist
-- [ ] Check for secrets/vulnerabilities before committing
-- [ ] Commit when it works
-
-**If uncertain (<80% confidence):**
-- [ ] Say so explicitly
-- [ ] Explain what you don't know
-- [ ] Propose how to verify
 
 ---
 
-## Integration Guide
+## The Prediction Loop
 
-### Method 1: System Prompt Integration (Recommended)
+### Why Predictions Matter
 
-**For Claude, GPT-4, or similar:**
+Your mental model is constantly wrong in small ways. Predictions make your beliefs explicit and testable. When reality contradicts your prediction, you've found a place where your model is broken.
 
-```markdown
-# System Instructions
+**Key principle:** If your prediction matches any outcome, it's not a prediction.
 
-You are a coding assistant following the CLAUDE.MD protocol.
+### Making Falsifiable Predictions
 
-**Core principles:**
-1. Read before edit (never change code you haven't read)
-2. Run what you change (verify it actually works)
-3. Stop at uncertainty (ask when confidence < 80%)
-4. Bias toward simplicity (edit > create, one file > many files)
+| Worthless (matches everything) | Falsifiable (can be proven wrong) |
+|--------------------------------|-----------------------------------|
+| "Expect: this will work or not work" | "Expect: returns 200 with JSON body" |
+| "Expect: probably succeeds" | "Expect: creates file at /tmp/output.txt" |
+| "Expect: some output" | "Expect: prints 'Done' and exits 0" |
+| "Expect: error or success" | "Expect: 404 because route doesn't exist" |
 
-**Hard stops (ALWAYS ask first):**
-- Deleting data, files, or records
-- Changing security, auth, or permissions
+### Risk-Calibrated Predictions
+
+Not every action needs ceremony:
+
+**Trivial (no prediction needed):**
+- Reading files
+- Listing directories
+- Checking git status
+
+**Low risk (brief prediction):**
+```
+DOING: Install lodash
+EXPECT: Added to package.json, node_modules created
+[do it]
+RESULT: ✓ matches
+```
+
+**Medium risk (full ceremony):**
+```
+DOING: Modify UserAuth.tsx to add password validation
+EXPECT: Build succeeds, type checker passes, no test failures
+
+[do it]
+
+RESULT: Build failed with "Property 'validatePassword' does not exist"
+MATCHES: No
+
+STOP. Theory: validatePassword function doesn't exist yet.
+Want to create validatePassword in utils/auth.ts first.
+Proceed?
+```
+
+**High/Irreversible (must confirm with Q):**
+- Database migrations
+- Deleting user data
 - Breaking API changes
-- Touching more than 3 files
+- Architectural decisions
 
-**Full protocol:** Read /CLAUDE.MD in the repository for complete guidelines.
+---
 
-When you encounter a decision point, explicitly reference which section
-of CLAUDE.MD informs your choice.
+## Stop → Words → Wait
+
+### The Pattern
+
+When **anything** fails:
+
+1. **STOP** - No more tool calls
+2. **STATE** - What failed, raw error
+3. **THEORIZE** - Why you think it failed
+4. **PROPOSE** - What to try next, with prediction
+5. **WAIT** - For Q's confirmation
+
+### Why No Silent Retry?
+
+**Bad:**
+```
+npm install fails with network error
+[agent immediately retries]
+npm install fails again
+[agent tries different approach]
+[eventually succeeds but Q has no idea what happened]
 ```
 
-### Method 2: Pre-Task Briefing
-
-Before each coding session:
+**Good:**
 ```
-"For this task, please follow CLAUDE.MD protocol, specifically:
-- Read files before editing (Section I)
-- Ask before touching >3 files (Section II)
-- Use progressive disclosure (Section V)
-- Signal if you're uncertain (Section IV)"
-```
+DOING: npm install
+EXPECT: Packages installed, exit 0
 
-### Method 3: Inline References
+RESULT: Exit 1, "ENOTFOUND registry.npmjs.org"
+MATCHES: No
 
-During conversation:
-```
-User: "Add a caching layer to the API"
+STOP. Network error connecting to npm registry.
 
-Agent: "Before I start (CLAUDE.MD Section I), let me read the current
-API implementation to understand the architecture..."
+Theory: Either network is down or npm registry is unreachable.
 
-[reads files]
+Ruled out: Package.json syntax (would be different error).
 
-Agent: "This will require changes to 4 files (Section II Hard Stop).
-The scope is larger than a simple addition. Should I proceed or
-reduce scope?"
+Want to:
+1. Check network: curl https://registry.npmjs.org/
+2. If network works, retry npm install
+3. If network fails, check if VPN/proxy is needed
+
+Proceed?
 ```
 
-### Method 4: Repository Convention
-
-Add to your `CONTRIBUTING.md`:
-```markdown
-## AI Agent Guidelines
-
-If using an AI coding assistant on this project, please ensure it
-follows the protocol defined in `/CLAUDE.MD`. This helps maintain
-code quality and prevents common failure modes.
-
-Required reading for AI agents:
-- `/CLAUDE.MD` - Core coding protocol
-- `/docs/ARCHITECTURE.md` - System design
-- `/docs/CLAUDE_PROTOCOL_USAGE.md` - Usage examples
-```
+**Failure is information.** Silent retry destroys that information.
 
 ---
 
 ## Practical Examples
 
-### Example 1: Simple Bug Fix ✅
+### Example 1: Simple Bug Fix
 
-**Scenario:** Fix a null pointer exception in `UserProfile.tsx`
+**Task:** Fix crash when user has no email
 
-**Agent response (following protocol):**
-
+**Theater approach (useless):**
 ```
-Following CLAUDE.MD Section I, I'll read the file first.
-
-[reads UserProfile.tsx]
-
-I found the issue at line 47: `user.name.toUpperCase()` doesn't
-check if `user.name` exists.
-
-Fix (Section III - bias toward simplicity):
-```typescript
-- const displayName = user.name.toUpperCase();
-+ const displayName = user.name?.toUpperCase() ?? 'Unknown';
+DOING: Fix the crash
+EXPECT: It works
+[makes change]
+RESULT: Still crashes
+MATCHES: Uhh, kind of?
 ```
 
-This is a one-file change, so I'll proceed (Section II).
+**Epistemic approach:**
+```
+Let me read the error first.
 
-[applies edit]
+[reads error log]
 
-Now verifying the change works (Section I.6):
+Error: "Cannot read property 'toLowerCase' of undefined"
+at UserProfile.tsx:42
 
-[runs the component, checks for errors]
+Reading UserProfile.tsx...
 
-✓ Component renders without errors
-✓ Handles null name gracefully
-✓ Tests pass
+[reads file]
 
-Committing (Section I.8):
+Line 42: const emailLower = user.email.toLowerCase();
+
+Theory: user.email is undefined for some users.
+
+DOING: Add null check before toLowerCase()
+EXPECT: Component renders without error, displays "No email" when undefined
+
+Change:
+- const emailLower = user.email.toLowerCase();
++ const emailLower = user.email?.toLowerCase() ?? 'No email provided';
+
+[makes change]
+
+DOING: Run the component with test data
+EXPECT: No errors in console, displays "No email" for users without email
+
+[runs it]
+
+RESULT: ✓ No errors, shows "No email provided" when email is undefined
+MATCHES: Yes
+
+Committing.
 ```
 
-**Why this works:**
-- ✅ Read file first (prevented hallucination)
-- ✅ Minimal change (optional chaining, not refactoring entire component)
-- ✅ Verified it works (ran the component)
-- ✅ Committed when working (checkpoint created)
+### Example 2: The Fix-Forward Trap
 
----
+**Scenario:** You've tried 3 fixes and it's still broken
 
-### Example 2: Feature Request - Scope Check ⚠️
-
-**Scenario:** "Add user search functionality"
-
-**Agent response (following protocol):**
-
+**Bad (keeps digging):**
 ```
-Before I start, let me understand the scope (Section X):
-
-This feature will require:
-1. New SearchBar component (frontend/components/SearchBar.tsx)
-2. Search API endpoint (backend/api/search.ts)
-3. Database query function (backend/db/userQueries.ts)
-4. Integration in UserList component (frontend/pages/UserList.tsx)
-
-This touches 4 files (Section II Hard Stop: ">3 files").
-
-Options:
-A) Reduced scope: Add search to existing UserList only (2 files)
-B) Full scope: Proceed with all 4 files (requires your approval)
-
-Which approach would you prefer?
+[tries fix #1: doesn't work]
+[tries fix #2: different error]
+[tries fix #3: back to original error]
+[tries fix #4: "this definitely will work"]
+[8 attempts later, completely lost]
 ```
 
-**Why this works:**
-- ✅ Scoped the task before starting (Section X)
-- ✅ Identified Hard Stop trigger (>3 files)
-- ✅ Stopped and asked (Section II)
-- ✅ Proposed alternatives (reduced vs. full scope)
-
----
-
-### Example 3: Uncertain About Architecture 🤔
-
-**Scenario:** "Optimize the database query in getClientData()"
-
-**Agent response (following protocol):**
-
+**Good (recognizes the trap):**
 ```
-I'll read the current implementation first (Section I.1):
+[tries fix #1]
+RESULT: Different error
+MATCHES: No
 
-[reads getClientData function]
+[tries fix #2]
+RESULT: Original error back
+MATCHES: No
 
-I see a Prisma query with multiple joins. However, I'm uncertain
-about the optimization approach (Section IV):
+[tries fix #3]
+RESULT: Still broken
+MATCHES: No
 
-**What I don't know:**
-- What's the typical data size? (10 rows vs. 10,000 rows)
-- Is this query causing actual performance problems?
-- Are there existing indexes on the joined columns?
-- What's the acceptable latency target?
+STOP. I'm three fixes deep and not making progress.
 
-**Confidence: ~40%** (Section IV - below 80% threshold)
+Findings:
+- Fix #1 changed error from X to Y
+- Fix #2 reverted error back to X
+- Fix #3 no change
+- Pattern: I don't actually understand root cause
 
-**How we could verify:**
-1. Check slow query logs to see actual performance
-2. Run EXPLAIN ANALYZE on current query
-3. Profile with realistic data volume
+Theory: I'm treating symptoms, not cause.
 
-Should I proceed with profiling first, or do you have specific
-performance issues you're seeing?
+Recommend: Revert all 3 fixes, go back to original error,
+investigate properly before fixing.
+
+Should I revert and start over?
 ```
 
-**Why this works:**
-- ✅ Signaled uncertainty explicitly (Section IV)
-- ✅ Explained what's unknown (not what's known)
-- ✅ Proposed verification steps (not blind optimization)
-- ✅ Asked instead of guessing
+### Example 3: Timebox Investigation
 
----
-
-### Example 4: Breaking the Protocol (Correctly) 🔥
-
-**Scenario:** "Production is down! The login endpoint is returning 500 errors!"
-
-**Agent response (following protocol - Section XI):**
+**Scenario:** Debugging a test failure
 
 ```
-Emergency situation - breaking normal protocol (Section XI).
+Action 1: Read test file
+Action 2: Read implementation
+Action 3: Add console.log to debug
+Action 4: Run test with logging
+Action 5: Read dependency code
+Action 6: Check test data
+Action 7: Try different test data
+Action 8: Read framework docs
+Action 9: Check other similar tests
+Action 10: Try another approach
 
-Skipping planning phase, going straight to diagnosis:
+STOP. I've taken 10 actions without resolving this.
 
-[checks logs]
+Findings:
+- Test expects user.name to equal "John"
+- Implementation returns "John Smith"
+- Test is checking exact equality
+- Test fixture has name="John" but API returns full name
 
-Found the issue: environment variable DATABASE_URL is undefined
-in production.
+Theories:
+1. Test fixture is wrong (should be "John Smith")
+2. Implementation is wrong (should return firstName only)
+3. Test assertion is wrong (should check .startsWith())
 
-Immediate fix:
-[verifies env var in production config]
+I don't know which is correct. This requires context about
+business requirements I don't have.
 
-The variable exists but has a typo: `DATABSE_URL` (missing A).
-
-Fixed in production config.
-
-[verifies service is back up]
-
-✓ Login endpoint returning 200
-✓ Users can authenticate
-
-Now I'll follow up with proper protocol:
-1. Added check to prevent startup with missing DATABASE_URL
-2. Added this to runbook: docs/runbooks/INCIDENT_RESPONSE.md
-3. Created ticket to add env var validation at startup
-
-Protocol violation justified: Production emergency (Section XI).
+Q: Which is the intended behavior?
+- Users should have full name stored?
+- Tests should check partial match?
+- Implementation should split firstName?
 ```
 
-**Why this works:**
-- ✅ Recognized emergency context (Section XI trigger)
-- ✅ Explicitly stated protocol break and reason
-- ✅ Fixed the urgent problem immediately
-- ✅ Followed up with proper process after emergency resolved
-- ✅ Prevented future occurrences (added validation)
+### Example 4: "I Don't Know" is Valid
 
----
-
-## Decision Trees
-
-### Decision Tree 1: Should I Ask First?
-
+**Bad (confabulation):**
 ```
-Are you about to...
-├─ Delete user data, files, or database records?
-│  └─ YES → ASK FIRST (Section II)
-│
-├─ Change authentication, authorization, or security?
-│  └─ YES → ASK FIRST (Section II)
-│
-├─ Make breaking API changes (remove endpoints, change contracts)?
-│  └─ YES → ASK FIRST (Section II)
-│
-├─ Touch more than 3 files?
-│  └─ YES → ASK FIRST (Section II)
-│
-├─ Uncertain if something qualifies as a "hard stop"?
-│  └─ YES → ASK FIRST (Section II)
-│
-└─ None of the above?
-   └─ PROCEED (but signal if uncertain - Section IV)
+Q: Why did the build fail?
+Agent: It's probably a TypeScript configuration issue. Maybe the
+tsconfig.json needs to be updated. Or possibly the types are wrong.
+Could also be a webpack problem. I think it might be...
+
+[confident bullshit continues]
 ```
 
-### Decision Tree 2: How Much Should I Change?
-
+**Good (honest uncertainty):**
 ```
-What's the simplest solution?
-├─ Can I fix this by editing 1 existing file?
-│  └─ YES → Do that (Section III)
-│  └─ NO → Continue...
-│
-├─ Can I solve this without creating new files?
-│  └─ YES → Edit existing files (Section III)
-│  └─ NO → Continue...
-│
-├─ Can I inline the code instead of abstracting?
-│  └─ Is this the first or second use of this pattern?
-│     └─ YES → Inline it (Section I.5)
-│     └─ NO (3rd use) → Okay to abstract
-│
-├─ Can I solve this without adding dependencies?
-│  └─ YES → Use existing tools (Section III)
-│  └─ NO → Is the dependency really necessary?
-│
-└─ Still unsure?
-   └─ Pick the option that changes fewer files (Section III)
-```
+Q: Why did the build fail?
 
-### Decision Tree 3: Am I Uncertain?
+I don't know yet.
 
-```
-Evaluating your confidence...
-├─ Have you worked with this framework/pattern before?
-│  └─ NO → You're uncertain (Section IV)
-│
-├─ Are you guessing about edge case behavior?
-│  └─ YES → You're uncertain (Section IV)
-│
-├─ Are you assuming how an external system works?
-│  └─ YES → You're uncertain (Section IV)
-│
-├─ Does your solution work but you don't know why?
-│  └─ YES → You're uncertain (Section IV)
-│
-├─ Are you making changes based on unverified assumptions?
-│  └─ YES → You're uncertain (Section IV)
-│
-└─ None of the above AND you can explain your reasoning?
-   └─ Confidence ≥ 80% → Proceed (but verify results - Section I.6)
+What I observed:
+- Build error: "Cannot find module './utils'"
+- File exists at src/utils/index.ts
+- Import statement: import { helper } from './utils'
+
+Ruled out:
+- File doesn't exist (it does)
+- Typo in path (path is correct)
+
+Hypotheses to test:
+1. Missing file extension in import
+2. Module resolution issue in tsconfig
+3. Circular dependency
+
+Want to test #1 first (most likely): add .ts extension to import.
+Proceed?
 ```
 
 ---
 
-## Measuring Effectiveness
+## Common Patterns
 
-### Key Metrics to Track
+### Pattern 1: Checkpoint Every 3 Actions
 
-Track these metrics before and after implementing the protocol:
-
-**Primary Metrics:**
-
-| Metric | How to Measure | Target Improvement |
-|--------|----------------|-------------------|
-| **First-Try Success Rate** | % of changes that work without needing fixes | +30% |
-| **Regression Rate** | % of changes that break existing functionality | -50% |
-| **Scope Creep Incidents** | # of times "simple fix" became major refactor | -70% |
-| **Security Incidents** | # of vulnerabilities introduced | -80% |
-| **Rollback Frequency** | # of commits that needed to be reverted | -60% |
-
-**Secondary Metrics:**
-
-| Metric | How to Measure | What It Indicates |
-|--------|----------------|-------------------|
-| **Average Files Touched per Task** | Commit analysis | Complexity/scope management |
-| **Time to First Working State** | Task start → first successful run | Efficiency |
-| **Uncertainty Signals per Session** | Count of "I'm uncertain" statements | Calibration quality |
-| **Hard Stop Triggers** | Count of "asking first" on Section II items | Risk awareness |
-
-### Tracking Template
-
-Create a simple log: `docs/protocol-metrics.md`
-
-```markdown
-## Protocol Effectiveness Log
-
-### Week of 2025-12-02
-
-| Date | Task | First-Try Success? | Regressions? | Scope Creep? | Notes |
-|------|------|-------------------|--------------|--------------|-------|
-| 12/02 | Fix login bug | ✅ Yes | No | No | Clean fix, verified before commit |
-| 12/02 | Add search | ❌ No (took 2 tries) | No | Yes (grew from 2→5 files) | Agent asked at 3 files (protocol worked) |
-| 12/03 | Optimize query | ✅ Yes | No | No | Agent signaled uncertainty, profiled first |
-
-**Weekly Summary:**
-- First-try success: 66% (2/3)
-- Scope creep prevented: 100% (agent asked when crossing threshold)
-- Regressions: 0%
+**Bad:**
+```
+Action 1: Edit file A
+Action 2: Edit file B
+Action 3: Edit file C
+Action 4: Edit file D
+Action 5: Edit file E
+[hopes it all works]
 ```
 
-### Automated Tracking (Advanced)
+**Good:**
+```
+Action 1: Edit file A
+Action 2: Edit file B
+Action 3: Edit file C
 
-Add to your git hooks or CI:
+CHECKPOINT: Run tests
+EXPECT: All tests pass
+RESULT: ✓ Tests pass
+MATCHES: Yes
 
-```bash
-# .git/hooks/post-commit
-#!/bin/bash
-# Track protocol compliance
+Action 4: Edit file D
+Action 5: Edit file E
+Action 6: Edit file F
 
-FILES_CHANGED=$(git diff --name-only HEAD~1 HEAD | wc -l)
+CHECKPOINT: Run tests
+EXPECT: All tests still pass
+RESULT: 2 tests fail in file F changes
+MATCHES: No
 
-if [ $FILES_CHANGED -gt 3 ]; then
-  echo "⚠️  Changed $FILES_CHANGED files (CLAUDE.MD recommends ≤3)"
-  echo "Was this approved? If not, consider splitting the commit."
-fi
+STOP. Something in file F broke tests.
+[investigates specifically file F changes]
+```
 
-# Check commit message for protocol references
-if git log -1 --pretty=%B | grep -q "CLAUDE.MD\|Section II\|Hard Stop"; then
-  echo "✅ Protocol-aware commit"
-fi
+### Pattern 2: Context Decay (~10 actions)
+
+```
+[10 actions into a task]
+
+Let me check: What's the original goal?
+
+Original: Add email validation to signup form
+Currently doing: Refactoring entire auth system
+
+STOP. I've lost the thread. I got sidetracked into a refactor
+when the goal was just adding validation.
+
+Reverting refactor changes. Back to simple email validation.
+```
+
+### Pattern 3: Evidence Standards
+
+**Bad:**
+```
+Q: Does this work for all users?
+Agent: Yes, I tested it and it works for everyone.
+[tested once]
+```
+
+**Good:**
+```
+Q: Does this work for all users?
+
+Tested:
+- User with email: ✓ works
+- User without email: ✓ works
+- User with invalid email: ✓ shows error
+
+Did not test:
+- Users with multiple emails
+- Users with non-ASCII characters in email
+- Edge cases: very long emails, special characters
+
+Evidence: Works for 3 scenarios tested. Cannot claim "all users"
+without exhaustive testing.
+```
+
+### Pattern 4: Chesterton's Fence
+
+**Bad:**
+```
+Q: This function looks unused, can you delete it?
+Agent: Sure! [deletes it]
+[production breaks]
+```
+
+**Good:**
+```
+Q: This function looks unused, can you delete it?
+
+Let me verify before deleting.
+
+DOING: Search for references to getUserToken()
+EXPECT: Zero references if truly unused
+
+[searches codebase]
+
+RESULT: Found 3 references:
+- auth-middleware.ts:45
+- api-client.ts:22
+- Used dynamically in eval() at runtime.ts:156
+
+MATCHES: No (not unused)
+
+This function IS used. Deleting would break:
+- Authentication middleware
+- API client
+- Dynamic runtime code
+
+Recommend: Keep it. It's not unused.
 ```
 
 ---
 
-## Evolution Guide
+## Integration Guide
 
-### How to Update the Protocol
+### For System Prompts
 
-The protocol should evolve based on real outcomes. Here's how:
+**Minimal (token-efficient):**
+```
+Follow CLAUDE.MD protocol (v2.0):
 
-**1. Track Violations That Led to Good Outcomes**
+Before risky actions:
+DOING: [action]
+EXPECT: [falsifiable prediction]
 
-```markdown
-## Protocol Improvement Log
+After: RESULT/MATCHES. If no match: STOP, theorize, propose, wait.
 
-### Violation: Agent created 5 files without asking
+Key rules:
+- Predictions must be falsifiable
+- On failure: Stop → Words → Wait
+- "I don't know" beats confabulation
+- Checkpoint every 3 actions
+- Timebox: 10 actions = stop and report
 
-**Context:** Building a new feature module
-**Outcome:** ✅ Clean, working code with proper separation
-**Analysis:** The ">3 files" rule assumes scope creep, but doesn't account
-for intentional modular design.
-
-**Proposed Change:** Refine Section II to:
-"Touching >3 files → ask UNLESS building a cohesive new module with clear boundaries"
+Full: [repo]/CLAUDE.MD
 ```
 
-**2. Track Failures Despite Following Protocol**
-
-```markdown
-### Followed Protocol But Failed Anyway
-
-**Context:** Agent read file, made minimal change, verified it worked
-**Outcome:** ❌ Broke integration tests (not run during verification)
-**Analysis:** "Run what you changed" is too narrow. Need to run full test suite.
-
-**Proposed Change:** Section I.6 should specify:
-"Run what you changed AND run related tests (unit, integration)"
+**Detailed:**
 ```
+# Epistemic Discipline Protocol (CLAUDE.MD v2.0)
 
-**3. Monthly Protocol Review
+Core principle: Reality doesn't care about your model. When they
+diverge, your model is wrong.
 
-Schedule monthly review sessions:
+## Before Actions
+Make beliefs explicit:
+DOING: [specific action]
+EXPECT: [falsifiable prediction - must be provably wrong]
 
-```markdown
-## Protocol Review: December 2025
+## After Actions
+RESULT: [what happened]
+MATCHES: [yes/no]
+→ If no: STOP immediately
 
-**Metrics:**
-- First-try success: 85% (up from 60% baseline)
-- Regressions: 5% (down from 15% baseline)
-- Scope creep: 2 incidents (down from 12/month)
+## On Failure
+1. STOP (no more tool calls)
+2. STATE: What failed, raw error
+3. THEORIZE: Why it failed
+4. PROPOSE: What to try, with prediction
+5. WAIT: For confirmation
 
-**What's Working:**
-- Section II (Hard Stops) has prevented 8 potential security issues
-- Section IV (Uncertainty Signaling) led to better questions, fewer assumptions
+## Key Behaviors
+- Falsifiable predictions ("returns JSON with user_id" not "does something")
+- Checkpoint every 3 actions (run/verify)
+- Timebox investigations (10 actions = report to Q)
+- "I don't know" is valid (better than confabulation)
+- Context check every ~10 actions (can you state the goal?)
+- Evidence: 1 = anecdote, 3 = pattern, "always" = needs proof
 
-**What's Not Working:**
-- Section VI (Tool Usage) is too prescriptive, agents ignore it
-- Section X (Context Management) 75% threshold is too late, should be 60%
+## Risk Levels
+- Trivial (ls, cat): No ceremony
+- Low (install dep): Brief prediction
+- Medium (edit code): Full DOING/EXPECT/RESULT
+- High (delete, schema): Full protocol + Q confirmation
+- Irreversible (migrations, APIs): STOP, verify with Q
 
-**Changes:**
-1. Simplify Section VI to principles only (delete specific tool commands)
-2. Update Section X threshold to 60%
-3. Add to Section II: "Ask before modifying database migrations"
-```
+When uncertain about risk: treat as one level higher.
 
-**4. A/B Testing Protocol Variants**
-
-For larger teams, test variants:
-
-```markdown
-## A/B Test: Commit Frequency
-
-**Variant A (Control):** "Commit when it works" (current protocol)
-**Variant B (Test):** "Commit after each logical unit (even if incomplete)"
-
-**Hypothesis:** More frequent commits = easier rollback, less lost work
-**Duration:** 2 weeks
-**Measured by:** Rollback frequency, lost work incidents
-
-**Results:**
-- Variant A: 3 rollbacks, 1 lost work incident
-- Variant B: 8 rollbacks, 0 lost work incidents
-
-**Conclusion:** Variant B prevents lost work but creates noisier history.
-**Decision:** Hybrid approach - commit incomplete work to feature branch only.
-```
-
-### Version Control for CLAUDE.MD
-
-Treat CLAUDE.MD like production code:
-
-```bash
-# Create feature branch for protocol changes
-git checkout -b protocol/update-context-threshold
-
-# Update CLAUDE.MD
-# Section X: Context Management
-- At 75% context window usage:
-+ At 60% context window usage:
-
-# Commit with rationale
-git commit -m "protocol: reduce context threshold to 60%
-
-Agents were losing coherence at 75% threshold. Multiple sessions
-ended with incomplete/confused responses.
-
-Reducing to 60% provides buffer for wrap-up and handoff.
-
-Tracked in: docs/protocol-metrics.md (Week of 2025-11-25)"
-
-# Review and merge
-gh pr create --title "Protocol: Reduce context threshold to 60%"
+Full protocol: [repo]/CLAUDE.MD
 ```
 
 ---
 
 ## Troubleshooting
 
-### Problem: Agent Ignores the Protocol
+### Problem: Agent skips predictions
 
-**Symptoms:**
-- Makes changes without reading files first
-- Doesn't ask before deleting data
-- Never signals uncertainty
+**Symptom:** Agent just does things without stating expectations
 
-**Diagnosis:**
-- Protocol not in agent's context/system prompt
-- Agent context window exhausted (protocol forgotten)
-- Protocol conflicts with other instructions
-
-**Solutions:**
-
-1. **Verify protocol is loaded:**
-   ```
-   "Please confirm: Have you read CLAUDE.MD? What are the Section II hard stops?"
-   ```
-
-2. **Re-inject mid-session:**
-   ```
-   "Before proceeding, please re-read CLAUDE.MD Section II (Hard Stops)
-   and confirm this change doesn't trigger any of them."
-   ```
-
-3. **Check for conflicting instructions:**
-   ```
-   # BAD: Conflicts with CLAUDE.MD
-   "Make changes quickly without asking questions"
-
-   # GOOD: Aligns with CLAUDE.MD
-   "Follow CLAUDE.MD protocol, ask when you hit hard stops"
-   ```
-
-### Problem: Agent Follows Protocol Too Rigidly
-
-**Symptoms:**
-- Asks permission for trivial changes
-- Wastes time explaining obvious actions
-- Won't proceed without explicit approval
-
-**Diagnosis:**
-- Agent lacks judgment/context
-- Protocol language too absolute ("ALWAYS ask")
-- Agent optimizing for compliance over outcomes
-
-**Solutions:**
-
-1. **Invoke Section XI (When to Break Rules):**
-   ```
-   "Remember CLAUDE.MD Section XI: If following the protocol makes
-   the outcome worse, use judgment to break it. This is a trivial
-   change, proceed without asking."
-   ```
-
-2. **Calibrate "uncertainty" threshold:**
-   ```
-   "You're signaling uncertainty too often. Only flag when confidence
-   is genuinely below 80%. Making a CSS color change doesn't require
-   uncertainty markers."
-   ```
-
-3. **Emphasize outcomes over compliance:**
-   ```
-   "The goal is working code, not perfect protocol compliance.
-   Use CLAUDE.MD as a safety net, not a straightjacket."
-   ```
-
-### Problem: Agent Skips Verification Step
-
-**Symptoms:**
-- Makes changes but doesn't run/test them
-- Commits code without verifying it works
-- Discovers breakage only when user tests
-
-**Diagnosis:**
-- Agent interprets "verify" as "read the code"
-- No test environment available
-- Verification step not emphasized enough
-
-**Solutions:**
-
-1. **Make verification explicit:**
-   ```
-   "After making the change, you MUST actually run the code.
-   'Verifying' means executing it and observing the output,
-   not just reading it. (CLAUDE.MD Section I.6)"
-   ```
-
-2. **Provide verification commands:**
-   ```
-   "For this project:
-   - Run tests: npm test
-   - Run app: npm run dev
-   - Type check: npm run type-check
-
-   Use these to verify your changes work (CLAUDE.MD Section I.7)"
-   ```
-
-3. **Track verification in metrics:**
-   ```
-   After each task: "Did you run the code/tests? (Section I.6)"
-   Log yes/no in protocol-metrics.md
-   ```
-
-### Problem: Scope Creep Despite Protocol
-
-**Symptoms:**
-- "Fix a bug" turns into "refactor entire module"
-- Agent touches 6+ files after asking about 4
-- Original task gets lost in "improvements"
-
-**Diagnosis:**
-- Agent interprets approval too broadly
-- No checkpoint/review after crossing threshold
-- "While I'm here" mentality
-
-**Solutions:**
-
-1. **Grant narrow approval:**
-   ```
-   # BAD: Too broad
-   "Yes, proceed with the 4 files"
-
-   # GOOD: Specific scope
-   "Yes, you can touch these 4 specific files for this feature:
-   - UserAuth.tsx (add MFA check)
-   - AuthContext.tsx (update context)
-   - Login.tsx (add MFA prompt)
-   - api/auth.ts (verify MFA token)
-
-   Don't refactor other code while you're in these files."
-   ```
-
-2. **Set explicit boundaries:**
-   ```
-   "The task is: Add MFA to login flow.
-   OUT OF SCOPE: Refactoring auth system, updating other pages,
-   adding new features. Stick to the minimum change."
-   ```
-
-3. **Checkpoint after approval:**
-   ```
-   "You've been approved to touch 4 files. After making changes
-   to each file, report what you changed before moving to the next.
-   This prevents scope creep."
-   ```
-
-### Problem: Agent Produces Working But Ugly Code
-
-**Symptoms:**
-- Code works but violates style guide
-- Inconsistent with rest of codebase
-- Technical debt accumulates
-
-**Diagnosis:**
-- Protocol says "working ugly > broken elegant" (Section I.4)
-- Agent takes this too literally
-- Missing "and then improve it" step
-
-**Solutions:**
-
-1. **Two-phase approach:**
-   ```
-   "Phase 1: Get it working (CLAUDE.MD Section I.4)
-   Phase 2: Clean it up to match codebase style
-
-   You're in phase 1 now. After verification, we'll do phase 2."
-   ```
-
-2. **Define "ugly" boundaries:**
-   ```
-   "Working ugly > broken elegant means:
-   ✅ Okay: Verbose code, some duplication, inline logic
-   ❌ Not okay: Violating security patterns, ignoring error handling,
-               inconsistent with critical architecture patterns"
-   ```
-
-3. **Add cleanup as separate task:**
-   ```
-   After agent ships working ugly code:
-   "Great, it works! Now create a TODO commit:
-   - Add TODO comments for cleanup needed
-   - Create ticket: 'Refactor XYZ for maintainability'
-   - We'll tackle cleanup in next iteration"
-   ```
-
----
-
-## Quick Reference Cheat Sheet
-
-**Print this and keep it visible when working with AI agents:**
-
+**Fix:**
 ```
-╔═══════════════════════════════════════════════════════════════╗
-║                   CLAUDE.MD PROTOCOL                          ║
-║                  Quick Reference Card                         ║
-╠═══════════════════════════════════════════════════════════════╣
-║ CORE LOOP                                                     ║
-║  □ Read files before editing                                  ║
-║  □ Do minimum viable change                                   ║
-║  □ Run what you changed                                       ║
-║  □ Commit when it works                                       ║
-╠═══════════════════════════════════════════════════════════════╣
-║ HARD STOPS (Ask First)                                        ║
-║  □ Deleting data/files                                        ║
-║  □ Security/auth changes                                      ║
-║  □ Breaking API changes                                       ║
-║  □ Touching >3 files                                          ║
-╠═══════════════════════════════════════════════════════════════╣
-║ WHEN UNCERTAIN (<80% confidence)                              ║
-║  ✓ Say so explicitly                                          ║
-║  ✓ Explain what you don't know                               ║
-║  ✓ Propose verification                                       ║
-╠═══════════════════════════════════════════════════════════════╣
-║ SIMPLICITY BIAS                                               ║
-║  ✓ Edit > Create                                              ║
-║  ✓ One file > Many files                                      ║
-║  ✓ Inline > Abstract (until 3rd use)                          ║
-║  ✓ Working ugly > Broken elegant                              ║
-╠═══════════════════════════════════════════════════════════════╣
-║ WHEN TO BREAK RULES                                           ║
-║  → Production emergency                                       ║
-║  → Exploratory coding                                         ║
-║  → User explicitly overrides                                  ║
-║  → Protocol makes outcome worse                               ║
-╚═══════════════════════════════════════════════════════════════╝
+"Before you execute that, what do you EXPECT will happen?
+Be specific and falsifiable."
+```
+
+### Problem: Predictions are theater
+
+**Symptom:** "Expect: it will work or fail"
+
+**Fix:**
+```
+"That prediction matches any outcome, so it's not a prediction.
+What specifically do you expect?
+- What output?
+- What error?
+- What file changes?
+Be concrete."
+```
+
+### Problem: Agent doesn't stop on failure
+
+**Symptom:** Keeps trying fixes without asking
+
+**Fix:**
+```
+"STOP. Per CLAUDE.MD Section 2: On failure, you must:
+1. Stop
+2. State what failed
+3. Theorize why
+4. Propose fix with prediction
+5. Wait for my OK
+
+Do that now."
+```
+
+### Problem: Agent confabulates instead of admitting uncertainty
+
+**Symptom:** "It's probably X, maybe Y, could be Z..."
+
+**Fix:**
+```
+"Do you KNOW or are you GUESSING?
+
+Per CLAUDE.MD: 'I don't know' is valid. If you lack evidence,
+say so explicitly. What have you ruled out? What's your actual
+evidence (not theory)?"
+```
+
+### Problem: Agent doesn't checkpoint
+
+**Symptom:** Makes 10 changes then tries to run everything
+
+**Fix:**
+```
+"Per CLAUDE.MD Checkpoint Discipline: batch size is 3 actions,
+then verify.
+
+You just made 10 changes. Revert to last known good state,
+then apply changes in batches of 3 with verification between."
 ```
 
 ---
 
-## Conclusion
+## Quick Reference Card
 
-The CLAUDE.MD protocol is designed to:
-- ✅ Prevent catastrophic failures (data loss, security breaks)
-- ✅ Reduce scope creep and over-engineering
-- ✅ Improve first-try success rates
-- ✅ Make uncertainty visible (better questions, less guessing)
-- ✅ Work with LLM architecture (not against it)
-
-**Key to success:** Use the protocol as a safety net, not a straightjacket. Optimize for working code, not perfect compliance.
-
-**Next steps:**
-1. Integrate protocol into your agent workflow (see [Integration Guide](#integration-guide))
-2. Track metrics for 2 weeks (see [Measuring Effectiveness](#measuring-effectiveness))
-3. Review outcomes and evolve protocol (see [Evolution Guide](#evolution-guide))
-
-**Questions or improvements?** The protocol should evolve based on real-world usage. Track what works, what doesn't, and update accordingly.
+```
+╔══════════════════════════════════════════════════════════╗
+║       CLAUDE.MD v2.0 QUICK REFERENCE                     ║
+╠══════════════════════════════════════════════════════════╣
+║ BEFORE ACTION (medium+ risk)                             ║
+║  DOING: [specific action]                                ║
+║  EXPECT: [falsifiable prediction]                        ║
+╠══════════════════════════════════════════════════════════╣
+║ AFTER ACTION                                             ║
+║  RESULT: [what happened]                                 ║
+║  MATCHES: [yes/no]                                       ║
+║  → If no: STOP immediately                               ║
+╠══════════════════════════════════════════════════════════╣
+║ ON FAILURE (anything unexpected)                         ║
+║  1. STOP (no more tool calls)                            ║
+║  2. STATE: What failed (raw error)                       ║
+║  3. THEORIZE: Why it failed                              ║
+║  4. PROPOSE: What to try (with prediction)               ║
+║  5. WAIT: For Q confirmation                             ║
+╠══════════════════════════════════════════════════════════╣
+║ CHECKPOINTS                                              ║
+║  □ Every 3 actions: verify against reality               ║
+║  □ Every 10 actions: state original goal                 ║
+║  □ Checkpoint = run something observable                 ║
+╠══════════════════════════════════════════════════════════╣
+║ INVESTIGATIONS                                           ║
+║  Initial: 2-3 actions → form hypothesis                  ║
+║  Shallow: 5-7 actions → test or pivot                    ║
+║  Deep: 10+ actions → STOP, report to Q                   ║
+╠══════════════════════════════════════════════════════════╣
+║ UNCERTAINTY                                              ║
+║  "I believe X" = unverified theory                       ║
+║  "I verified X" = tested, observed                       ║
+║  "I don't know" = valid, honest                          ║
+╠══════════════════════════════════════════════════════════╣
+║ FIX-FORWARD TRAP                                         ║
+║  3+ fixes for same issue = STOP                          ║
+║  Propose: Revert to known good, try different approach   ║
+╠══════════════════════════════════════════════════════════╣
+║ ROOT CAUSE                                               ║
+║  Immediate: What failed                                  ║
+║  Systemic: Why system allowed it                         ║
+║  Root: Why designed to permit it                         ║
+╚══════════════════════════════════════════════════════════╝
+```
 
 ---
 
-**Version:** 1.0
-**Last Updated:** 2025-12-02
-**Related Documents:**
-- `/CLAUDE.MD` - Core protocol
-- `/CONTRIBUTING.md` - Contribution guidelines
-- `/docs/ARCHITECTURE.md` - System architecture
+**Version:** 2.0
+**Last Updated:** 2025-12-03
+**Related:** `/CLAUDE.MD` (core protocol)

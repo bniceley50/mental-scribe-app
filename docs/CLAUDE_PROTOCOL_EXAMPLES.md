@@ -1,1090 +1,835 @@
-# CLAUDE.MD Protocol - Code Examples
+# CLAUDE.MD Protocol v2.0 - Real Code Examples
 
-**Real-world scenarios showing protocol in action**
+**Epistemic discipline in practice**
 
-This document provides concrete code examples of the CLAUDE.MD protocol applied to real development tasks.
+This document shows the prediction-driven protocol applied to real development scenarios.
 
 ---
 
 ## Table of Contents
 
-1. [Bug Fixes](#bug-fixes)
+1. [Bug Fixes with Predictions](#bug-fixes-with-predictions)
 2. [Feature Development](#feature-development)
-3. [Refactoring](#refactoring)
-4. [Security Changes](#security-changes)
-5. [Emergency Fixes](#emergency-fixes)
-6. [Architecture Decisions](#architecture-decisions)
+3. [Investigation & Debugging](#investigation--debugging)
+4. [Handling Uncertainty](#handling-uncertainty)
+5. [The Fix-Forward Trap](#the-fix-forward-trap)
+6. [Checkpoint Discipline](#checkpoint-discipline)
 
 ---
 
-## Bug Fixes
+## Bug Fixes with Predictions
 
-### Example 1: Null Pointer Exception
+### Example 1: TypeError - Null Reference
 
-**Task:** "Fix the crash when user profile has no avatar"
+**Task:** "App crashes on user profile page"
 
-#### ❌ Without Protocol
-
-```typescript
-// Agent makes changes without reading the file first
-// Guesses at the implementation
-
-// UserProfile.tsx
-function UserAvatar({ user }) {
-  // Agent assumes the structure and adds a check
-  const avatarUrl = user.profile.avatar || '/default-avatar.png';
-
-  return <img src={avatarUrl} alt={user.name} />;
-}
-
-// Result: Still crashes!
-// Reason: Didn't verify that `user.profile` exists
-// Didn't run the code to test
-```
-
-#### ✅ With Protocol
+#### Without Protocol (Guessing)
 
 ```
-Agent: "Following CLAUDE.MD Section I, I'll read UserProfile.tsx first."
+Agent: I'll fix the crash.
+
+[edits UserProfile.tsx without reading error]
+[adds random null checks]
+[doesn't test]
+
+Agent: Fixed! The crash should be gone now.
+[User reports it still crashes]
+```
+
+#### With Protocol (Reality-Testing)
+
+```
+Agent: Let me start by reading the actual error.
+
+DOING: Check browser console / error logs
+EXPECT: Stack trace showing which line crashes
+
+[reads logs]
+
+RESULT:
+Error: Cannot read property 'avatar' of undefined
+at UserProfile.tsx:67
+
+MATCHES: Yes (found the error)
+
+---
+
+Reading UserProfile.tsx:67...
 
 [reads file]
 
-Agent: "I found the issue at line 23. The code assumes user.profile exists:
-  const avatarUrl = user.profile.avatar || '/default-avatar.png';
+Line 67: return <Avatar src={user.profile.avatar} />
 
-However, user.profile can be null for new accounts.
+Theory: user.profile is undefined for some users.
 
-Fix (Section III - simplicity bias, one file change):
-```
+DOING: Search codebase for how user.profile is populated
+EXPECT: Find where profile is created, might be optional
+
+[searches]
+
+RESULT: user.profile can be null for new users (docs/API.md confirms)
+MATCHES: My theory was correct
+
+---
+
+DOING: Add null check with fallback avatar
+EXPECT: Component renders without crash, shows default avatar when profile is null
+
+Code change:
 ```typescript
-// UserProfile.tsx - Line 23
-- const avatarUrl = user.profile.avatar || '/default-avatar.png';
-+ const avatarUrl = user.profile?.avatar || '/default-avatar.png';
-```
+-return <Avatar src={user.profile.avatar} />
++return <Avatar src={user.profile?.avatar ?? '/default-avatar.png'} />
 ```
 
-Agent: "Verifying the fix works (Section I.6):"
+[applies change]
 
-[runs component with test data]
+---
 
-Agent: "✓ Component renders with avatar
-✓ Component renders with null profile
-✓ No console errors
+DOING: Run app with user who has no profile
+EXPECT: No crash, default avatar displays
 
-Committing (Section I.8):"
+[tests with test account]
 
-[commits with message: "fix: handle null user profile in UserAvatar"]
+RESULT: ✓ No crash, shows default avatar
+MATCHES: Yes
+
+Committing fix.
 ```
 
-**What the protocol prevented:**
-- Hallucinating code structure
-- Incomplete fix (missing other null checks)
-- Not verifying the fix actually works
+**Key differences:**
+- ✅ Read error first (not guessing)
+- ✅ Made prediction about cause
+- ✅ Verified theory before fixing
+- ✅ Tested fix against specific expectation
+- ✅ Reality confirmed model at each step
 
 ---
 
 ### Example 2: Performance Issue
 
-**Task:** "The client list page is slow, optimize it"
+**Task:** "Dashboard is slow to load"
 
-#### ❌ Without Protocol
-
-```typescript
-// Agent immediately starts "optimizing" without understanding the problem
-
-// ClientsList.tsx
-- const clients = useQuery('clients', fetchClients);
-+ const clients = useQuery('clients', fetchClients, {
-+   staleTime: Infinity,
-+   cacheTime: Infinity,
-+ });
-
-// Result: Data never refreshes, shows stale information
-// Agent also refactored the entire component (scope creep)
-// Added React.memo, useMemo, useCallback everywhere (over-engineering)
-```
-
-#### ✅ With Protocol
+#### Without Protocol
 
 ```
-Agent: "Before optimizing, I need to understand the actual problem (Section IV - uncertainty).
+Agent: I'll optimize it.
 
-**I'm uncertain (<80% confidence) about:**
-- What's actually slow? (initial load, scrolling, search?)
-- How slow is it? (1s vs 10s makes different solutions appropriate)
-- What's the data size? (100 clients vs 10,000 clients)
+[adds React.memo everywhere]
+[adds useMemo to all functions]
+[adds useCallback to all callbacks]
 
-**How to verify (Section IV):**
-1. Profile the page with React DevTools
-2. Check network tab for API call timing
-3. Measure render time with different data sizes
+Agent: Optimized! Should be faster now.
+[User reports it's still slow]
+```
 
-Should I proceed with profiling first, or do you have specific
-performance metrics I should target?"
+#### With Protocol
+
+```
+Agent: Before optimizing, I need to know what's actually slow.
+
+DOING: Profile Dashboard component with React DevTools
+EXPECT: Profiler shows which component/operation takes most time
+
+[profiles]
+
+RESULT:
+- Initial render: 4200ms
+- ClientList component: 4000ms (95% of time)
+- Rendering 500 ClientCard components
+- Each ClientCard: ~8ms
+
+MATCHES: Yes (found bottleneck)
 
 ---
 
-User: "It takes 5 seconds to load, there are 500 clients"
+Theory: Rendering 500 cards without virtualization is the issue.
 
-Agent: "Thanks! Let me read the code and profile it (Section I.1):"
+DOING: Check if all 500 cards are visible at once
+EXPECT: Only ~10 cards fit in viewport
 
-[reads ClientsList.tsx]
-[profiles with DevTools]
+[checks UI]
 
-Agent: "Found the issue:
-- API call: 200ms (not the problem)
-- Rendering 500 ClientCard components: 4800ms (the problem)
-- Each ClientCard has an expensive avatar image processing
+RESULT: Viewport shows 8 cards, other 492 are off-screen but still rendered
+MATCHES: Yes
 
-**Solution (Section V - progressive disclosure, simplest approach first):**
-Only render visible clients using virtualization.
+---
 
-This requires adding react-window library and modifying ClientsList.tsx.
+DOING: Add react-window virtualization to ClientList
+EXPECT: Only visible cards render, load time < 500ms
 
-That's 1 file + 1 dependency (Section III).
-
-Proceeding:
-```
+Code change:
 ```typescript
-// ClientsList.tsx
 import { FixedSizeList } from 'react-window';
 
-- return (
--   <div>
--     {clients.map(client => <ClientCard key={client.id} client={client} />)}
--   </div>
-- );
-+ return (
-+   <FixedSizeList
-+     height={600}
-+     itemCount={clients.length}
-+     itemSize={80}
-+     width="100%"
-+   >
-+     {({ index, style }) => (
-+       <div style={style}>
-+         <ClientCard client={clients[index]} />
-+       </div>
-+     )}
-+   </FixedSizeList>
-+ );
-```
+-{clients.map(client => <ClientCard key={client.id} client={client} />)}
++<FixedSizeList
++  height={600}
++  itemCount={clients.length}
++  itemSize={80}
++>
++  {({ index, style }) => (
++    <div style={style}>
++      <ClientCard client={clients[index]} />
++    </div>
++  )}
++</FixedSizeList>
 ```
 
-Agent: "Verifying (Section I.6):"
+[applies change]
 
-[runs page with 500 clients]
+---
 
-Agent: "✓ Page loads in 300ms (was 5000ms)
-✓ Smooth scrolling
-✓ All clients accessible
+DOING: Re-profile Dashboard with 500 clients
+EXPECT: Load time < 500ms, smooth scrolling
 
-Committing (Section I.8)."
+[profiles again]
+
+RESULT:
+- Initial render: 320ms
+- Smooth scrolling
+- Only renders visible cards + buffer
+
+MATCHES: Yes (13x faster)
+
+Committing optimization.
 ```
 
-**What the protocol prevented:**
-- Premature optimization without diagnosis
-- Over-engineering (memo-ing everything)
-- Guessing at the solution
-- Not measuring actual improvement
+**Key differences:**
+- ✅ Measured before optimizing
+- ✅ Found root cause (not guessing)
+- ✅ Predictions were specific and measurable
+- ✅ Verified improvement with actual metrics
 
 ---
 
 ## Feature Development
 
-### Example 3: Adding Search Functionality
+### Example 3: Adding Search (Scope Management)
 
-**Task:** "Add search to the clients list"
+**Task:** "Add search to clients list"
 
-#### ❌ Without Protocol
+#### Without Protocol
 
+```
+[Creates 8 new files]
+[Builds entire search framework]
+[Hours later, massive PR]
+[Never asked about scope]
+```
+
+#### With Protocol
+
+```
+Agent: Let me scope this feature first.
+
+Possible approaches:
+
+1. Client-side filter (minimal)
+   - Add input field
+   - Filter existing array
+   - 1 file modified
+
+2. Server-side search (moderate)
+   - New API endpoint
+   - Search UI component
+   - ~3 files modified
+
+3. Full-featured search (extensive)
+   - Debounced search
+   - Filter by multiple fields
+   - Highlight matches
+   - Search history
+   - ~5+ files
+
+Per CLAUDE.MD Risk-Tiered Ceremony:
+- Option 1: Low risk, go ahead
+- Option 2: Medium risk (at 3-file boundary)
+- Option 3: High risk, need Q's confirmation
+
+DOING: Start with Option 1 (progressive disclosure)
+EXPECT: Simple search works, we can enhance if needed
+
+Code change (ClientsList.tsx):
 ```typescript
-// Agent immediately creates multiple new files and abstractions
-
-// NEW FILE: src/components/SearchBar.tsx (200 lines)
-// NEW FILE: src/hooks/useSearch.ts (150 lines)
-// NEW FILE: src/hooks/useDebounce.ts (50 lines)
-// NEW FILE: src/utils/searchFilters.ts (300 lines)
-// NEW FILE: src/types/search.ts (100 lines)
-// MODIFIED: ClientsList.tsx (refactored to use new architecture)
-// MODIFIED: ClientCard.tsx (added highlight matching)
-// MODIFIED: api/clients.ts (new search endpoint)
-
-// Result: 5 new files, 3 modified files (8 total)
-// Didn't ask (Section II: >3 files is hard stop)
-// Massive scope creep for "add search"
-```
-
-#### ✅ With Protocol
-
-```
-Agent: "Let me plan this feature before starting (Section X - scope management):
-
-**Minimal viable search (Option A):**
-- Add <input> to ClientsList.tsx
-- Filter existing client array on client-side
-- 1 file change
-
-**Backend search with new UI (Option B):**
-- New SearchBar component
-- New API endpoint
-- Update ClientsList to integrate
-- 3 files (at the Section II threshold)
-
-**Full-featured search (Option C):**
-- New SearchBar with filters (name, status, program)
-- Backend search endpoint
-- Debounced search
-- Highlight matching results
-- 5+ files (Section II hard stop - need approval)
-
-Section V (progressive disclosure) says: start simple, only complexify if needed.
-
-Proceeding with Option A (simplest approach):
-```
-```typescript
-// ClientsList.tsx
-function ClientsList() {
-  const { data: clients } = useClients();
-+ const [searchQuery, setSearchQuery] = useState('');
++const [searchQuery, setSearchQuery] = useState('');
 +
-+ const filteredClients = clients?.filter(client =>
-+   client.name.toLowerCase().includes(searchQuery.toLowerCase())
-+ ) ?? [];
++const filteredClients = clients.filter(client =>
++  client.name.toLowerCase().includes(searchQuery.toLowerCase())
++);
 
-  return (
-    <div>
-+     <input
-+       type="text"
-+       placeholder="Search clients..."
-+       value={searchQuery}
-+       onChange={(e) => setSearchQuery(e.target.value)}
-+       className="mb-4 px-4 py-2 border rounded"
-+     />
--     {clients?.map(client => ...)}
-+     {filteredClients.map(client => ...)}
-    </div>
-  );
-}
-```
+ return (
+   <div>
++    <input
++      value={searchQuery}
++      onChange={(e) => setSearchQuery(e.target.value)}
++      placeholder="Search clients..."
++    />
+-    {clients.map(client => ...)}
++    {filteredClients.map(client => ...)}
+   </div>
+ );
 ```
 
-Agent: "Verifying (Section I.6):"
-
-[runs the page]
-
-Agent: "✓ Search filters clients instantly
-✓ Case-insensitive matching works
-✓ No clients = shows empty state
-
-This solves the requirement with 1 file change (Section III).
-
-If you need more advanced features (backend search, filters, debounce),
-we can add them incrementally (Section V)."
-```
-
-**What the protocol prevented:**
-- Massive over-engineering for simple requirement
-- Creating unnecessary abstractions on first use (Section I.5: inline until 3rd use)
-- Scope creep without approval (Section II: >3 files)
+[applies change]
 
 ---
 
-### Example 4: Scope Expansion (Hard Stop Triggered)
+DOING: Test search with various queries
+EXPECT: Instant filtering, case-insensitive, handles empty results
 
-**Task:** "Add export to CSV button for clients"
+[tests]
 
-#### ❌ Without Protocol
+RESULT:
+✓ "john" finds John Smith
+✓ "SMITH" finds John Smith (case-insensitive)
+✓ "xyz" shows "No clients found"
+✓ Clear input shows all clients
 
-```typescript
-// Agent silently expands scope
+MATCHES: Yes
 
-// Created entire export architecture:
-// - src/services/ExportService.ts (generic export framework)
-// - src/components/ExportButton.tsx (reusable export component)
-// - src/components/ExportModal.tsx (export options UI)
-// - src/utils/csvFormatter.ts (CSV utilities)
-// - src/utils/excelFormatter.ts (also added Excel, why not?)
-// - src/utils/pdfFormatter.ts (and PDF!)
-// - Modified: ClientsList.tsx, ClientsToolbar.tsx, etc.
+Committing minimal search implementation.
 
-// Result: 9+ files changed, massive scope creep
-// No hard stop triggered (should have asked at 3 files)
+Note: If you need server-side search or advanced features, we
+can enhance incrementally (progressive disclosure).
 ```
 
-#### ✅ With Protocol
-
-```
-Agent: "Planning the implementation (Section X):
-
-**Minimal approach:**
-- Add button to ClientsList.tsx
-- Inline CSV generation function
-- Download using blob URL
-- 1 file change
-
-**Reusable approach:**
-- Create ExportButton component
-- Create csvExport utility
-- Modify ClientsList to use it
-- 3 files (Section II threshold)
-
-Going with minimal approach first (Section V - progressive disclosure):
-```
-```typescript
-// ClientsList.tsx
-function ClientsList() {
-  const { data: clients } = useClients();
-
-+ const exportToCsv = () => {
-+   const csv = [
-+     ['Name', 'Email', 'Status'],
-+     ...clients.map(c => [c.name, c.email, c.status])
-+   ].map(row => row.join(',')).join('\n');
-+
-+   const blob = new Blob([csv], { type: 'text/csv' });
-+   const url = URL.createObjectURL(blob);
-+   const a = document.createElement('a');
-+   a.href = url;
-+   a.download = 'clients.csv';
-+   a.click();
-+ };
-
-  return (
-    <div>
-+     <button onClick={exportToCsv}>Export to CSV</button>
-      {/* ... rest of component */}
-    </div>
-  );
-}
-```
-```
-
-Agent: "Verifying (Section I.6):"
-
-[clicks export button]
-
-Agent: "✓ CSV file downloads
-✓ Contains all clients
-✓ Proper formatting
-
-This solves the requirement with 1 file change (Section III - bias toward simplicity).
-
-Note: The CSV function is inline. If we need to export from other pages,
-we can extract it on the 3rd use (Section I.5)."
+**Key principles:**
+- ✅ Scoped options by complexity
+- ✅ Started with simplest approach
+- ✅ Tested against specific expectations
+- ✅ Noted path for future enhancement
+- ✅ Didn't build features not requested
 
 ---
 
-User: "Can you also add Excel and PDF export?"
+## Investigation & Debugging
 
-Agent: "That would require:
-- ExcelJS library for Excel export
-- jsPDF library for PDF export
-- Modified export button to show format selector
-- Likely extracting to shared utilities
+### Example 4: Timebox Investigation
 
-This expands to 4+ files (Section II hard stop - need approval).
+**Task:** "Tests failing after merge"
 
-Options:
-A) Add only CSV for now (already done)
-B) Add all formats (needs approval, 4-5 files)
-C) Add Excel next, PDF later (incremental)
+#### Without Protocol
 
-Which approach would you prefer?"
+```
+[30 actions of random debugging]
+[Tries everything]
+[Never reports findings]
+[Eventually gives up]
 ```
 
-**What the protocol prevented:**
-- Silent scope expansion
-- Over-engineering on first implementation
-- Creating "generic framework" for single use case
-- Not asking when crossing 3-file threshold
+#### With Protocol
+
+```
+Agent: Investigating test failures.
+
+Action 1: Read test output
+RESULT: 3 tests failing in auth.test.ts
+
+Action 2: Read failing tests
+RESULT: All testing login functionality
+
+Action 3: Run tests locally
+RESULT: Same failures
+
+--- Checkpoint (3 actions) ---
+
+Hypothesis: Login broke in recent merge.
+
+Action 4: Check recent commits
+Action 5: See auth.ts was modified
+Action 6: Read auth.ts changes
+
+--- Checkpoint (6 actions) ---
+
+Theory: validateToken function signature changed.
+
+Action 7: Compare old vs new signature
+Action 8: Check if tests use old signature
+Action 9: Confirm tests use old API
+
+--- Checkpoint (9 actions) ---
+
+Action 10: Check if there's a migration guide
+
+STOP. I've taken 10 actions. Time to report.
+
+Findings:
+- Merge changed validateToken(token) → validateToken(token, options)
+- Tests still use old single-argument form
+- Migration guide exists in PR description (missed in merge)
+
+Theory: Tests need updating to new API.
+
+Evidence:
+- Tested: auth.test.ts uses old API (verified)
+- Tested: auth.ts now requires second argument (verified)
+- Did not test: Whether options parameter is optional
+
+Recommend: Either:
+1. Make options parameter optional (backwards compatible)
+2. Update all test calls to new API
+
+Which approach do you prefer?
+```
+
+**Key behaviors:**
+- ✅ Checkpointed every 3 actions
+- ✅ Stopped at 10 actions to report
+- ✅ Listed findings clearly
+- ✅ Separated evidence from theory
+- ✅ Asked Q for direction
 
 ---
 
-## Refactoring
+### Example 5: "I Don't Know" is Valid
 
-### Example 5: Improving Code Quality
+**Task:** "Why is the build failing in CI but not locally?"
 
-**Task:** "Clean up the messy authentication code"
-
-#### ❌ Without Protocol
-
-```typescript
-// Agent starts massive refactor without understanding requirements
-
-// Touched 15+ files:
-// - Renamed all auth functions (breaking changes!)
-// - Extracted 5 new utility files
-// - Changed authentication flow architecture
-// - Updated all components using auth
-// - Modified API endpoints
-// - Changed database queries
-
-// Result:
-// - Tests failing
-// - Build broken
-// - Lost track of what was changed
-// - Can't easily revert
-// - Broke production (changed API contracts without asking)
-```
-
-#### ✅ With Protocol
+#### Without Protocol (Confabulation)
 
 ```
-Agent: "Before refactoring, I need to understand what 'messy' means (Section IV - uncertainty).
+Agent: It's probably a Node version mismatch. Or maybe it's a cache
+issue. Could be environment variables. Possibly the CI runner is
+out of date. Maybe the package-lock.json is stale. It might be...
 
-**I'm uncertain about:**
-- What specific problems exist? (bugs, performance, readability?)
-- What's the desired end state?
-- Are there tests I need to maintain compatibility with?
-- Is this code actively being modified by others?
+[Makes up 10 theories without evidence]
+```
 
-Let me read the current auth code first (Section I.1):"
+#### With Protocol (Honest Uncertainty)
 
-[reads auth files]
+```
+Agent: Let me gather facts first.
 
-Agent: "I found several issues:
-1. AuthContext.tsx has 500 lines (too large)
-2. Duplicate token validation in 3 places
-3. No error handling for failed logins
-4. Session timeout logic is unclear
+DOING: Read CI logs
+EXPECT: Build error message
 
-**Proposed approach (Section V - progressive disclosure):**
-
-**Phase 1 (Low risk):** Extract duplicate token validation
-- Create validateToken() in src/lib/auth.ts
-- Replace 3 duplicates with function call
-- 4 files touched (Section II hard stop)
-
-Should I proceed with Phase 1, or do you want a different approach?"
+RESULT: "Module not found: 'aws-sdk'"
+MATCHES: Yes
 
 ---
 
-User: "Yes, start with Phase 1"
+DOING: Check if aws-sdk is in package.json
+EXPECT: Should be listed as dependency
 
-Agent: "Proceeding with token validation extraction.
-
-Creating src/lib/auth.ts (new file):
-```
-```typescript
-// src/lib/auth.ts
-export function validateToken(token: string): boolean {
-  if (!token) return false;
-
-  try {
-    const payload = JSON.parse(atob(token.split('.')[1]));
-    return payload.exp * 1000 > Date.now();
-  } catch {
-    return false;
-  }
-}
-```
-```
-
-Replacing duplicates in:
-1. AuthContext.tsx
-2. api/middleware.ts
-3. pages/Login.tsx
-
-```typescript
-// AuthContext.tsx (before)
-- const isValid = (() => {
--   if (!token) return false;
--   try {
--     const payload = JSON.parse(atob(token.split('.')[1]));
--     return payload.exp * 1000 > Date.now();
--   } catch {
--     return false;
--   }
-- })();
-
-// AuthContext.tsx (after)
-+ const isValid = validateToken(token);
-```
-
-[similar changes in other 2 files]
-
-Agent: "Verifying (Section I.6):"
-
-[runs auth flow]
-
-Agent: "✓ Login works
-✓ Token validation works
-✓ Logout works
-✓ All auth tests pass
-
-Changed files: 4 (1 new, 3 modified)
-
-Committing (Section I.8).
-
-**Next phases (if desired):**
-- Phase 2: Split large AuthContext into smaller hooks
-- Phase 3: Add error handling
-- Phase 4: Clarify session timeout logic
-
-Each phase will be a separate, verified commit (Section VII - checkpoint commits)."
-```
-
-**What the protocol prevented:**
-- Massive refactor without clear goals
-- Breaking changes without hard stop
-- No verification between changes
-- Impossible to revert if something breaks
-- Lost track of scope
+RESULT: Not in dependencies or devDependencies
+MATCHES: No (unexpected - why does it work locally?)
 
 ---
 
-## Security Changes
+DOING: Check if aws-sdk is installed locally
+EXPECT: Should be in node_modules
 
-### Example 6: Adding Authentication
-
-**Task:** "Add password reset functionality"
-
-#### ❌ Without Protocol
-
-```typescript
-// Agent implements without security review
-
-// api/reset-password.ts
-export async function POST(req: Request) {
-  const { email } = await req.json();
-
-  // Security issue: No rate limiting
-  // Security issue: Reveals if email exists
-  const user = await db.user.findUnique({ where: { email } });
-  if (!user) {
-    return Response.json({ error: 'Email not found' }, { status: 404 });
-  }
-
-  // Security issue: Predictable reset token
-  const resetToken = Math.random().toString(36);
-
-  // Security issue: No expiration
-  await db.user.update({
-    where: { email },
-    data: { resetToken }
-  });
-
-  // Security issue: Token in email (not hashed)
-  await sendEmail(email, `Reset link: /reset?token=${resetToken}`);
-
-  return Response.json({ success: true });
-}
-
-// Result: Multiple critical security vulnerabilities
-// Agent didn't ask before implementing auth changes (Section II hard stop)
-```
-
-#### ✅ With Protocol
-
-```
-Agent: "This task involves authentication changes (Section II hard stop).
-
-**Security concerns I need to address:**
-- Rate limiting (prevent abuse)
-- Token generation (cryptographically secure?)
-- Token storage (hashed?)
-- Token expiration (how long valid?)
-- Email enumeration (should we reveal if email exists?)
-- Audit logging (track reset attempts?)
-
-**Section IV - I'm uncertain about:**
-- Your security requirements for password reset
-- Compliance requirements (HIPAA, GDPR, etc.)
-- Existing auth architecture patterns
-
-Before implementing, I need approval and clarification (Section II + IV).
-
-**Questions:**
-1. Should reset tokens expire? (recommend: 1 hour)
-2. Should we rate limit reset requests? (recommend: 3 per hour per IP)
-3. Should we hash tokens in database? (recommend: yes)
-4. Should we log reset attempts for security audit? (recommend: yes)
-5. Should we prevent email enumeration? (recommend: yes, same response for all emails)
-
-Once you approve the approach, I'll implement following security best practices."
+RESULT: It exists in node_modules/
+MATCHES: Yes (but how?)
 
 ---
 
-User: "Yes to all 5 questions"
+DOING: Check package-lock.json for aws-sdk
+EXPECT: Might be a transitive dependency
 
-Agent: "Thank you. Implementing password reset with security controls.
-
-This will touch:
-1. api/reset-password.ts (new endpoint)
-2. api/verify-reset.ts (new endpoint)
-3. db/schema.prisma (add reset_token, reset_expires fields)
-4. lib/auth.ts (add secure token generation)
-5. lib/audit.ts (add logging)
-
-5 files (Section II hard stop was already cleared).
-
-**Security checklist (Section XII):**
-```
-```
-- [x] No hardcoded secrets (using env vars)
-- [x] User input validated (email format, token format)
-- [x] Authentication verified (reset must use valid token)
-- [x] Authorization enforced (can only reset own password)
-- [x] Sensitive data encrypted (token hashed with bcrypt)
-- [x] Error messages don't leak info (same response for all emails)
-- [x] Rate limiting exists (3 requests/hour per IP)
-- [x] Audit logs capture activity (all reset attempts logged)
-```
-```
-
-Implementing:
-```
-```typescript
-// api/reset-password.ts
-import { hash } from 'bcrypt';
-import { randomBytes } from 'crypto';
-import { rateLimit } from '@/lib/rateLimit';
-import { auditLog } from '@/lib/audit';
-
-export async function POST(req: Request) {
-  const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
-
-  // Security: Rate limiting
-  const limited = await rateLimit(ip, 'password-reset', 3, 60);
-  if (limited) {
-    return Response.json({ error: 'Too many requests' }, { status: 429 });
-  }
-
-  const { email } = await req.json();
-
-  // Security: Validate email format
-  if (!email?.match(/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/)) {
-    return Response.json({ error: 'Invalid email' }, { status: 400 });
-  }
-
-  // Security: Prevent email enumeration (always same response)
-  const user = await db.user.findUnique({ where: { email } });
-
-  if (user) {
-    // Security: Cryptographically secure token
-    const resetToken = randomBytes(32).toString('hex');
-
-    // Security: Hash token before storing
-    const hashedToken = await hash(resetToken, 10);
-
-    // Security: Token expires in 1 hour
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
-
-    await db.user.update({
-      where: { id: user.id },
-      data: {
-        resetToken: hashedToken,
-        resetExpires: expiresAt
-      }
-    });
-
-    await sendEmail(email, `Reset link: /reset?token=${resetToken}`);
-
-    // Security: Audit log
-    await auditLog({
-      action: 'password_reset_requested',
-      userId: user.id,
-      metadata: { email }
-    });
-  } else {
-    // Security: Log failed attempts
-    await auditLog({
-      action: 'password_reset_failed',
-      metadata: { email, reason: 'user_not_found' }
-    });
-  }
-
-  // Security: Same response regardless of whether user exists
-  return Response.json({
-    message: 'If that email exists, a reset link has been sent'
-  });
-}
-```
-```
-
-Agent: "Verifying (Section I.6 + Section XII):"
-
-[runs security tests]
-
-Agent: "✓ Rate limiting works (4th request blocked)
-✓ Invalid emails rejected
-✓ Tokens are hashed in database
-✓ Tokens expire after 1 hour
-✓ Email enumeration prevented (same response)
-✓ All attempts logged to audit_logs
-
-Security checklist complete (Section XII).
-
-Committing (Section I.8)."
-```
-
-**What the protocol prevented:**
-- Implementing security-sensitive feature without approval (Section II)
-- Multiple critical security vulnerabilities
-- No security review before implementation
-- Missing audit logging
-- Skipping threat modeling
+RESULT: Not in lock file either
+MATCHES: Weird
 
 ---
 
-## Emergency Fixes
+I don't know why this is working locally.
 
-### Example 7: Production Outage
+What I verified:
+✓ aws-sdk is not in package.json
+✓ aws-sdk is not in package-lock.json
+✓ Build fails in CI (clean install)
+✓ Build works locally (existing node_modules)
 
-**Task:** "URGENT: Users can't log in! 500 errors on /api/auth"
+Ruled out:
+✗ Node version (both use 18.x)
+✗ Package manager (both use npm)
 
-#### ❌ Without Protocol
+Hypotheses:
+1. aws-sdk was manually installed (npm install without --save)
+2. aws-sdk came from a since-removed dependency
+3. Global install interfering locally
 
-```typescript
-// Agent follows normal protocol during emergency
-
-Agent: "Following Section I, let me read the auth code first..."
-[reads for 2 minutes]
-
-Agent: "Now let me understand the architecture..."
-[reads more files]
-
-Agent: "I should ask before making changes since this is security-related..."
-[waits for approval]
-
-// Result: Service down for 10+ minutes while agent follows process
-// Lost revenue, angry users
+Want to test #1: Check npm history / .bash_history for manual install.
+Proceed?
 ```
 
-#### ✅ With Protocol
-
-```
-Agent: "PRODUCTION EMERGENCY - invoking Section XI (when to break rules).
-
-Breaking normal protocol:
-- Skipping planning phase
-- Skipping approval for security changes
-- Acting immediately
-
-Diagnosis:
-```
-```bash
-# Check logs
-tail -n 100 /var/log/api.log
-
-# Error: "Environment variable JWT_SECRET is undefined"
-```
-```
-
-Agent: "Root cause: JWT_SECRET missing in production environment.
-
-Immediate fix:
-```
-```bash
-# Verify secret exists in vault
-vault kv get production/secrets/jwt
-
-# Add to production env
-export JWT_SECRET="[value from vault]"
-
-# Restart service
-systemctl restart api-server
-```
-```
-
-Agent: "✓ Service restored (login working)
-✓ Response time normal
-✓ No errors in logs
-
-**Post-mortem (now following protocol again):**
-
-This was an emergency (Section XI), protocol violation justified.
-
-**Preventive measures:**
-1. Add startup check: fail if JWT_SECRET missing
-2. Add to runbook: docs/runbooks/INCIDENT_RESPONSE.md
-3. Create monitoring alert for missing env vars
-4. Add to deployment checklist
-
-Creating follow-up tasks:
-
-```typescript
-// NEW FILE: src/lib/validateEnv.ts
-const requiredEnvVars = [
-  'JWT_SECRET',
-  'DATABASE_URL',
-  'API_KEY'
-];
-
-for (const envVar of requiredEnvVars) {
-  if (!process.env[envVar]) {
-    console.error(`FATAL: Missing required env var: ${envVar}`);
-    process.exit(1);
-  }
-}
-```
-
-Agent: "Committing preventive fixes (Section I.8).
-
-**Incident summary:**
-- Outage duration: 3 minutes (fast response due to Section XI)
-- Root cause: Missing env var
-- Impact: 100% of login attempts failed
-- Prevention: Added env validation at startup
-
-Protocol violation was appropriate for production emergency (Section XI)."
-```
-
-**What the protocol enabled:**
-- Explicit permission to break rules in emergency (Section XI)
-- Clear documentation of why rules were broken
-- Proper follow-up after emergency resolved
-- Learning from incident (add preventive measures)
+**Key behaviors:**
+- ✅ Admitted not knowing
+- ✅ Listed verified facts
+- ✅ Separated observation from theory
+- ✅ Proposed specific hypothesis to test
+- ✅ No confident guessing
 
 ---
 
-## Architecture Decisions
+## The Fix-Forward Trap
 
-### Example 8: State Management Choice
+### Example 6: Recognizing Sunk Cost
 
-**Task:** "Our component state is getting complex, should we add Redux?"
+**Task:** "Add email validation to signup form"
 
-#### ❌ Without Protocol
-
-```typescript
-// Agent immediately installs Redux and refactors everything
-
-npm install redux react-redux @reduxjs/toolkit
-
-// Created:
-// - src/store/index.ts
-// - src/store/slices/userSlice.ts
-// - src/store/slices/clientSlice.ts
-// - src/store/slices/authSlice.ts
-// - src/store/middleware/logger.ts
-// - Refactored 20+ components to use Redux
-
-// Result:
-// - Massive scope creep
-// - Introduced unnecessary complexity
-// - Didn't verify simpler solutions first
-```
-
-#### ✅ With Protocol
+#### Without Protocol (Digging Deeper)
 
 ```
-Agent: "Before adding a new state management library, let me understand
-the actual problem (Section IV - uncertainty).
+Attempt 1: Add regex validation
+RESULT: Doesn't work for some valid emails
 
-**I'm uncertain about:**
-- What specific complexity are you experiencing?
-- Which components share state awkwardly?
-- Have simpler solutions been tried?
-- What's the performance impact of current approach?
+Attempt 2: Try different regex
+RESULT: Now blocks valid emails
 
-Let me read the current state management code (Section I.1):"
+Attempt 3: Use validator library
+RESULT: Validation works but form doesn't submit
 
-[reads components]
+Attempt 4: Debug form submission
+RESULT: Different error now
 
-Agent: "I found:
-- 5 components pass props through 3+ levels (prop drilling)
-- User auth state duplicated in 4 components
-- No performance issues (rendering is fast)
+Attempt 5: Fix that error
+RESULT: New error appears
 
-**Section V (progressive disclosure) - simpler approaches first:**
+Attempt 6: Maybe I need to refactor the form component?
+[Starts major refactor]
 
-**Option A: React Context (built-in, 0 dependencies)**
-- Extract shared state to contexts
-- 3 new files (UserContext, ClientContext, AuthContext)
-- Refactor 5 components to use contexts
-- 8 files total (Section II: need approval for >3)
+Attempt 10: [Completely lost, code is a mess]
+```
 
-**Option B: Zustand (lightweight, 1 small dependency)**
-- Similar to Context but simpler API
-- Better DevTools support
-- Same file count as Option A
+#### With Protocol (Stopping the Bleed)
 
-**Option C: Redux Toolkit (heavy, 3 dependencies)**
-- More boilerplate
-- Useful if we need:
-  - Time-travel debugging
-  - Complex middleware
-  - Server-side rendering
+```
+Attempt 1: Add regex validation
 
-**My recommendation (Section III - simplicity bias):**
-Try Option A (React Context) first. It's built-in, no new dependencies.
+DOING: Add email regex to validate()
+EXPECT: Blocks invalid emails, allows valid ones
 
-If that proves insufficient, upgrade to Zustand.
-Only add Redux if we genuinely need its specific features.
-
-Should I proceed with Option A?"
+RESULT: Blocks "user+tag@example.com" (valid)
+MATCHES: No
 
 ---
 
-User: "Yes, try Context first"
+Attempt 2: Fix regex to allow + symbol
 
-Agent: "Implementing with React Context (Section V - start simple).
+DOING: Update regex to allow +
+EXPECT: Accepts user+tag@example.com
 
-Files to create:
-1. src/contexts/AuthContext.tsx
-2. src/contexts/UserContext.tsx
-3. src/contexts/ClientContext.tsx
+RESULT: Now accepts "invalid@" (not valid)
+MATCHES: No
 
-Files to modify:
-4. App.tsx (add providers)
-5-8. Four components using shared state
+---
 
-8 files total (Section II - approved).
+Attempt 3: Try comprehensive email regex
+
+DOING: Use RFC 5322 regex
+EXPECT: Correctly validates all email formats
+
+RESULT: Validation correct, but form won't submit
+MATCHES: No (new problem)
+
+---
+
+STOP. I'm three attempts deep and each fix creates new issues.
+
+Pattern recognition: I'm in the fix-forward trap.
+
+What happened:
+- Attempt 1: Regex too restrictive
+- Attempt 2: Regex too permissive
+- Attempt 3: Regex correct, but broke form submission
+- Each fix reveals I don't understand the whole system
+
+Root cause: I didn't understand form validation flow before starting.
+
+Recommend: Revert all changes, study form validation architecture,
+then implement properly.
+
+Should I revert to commit [abc123] (before any attempts) and
+restart with proper investigation?
+```
+
+**Key recognition:**
+- ✅ Noticed pattern of escalating failures
+- ✅ Stopped at 3 attempts (protocol threshold)
+- ✅ Admitted not understanding system
+- ✅ Proposed reset instead of continuing
+- ✅ Recognized sunk cost trap
+
+---
+
+## Checkpoint Discipline
+
+### Example 7: Batch Work with Verification
+
+**Task:** "Add dark mode to application"
+
+#### Without Protocol
+
+```
+[Edits 10 files]
+[Changes CSS variables]
+[Updates components]
+[Modifies theme system]
+[Finally runs app]
+[Everything broken, no idea which change caused it]
+```
+
+#### With Protocol
+
+```
+Agent: This will touch multiple files. Checkpointing every 3 actions.
+
+Action 1: Add theme context
+Action 2: Add theme provider to App.tsx
+Action 3: Add toggle button
+
+CHECKPOINT: Test theme toggle
+DOING: Run app and test toggle
+EXPECT: Button appears, click toggles between light/dark
+
+RESULT: ✓ Button appears, toggles state
+MATCHES: Yes
+
+---
+
+Action 4: Add dark mode CSS variables
+Action 5: Update Button component to use theme
+Action 6: Update Card component to use theme
+
+CHECKPOINT: Test themed components
+DOING: Toggle dark mode, observe components
+EXPECT: Button and Card change colors
+
+RESULT: Button changes, Card doesn't
+MATCHES: No
+
+STOP. Card component not responding to theme.
+
+Theory: Card still uses hardcoded colors.
+
+DOING: Check Card.tsx implementation
+EXPECT: Find hardcoded color values
+
+RESULT: Line 34: backgroundColor: '#ffffff' (hardcoded)
+MATCHES: Yes
+
+Fix: Replace with theme variable.
+
+Action 7: Update Card to use theme.background
+
+CHECKPOINT: Retest themed components
+DOING: Toggle dark mode
+EXPECT: Both Button and Card change colors
+
+RESULT: ✓ Both components respond to theme
+MATCHES: Yes
+
+---
+
+Action 8: Update Input component
+Action 9: Update Modal component
+Action 10: Update Header component
+
+CHECKPOINT: Test all themed components
+DOING: Toggle dark mode, verify all components
+EXPECT: All 5 components respond to theme
+
+RESULT: ✓ All components change colors correctly
+MATCHES: Yes
+
+Committing dark mode feature.
+```
+
+**Key behaviors:**
+- ✅ Checkpoint every 3 actions
+- ✅ Caught Card issue early (before more changes)
+- ✅ Fixed immediately instead of accumulating issues
+- ✅ Verified incrementally
+- ✅ Knew exactly what worked at each step
+
+---
+
+## Root Cause Analysis
+
+### Example 8: Beyond Symptoms
+
+**Task:** "Users getting logged out randomly"
+
+#### Symptom-Level Fix (Immediate Cause Only)
+
+```
+Agent: Session timeout is 30 minutes. I'll increase it to 60 minutes.
+
+DOING: Change SESSION_TIMEOUT from 30 to 60
+EXPECT: Users won't get logged out
+
+[Changes constant]
+
+"Fixed!"
+
+[Issue returns - users still logged out randomly]
+```
+
+#### Root Cause Fix (Systemic)
+
+```
+Agent: Before fixing, let me understand the full failure.
+
+DOING: Check logs for logout events
+EXPECT: Pattern showing when logouts happen
+
+RESULT:
+- Logouts happen during activity (not after idle time)
+- Pattern: Logouts occur every ~31 minutes regardless of activity
+- All users affected
+
+MATCHES: Timeout is involved, but activity doesn't reset it
+
+---
+
+Immediate cause: Session expires at 30 minutes
+Symptom: Users logged out while active
+
+But why doesn't activity reset the timer?
+
+DOING: Read session refresh logic
+EXPECT: Find code that refreshes session on activity
+
+RESULT:
+Line 45: refreshSession() function exists
+Line 67: Called on page navigation
+NOT called on: clicks, typing, scrolling
+
+MATCHES: Found the systemic issue
+
+---
+
+Systemic cause: Activity doesn't refresh session timer.
+
+But why was it designed this way?
+
+DOING: Check git history for refreshSession
+EXPECT: Original implementation might show intent
+
+RESULT:
+Commit abc123: "Add refreshSession on navigation"
+Comment: "Refresh session when user changes pages to prevent
+logout during multi-page workflows"
+
+Root cause: Original design assumed navigation = activity,
+didn't account for single-page app behavior.
+
+---
+
+Three-level fix:
+
+1. Immediate: Increase timeout to 60 min (band-aid)
+2. Systemic: Refresh session on any interaction (real fix)
+3. Root: Add activity heartbeat system (prevent recurrence)
+
+Implementing level 2 (systemic) + level 3 (root):
 
 ```typescript
-// src/contexts/AuthContext.tsx
-import { createContext, useContext, useState } from 'react';
+// Add activity listener
+useEffect(() => {
+  const handleActivity = () => refreshSession();
 
-interface AuthContextType {
-  user: User | null;
-  login: (credentials: Credentials) => Promise<void>;
-  logout: () => void;
-  isAuthenticated: boolean;
-}
+  window.addEventListener('click', handleActivity);
+  window.addEventListener('keypress', handleActivity);
+  window.addEventListener('scroll', handleActivity);
 
-const AuthContext = createContext<AuthContextType | null>(null);
-
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState<User | null>(null);
-
-  const login = async (credentials: Credentials) => {
-    const user = await api.login(credentials);
-    setUser(user);
+  return () => {
+    window.removeEventListener('click', handleActivity);
+    window.removeEventListener('keypress', handleActivity);
+    window.removeEventListener('scroll', handleActivity);
   };
-
-  const logout = () => setUser(null);
-
-  return (
-    <AuthContext.Provider value={{
-      user,
-      login,
-      logout,
-      isAuthenticated: !!user
-    }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
-
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) throw new Error('useAuth must be used within AuthProvider');
-  return context;
-};
+}, []);
 ```
 
-[similar implementations for UserContext, ClientContext]
+DOING: Test with 30-min timeout, continuous activity
+EXPECT: Session stays active during usage
 
-Now refactoring components to use contexts:
-```typescript
-// Before (prop drilling)
-function UserProfile({ user, onUpdate, onDelete, authToken, isAdmin }) {
-  return <UserDetails user={user} onUpdate={onUpdate} authToken={authToken} isAdmin={isAdmin} />
-}
+RESULT: ✓ No logouts during 60-min active session
+MATCHES: Yes
 
-function UserDetails({ user, onUpdate, authToken, isAdmin }) {
-  return <UserActions user={user} onUpdate={onUpdate} authToken={authToken} isAdmin={isAdmin} />
-}
-
-function UserActions({ user, onUpdate, authToken, isAdmin }) {
-  // Finally using the props 3 levels deep
-}
-
-// After (context)
-function UserProfile() {
-  return <UserDetails />
-}
-
-function UserDetails() {
-  return <UserActions />
-}
-
-function UserActions() {
-  const { user, updateUser } = useUser();
-  const { isAuthenticated, isAdmin } = useAuth();
-  // Direct access, no prop drilling
-}
+Root cause addressed. System now properly detects activity.
 ```
 
-Agent: "Verifying (Section I.6):"
-
-[runs app]
-
-Agent: "✓ Authentication works
-✓ User state shared across components
-✓ Client state shared across components
-✓ No prop drilling
-✓ Performance unchanged (no unnecessary re-renders)
-✓ All tests pass
-
-Result: Solved the complexity with 0 new dependencies (Section III).
-
-If we later need Redux-specific features, we can migrate incrementally (Section V).
-
-Committing (Section I.8)."
-```
-
-**What the protocol prevented:**
-- Premature optimization (jumping to Redux)
-- Adding unnecessary dependencies (Section III)
-- Not trying simpler solutions first (Section V)
-- Over-engineering for current needs
+**Layers analyzed:**
+- ✅ Immediate: Session expires
+- ✅ Systemic: Activity doesn't refresh
+- ✅ Root: Design didn't account for SPA behavior
+- ✅ Fix prevents recurrence, not just symptoms
 
 ---
 
-## Summary: Key Patterns
+## Key Patterns Summary
 
-### Pattern 1: Read → Understand → Act
+### Pattern: DOING/EXPECT/RESULT
 
-**Always:**
-1. Read the actual code (don't guess)
-2. Understand the problem (ask if unclear)
-3. Choose simplest solution (progressive disclosure)
-4. Verify it works (run/test)
-5. Commit when working (checkpoint)
+```
+DOING: [specific, concrete action]
+EXPECT: [falsifiable, specific prediction]
 
-### Pattern 2: Stop at Boundaries
+[execute]
 
-**Trigger hard stop when:**
-- Touching >3 files
-- Deleting data
-- Changing security/auth
-- Breaking API contracts
+RESULT: [actual outcome]
+MATCHES: [yes/no]
+→ If no: STOP
+```
 
-**Then:** Ask for approval with options
+### Pattern: Stop → Words → Wait
 
-### Pattern 3: Signal Uncertainty
+```
+[Action fails]
 
-**When uncertain (<80% confident):**
-- Say so explicitly
-- Explain what you don't know
-- Propose how to verify
-- Don't guess
+STOP. [Don't continue]
 
-### Pattern 4: Simplicity Wins
+What failed: [raw error]
+Theory: [why it failed]
+Ruled out: [what you checked]
+Propose: [what to try next]
 
-**Prefer:**
-- Edit > Create
-- One file > Many files
-- Inline > Abstract (until 3rd use)
-- Built-in > Library
-- Working ugly > Broken elegant
+Proceed?
+```
 
-### Pattern 5: Break Rules Wisely
+### Pattern: Honest Uncertainty
 
-**Break protocol when:**
-- Production emergency
-- Exploratory coding
-- User explicitly overrides
-- Following protocol makes outcome worse
+```
+I don't know [yet].
 
-**Then:** Document why you broke it
+What I verified: [facts]
+Ruled out: [disproven theories]
+Hypotheses: [untested theories]
+
+Want to test: [specific next step]
+```
+
+### Pattern: Checkpoint Rhythm
+
+```
+Action 1-3: [work]
+CHECKPOINT: [verify against reality]
+
+Action 4-6: [work]
+CHECKPOINT: [verify against reality]
+
+[Repeat]
+```
+
+### Pattern: Timebox
+
+```
+Actions 1-9: [investigation]
+
+Action 10: STOP
+
+I've spent 10 actions on this.
+Findings: [what I learned]
+Theories: [remaining unknowns]
+Recommend: [path forward]
+
+Should I continue or try different approach?
+```
 
 ---
 
-**Version:** 1.0
-**Last Updated:** 2025-12-02
-**Related Documents:**
-- `/CLAUDE.MD` - Core protocol
-- `/docs/CLAUDE_PROTOCOL_USAGE.md` - Usage guide
+**Version:** 2.0
+**Last Updated:** 2025-12-03
+**Related:** `/CLAUDE.MD` (core protocol), `/docs/CLAUDE_PROTOCOL_USAGE.md` (usage guide)

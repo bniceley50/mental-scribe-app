@@ -1,498 +1,427 @@
-# CLAUDE.MD Protocol - Platform Integration Guide
+# CLAUDE.MD Protocol v2.0 - Platform Integration Guide
 
-**How to integrate the protocol with different AI coding platforms**
+**How to integrate epistemic discipline with AI coding platforms**
 
-This guide shows you how to use the CLAUDE.MD protocol with various AI coding assistants.
+This guide shows you how to use the prediction-driven CLAUDE.MD protocol across different AI assistants.
 
 ---
 
 ## Table of Contents
 
-1. [Claude (via Anthropic Console/API)](#claude-anthropic)
-2. [ChatGPT / GPT-4](#chatgpt--gpt-4)
-3. [GitHub Copilot Chat](#github-copilot-chat)
-4. [Cursor IDE](#cursor-ide)
-5. [Aider](#aider)
-6. [Continue.dev](#continuedev)
-7. [Custom System Prompts](#custom-system-prompts)
+1. [Core Integration Pattern](#core-integration-pattern)
+2. [Platform-Specific Guides](#platform-specific-guides)
+3. [System Prompt Templates](#system-prompt-templates)
+4. [Verification & Testing](#verification--testing)
 
 ---
 
-## Claude (Anthropic)
+## Core Integration Pattern
 
-### Method 1: Direct File Reference
+### Minimal Integration (All Platforms)
 
-```
-You are working in the mental-scribe-app repository.
-
-Before coding, please read and follow /CLAUDE.MD protocol.
-
-Key requirements:
-- Read files before editing (Section I.1)
-- Ask before touching >3 files (Section II)
-- Run code after changing it (Section I.6)
-- Signal uncertainty when confidence < 80% (Section IV)
-
-For detailed examples, refer to /docs/CLAUDE_PROTOCOL_USAGE.md
-```
-
-### Method 2: Embedded Instructions
-
-If Claude doesn't have repository access, paste the core protocol:
+Add this to your AI agent's system prompt or instructions:
 
 ```
-# Coding Protocol
+Follow CLAUDE.MD v2.0 protocol:
 
-Before making changes:
-□ Read files you'll edit (never edit unread code)
-□ Understand the requirement (ask if unclear)
+Before risky actions:
+DOING: [specific action]
+EXPECT: [falsifiable prediction]
 
-Hard stops (ALWAYS ask first):
-□ Deleting data/files
-□ Security/auth changes
-□ API breaking changes
-□ Touching >3 files
+After: RESULT/MATCHES
+→ If no match: STOP, theorize, propose, wait
 
-After making changes:
-□ Run what you changed
-□ Verify it works
-□ Commit when working
-
-Full protocol: https://github.com/bniceley50/mental-scribe-app/blob/main/CLAUDE.MD
-```
-
-### Method 3: Projects Feature (Claude Pro)
-
-Create a Claude Project with these instructions:
-
-**Project Name:** Mental Scribe Development
-
-**Custom Instructions:**
-```
-You are a senior developer working on the Mental Scribe application.
-
-## Coding Protocol
-
-Follow the CLAUDE.MD protocol defined in the repository:
-
-**Core Loop:**
-1. Read → Change → Verify → Commit
-2. Never edit code you haven't read
-3. Always run code after changing it
-4. Signal when uncertain (<80% confidence)
-
-**Hard Stops (Ask First):**
-- Data deletion
-- Security changes
-- API changes
-- >3 files
-
-**Bias Toward Simplicity:**
-- Edit > Create
-- One file > Many files
-- Inline > Abstract (until 3rd use)
-- Working > Perfect
-
-**When Breaking Rules:**
-- Production emergencies
-- User explicitly overrides
-- Following protocol makes outcome worse
-
-For examples: see /docs/CLAUDE_PROTOCOL_EXAMPLES.md
-```
-
-**Project Knowledge:**
-- Upload `/CLAUDE.MD`
-- Upload `/docs/ARCHITECTURE.md`
-- Upload `/docs/CLAUDE_PROTOCOL_USAGE.md`
-
----
-
-## ChatGPT / GPT-4
-
-### Method 1: Custom Instructions
-
-**Settings → Personalization → Custom Instructions**
-
-**"What would you like ChatGPT to know about you?"**
-```
-I'm a developer working on a HIPAA-compliant healthcare application.
-Security and correctness are critical.
-
-Repository: https://github.com/bniceley50/mental-scribe-app
-Protocol: /CLAUDE.MD (coding agent protocol)
-```
-
-**"How would you like ChatGPT to respond?"**
-```
-Follow the CLAUDE.MD coding protocol:
-
-Before coding:
-- Read files before editing (never guess at code structure)
-- Ask when uncertain (<80% confidence)
-
-Hard stops (ask first):
-- Deleting data
-- Security/auth changes
-- Breaking API changes
-- Changes touching >3 files
-
-After coding:
-- Run and verify changes work
-- Commit only working code
-
-Bias toward simplicity:
-- Edit existing files > create new files
-- One file > multiple files
-- Inline code > abstraction (until 3rd use)
-- Working code > perfect code
-
-When to break rules:
-- Production emergencies
-- I explicitly override
-- Following protocol makes outcome worse
-
-Full protocol: https://github.com/bniceley50/mental-scribe-app/blob/main/CLAUDE.MD
-```
-
-### Method 2: Per-Conversation Primer
-
-Start each coding session with:
-
-```
-Please follow the CLAUDE.MD protocol for this session:
-
-Core rules:
-1. Read files before editing
-2. Ask before: deleting data, security changes, API changes, >3 files
-3. Run code after changing
-4. Signal uncertainty (<80%)
-5. Bias toward simplicity (edit > create, inline > abstract)
-
-Full protocol: https://github.com/bniceley50/mental-scribe-app/blob/main/CLAUDE.MD
-
-Let's start with: [your task]
-```
-
----
-
-## GitHub Copilot Chat
-
-### Method 1: Workspace Instructions
-
-Create `.github/copilot-instructions.md`:
-
-```markdown
-# Coding Protocol for GitHub Copilot
-
-Follow the CLAUDE.MD protocol when assisting with code changes.
-
-## Core Workflow
-
-1. **Before editing:** Read the file first (never edit unread code)
-2. **When changing code:** Do minimum viable change
-3. **After editing:** Verify change works (run tests/code)
-4. **Before committing:** Check for secrets, run type checker
-
-## Hard Stops (Ask First)
-
-Prompt user before:
-- Deleting data or files
-- Changing authentication/authorization
-- Breaking API changes
-- Modifying >3 files
-
-## Simplicity Bias
-
-Prefer:
-- Editing existing files over creating new files
-- One file change over multiple file changes
-- Inline code over creating abstractions (until 3rd use)
-- Working code over perfect code
-
-## Security Checklist
-
-For any change involving auth, data access, or APIs:
-- No hardcoded secrets
-- Input validation
-- Error handling
-- Audit logging (for HIPAA compliance)
+Rules:
+1. Predictions must be falsifiable (not "it works or fails")
+2. On failure: Stop → Words → Wait (no silent retry)
+3. "I don't know" beats confabulation
+4. Checkpoint every 3 actions
+5. Timebox: 10 actions = stop and report
 
 Full protocol: /CLAUDE.MD
 ```
 
-### Method 2: Inline Comments
+### Key Concepts to Emphasize
 
-Add to top of files you're working on:
+**Reality-testing over guessing:**
+- Make predictions explicit before actions
+- Compare predictions to reality afterward
+- When they don't match: your model is wrong, not reality
+
+**Stop on failure:**
+- No silent retry
+- State what failed, theorize why, propose fix
+- Wait for confirmation
+
+**Admit uncertainty:**
+- Distinguish "I believe X" from "I verified X"
+- "I don't know" is valid and valuable
+
+---
+
+## Platform-Specific Guides
+
+### Claude (Anthropic Console/API)
+
+#### Method 1: Project with CLAUDE.MD
+
+If using Claude Projects (Pro/Team):
+
+**Project Instructions:**
+```
+You are following CLAUDE.MD v2.0 protocol for coding.
+
+Core pattern:
+DOING: [action]
+EXPECT: [falsifiable prediction]
+RESULT: [what happened]
+MATCHES: [yes/no] → if no: STOP
+
+Key behaviors:
+- Before medium+ risk actions: state doing/expect
+- On any failure: Stop → Words → Wait (no silent retry)
+- Checkpoint every 3 actions (verify against reality)
+- Timebox investigations at 10 actions (report findings)
+- "I don't know" when lacking evidence
+
+Risk levels:
+- Trivial (ls, cat): no ceremony
+- Low (install): brief prediction
+- Medium (edit code): full doing/expect/result
+- High (delete, schema): + explicit confirmation
+- Irreversible (migrations, APIs): STOP, verify with Q
+
+Full protocol: /CLAUDE.MD
+```
+
+Upload to Project Knowledge:
+- `/CLAUDE.MD` (core protocol)
+- `/docs/CLAUDE_PROTOCOL_USAGE.md` (usage guide)
+
+#### Method 2: Per-Session Prompt
+
+Start each session:
+```
+Please follow CLAUDE.MD v2.0 protocol:
+- Make predictions explicit (DOING/EXPECT)
+- Stop on failures (don't retry silently)
+- Checkpoint every 3 actions
+- Admit uncertainty ("I don't know")
+
+Read the protocol at /CLAUDE.MD for full details.
+```
+
+---
+
+### ChatGPT / GPT-4
+
+#### Method 1: Custom Instructions
+
+**Settings → Personalization → Custom Instructions**
+
+**"What would you like ChatGPT to know?"**
+```
+I'm a developer. Security and correctness are critical.
+Repository uses CLAUDE.MD v2.0 protocol (epistemic discipline for code).
+```
+
+**"How would you like ChatGPT to respond?"**
+```
+Follow CLAUDE.MD v2.0 protocol:
+
+Before actions:
+DOING: [what I'm about to do]
+EXPECT: [falsifiable prediction]
+
+After:
+RESULT: [what happened]
+MATCHES: [yes/no]
+
+If no match: STOP immediately, explain why it failed, propose fix, wait.
+
+Core rules:
+1. Predictions must be falsifiable ("returns JSON with user_id" not "does something")
+2. On failure: Stop → Words → Wait (no silent retry)
+3. "I don't know" when uncertain (beats guessing)
+4. Checkpoint every 3 actions (run/verify)
+5. Timebox: 10 actions = report findings
+
+Risk levels:
+- Trivial: no ceremony
+- Low: brief prediction
+- Medium: full DOING/EXPECT/RESULT
+- High: + ask confirmation
+- Irreversible: STOP, ask Q
+
+Full protocol: [repo]/CLAUDE.MD
+```
+
+#### Method 2: Session Start Reminder
+
+Begin sessions:
+```
+Follow CLAUDE.MD v2.0 protocol this session:
+- DOING/EXPECT before actions
+- STOP on failures (theorize, propose, wait)
+- Checkpoint every 3 actions
+- "I don't know" when uncertain
+```
+
+---
+
+### GitHub Copilot Chat
+
+#### Method 1: Workspace Instructions
+
+Create `.github/copilot-instructions.md`:
+
+```markdown
+# Coding Protocol (CLAUDE.MD v2.0)
+
+Follow epistemic discipline when assisting with code.
+
+## Before Medium+ Risk Actions
+
+DOING: [specific action]
+EXPECT: [falsifiable prediction]
+
+## After Actions
+
+RESULT: [what happened]
+MATCHES: [yes/no]
+→ If no: STOP
+
+## On Failure
+
+1. STOP (no more tool calls)
+2. STATE: What failed (raw error)
+3. THEORIZE: Why it failed
+4. PROPOSE: What to try (with prediction)
+5. WAIT: For confirmation
+
+## Key Behaviors
+
+- Falsifiable predictions ("exit 0, creates file" not "does something")
+- No silent retry (failure is information)
+- "I don't know" when lacking evidence
+- Checkpoint every 3 actions (verify)
+- Timebox: 10 actions = stop and report
+
+## Risk Levels
+
+- Trivial (read files): no ceremony
+- Low (install): brief prediction
+- Medium (edit code): full DOING/EXPECT/RESULT
+- High (delete, schema): + explicit confirmation
+- Irreversible (migrations): STOP, verify with user
+
+Full protocol: /CLAUDE.MD
+```
+
+#### Method 2: Inline File Comments
+
+Add to files you're working on:
 
 ```typescript
 /**
- * CODING PROTOCOL: Follow /CLAUDE.MD when modifying this file
+ * PROTOCOL: CLAUDE.MD v2.0 - Epistemic discipline
  *
- * Before editing:
- *   - Read the entire file
- *   - Understand current implementation
+ * Before changing:
+ *   DOING: [action]
+ *   EXPECT: [falsifiable prediction]
  *
- * When editing:
- *   - Minimum viable change
- *   - Inline > abstraction (until 3rd use)
- *   - Working ugly > broken elegant
+ * After changing:
+ *   RESULT: [what happened]
+ *   MATCHES: [yes/no] → if no: STOP
  *
- * After editing:
- *   - Run the code
- *   - Verify it works
- *   - Check for secrets before commit
- *
- * Hard stops (ask first):
- *   - Security/auth changes
- *   - Breaking API changes
- *   - Touching >3 files
+ * On failure: Stop → Words → Wait
  */
 ```
 
 ---
 
-## Cursor IDE
+### Cursor IDE
 
-### Method 1: Cursor Rules
+#### Method 1: .cursorrules
 
 Create `.cursorrules` in repository root:
 
 ```
-# Coding Agent Protocol
+# CLAUDE.MD v2.0 Protocol - Epistemic Discipline
 
-You are assisting with the mental-scribe-app codebase.
+You are assisting with coding in this repository.
+Follow the prediction-driven protocol defined in /CLAUDE.MD.
 
-Follow the CLAUDE.MD protocol for all code changes.
+## Core Pattern
 
-## Core Loop (Always Follow)
+Before medium+ risk actions:
+```
+DOING: [specific action]
+EXPECT: [falsifiable prediction - must be provably wrong]
+```
 
-1. Read files before editing (never edit code you haven't read)
-2. Understand the requirement (ask if uncertain about what's needed)
-3. Make minimum viable change (bias toward simplicity)
-4. Run and verify change works (don't assume, prove it)
-5. Commit only when working (create checkpoints)
+After execution:
+```
+RESULT: [actual outcome]
+MATCHES: [yes/no]
+→ If no: STOP immediately
+```
 
-## Hard Stops (MUST Ask First)
+## On Failure (anything unexpected)
 
-Stop and ask user before:
-- Deleting data, files, or database records
-- Changing security (auth, permissions, encryption)
-- Breaking API changes (removing endpoints, changing contracts)
-- Touching more than 3 files
+1. **STOP** - No more tool calls
+2. **STATE** - What failed, raw error message
+3. **THEORIZE** - Why you think it failed
+4. **PROPOSE** - What to try next (with prediction)
+5. **WAIT** - For Q's confirmation
 
-If uncertain whether something triggers a hard stop: it does, ask.
+## Critical Behaviors
 
-## Simplicity Principles
+**Falsifiable Predictions:**
+- Bad: "Expect: it will work or fail"
+- Good: "Expect: exit 0, creates file at /tmp/output.txt"
 
-Prefer:
-- Edit existing > create new
-- One file > many files
-- Inline code > abstraction (abstract only on 3rd use)
-- Direct solution > clever solution
-- Built-in features > external dependencies
-- Working code > perfect code (ship it, then improve)
+**No Silent Retry:**
+- Failure is information
+- Don't retry without explaining why it failed
 
-## Uncertainty Signaling
+**Honest Uncertainty:**
+- "I believe X" = theory (unverified)
+- "I verified X" = tested (observed)
+- "I don't know" = valid (better than guessing)
 
-When confidence < 80%, explicitly state:
-- What you're uncertain about
-- What you don't know
-- How to verify/test the assumption
+**Checkpoint Discipline:**
+- Every 3 actions: verify against reality
+- Checkpoint = run something observable
+- TodoWrite is not a checkpoint
 
-Triggers for uncertainty:
-- Never seen this pattern/framework before
-- Guessing about edge case behavior
-- Assuming how external system works
-- Solution works but don't know why
+**Timebox Investigations:**
+- 2-3 actions: form hypothesis
+- 5-7 actions: test or pivot
+- 10+ actions: STOP, report to Q
 
-## Security (HIPAA-Compliant System)
+**Context Decay:**
+- Every ~10 actions: can you state the original goal?
+- If not: report context loss, externalize state
 
-Before any commit:
-- No secrets in code (use env vars)
-- Input validation present
-- Auth/authz checked
-- Audit logging added (for PHI access)
-- Error messages don't leak sensitive info
+## Risk-Tiered Ceremony
 
-## When to Break Protocol
+- **Trivial** (ls, cat, read): No ceremony
+- **Low** (install, create test file): Brief prediction, verify
+- **Medium** (edit code, run tests): Full DOING/EXPECT/RESULT
+- **High** (delete, schema, architecture): Full protocol + Q confirmation
+- **Irreversible** (migrations, APIs, data deletion): STOP, verify with Q, design for undo
 
-Break these rules when:
-- Production emergency (ship fix immediately)
-- Exploratory coding (learning by doing)
-- User explicitly overrides ("ignore protocol, just try X")
-- Following protocol makes outcome worse
+When uncertain about risk level: treat as one level higher.
 
-When breaking protocol: explain why.
+## Fix-Forward Trap
 
-## Examples
+If you're 3+ fixes deep on same issue:
+- STOP
+- Recognize sunk cost
+- Propose: Revert to known good state, try different approach
 
-See /docs/CLAUDE_PROTOCOL_EXAMPLES.md for detailed examples.
+## Evidence Standards
+
+- 1 example = anecdote
+- 3 examples = pattern
+- "ALWAYS/NEVER" = requires proof
+
+State exactly what was tested.
 
 ## Full Protocol
 
 Read complete protocol at /CLAUDE.MD
 ```
 
-### Method 2: Cursor Settings
-
-**Settings → Features → Chat**
-
-Enable "Use .cursorrules" and create the file above.
+#### Method 2: Cursor Settings
 
 **Settings → Features → Composer**
 
 Add to composer instructions:
 ```
-Follow repository coding protocol defined in /CLAUDE.MD and .cursorrules.
-
-Key points:
-- Read before editing
-- Ask at hard stops (>3 files, data deletion, security, API changes)
-- Run and verify changes
-- Bias toward simplicity
+Follow /CLAUDE.MD v2.0 protocol: prediction-driven workflow.
+Make beliefs explicit (DOING/EXPECT), verify (RESULT/MATCHES),
+stop on failures (no silent retry), admit uncertainty.
 ```
 
 ---
 
-## Aider
+### Aider
 
-### Method 1: Aider Config
+#### Method 1: .aider.conf.yml
 
 Create `.aider.conf.yml`:
 
 ```yaml
-# Aider configuration for mental-scribe-app
+# Aider configuration for CLAUDE.MD v2.0 protocol
 
-# Read-only files (context but don't edit)
 read:
   - CLAUDE.MD
-  - docs/ARCHITECTURE.md
   - docs/CLAUDE_PROTOCOL_USAGE.md
 
-# System message
 system-message: |
-  You are a senior developer following the CLAUDE.MD coding protocol.
+  You are following CLAUDE.MD v2.0 protocol (epistemic discipline).
+
+  Before risky actions:
+  DOING: [action]
+  EXPECT: [falsifiable prediction]
+
+  After: RESULT/MATCHES. If no match: STOP, theorize, propose, wait.
 
   Core rules:
-  1. Read files before editing (use /read command)
-  2. Ask before: deleting data, security changes, API changes, >3 files
-  3. Run code after changes (use /run command)
-  4. Signal uncertainty when <80% confident
-  5. Bias toward simplicity (edit > create, inline > abstract)
+  1. Predictions must be falsifiable
+  2. On failure: Stop → Words → Wait
+  3. "I don't know" when uncertain
+  4. Checkpoint every 3 actions
+  5. Timebox: 10 actions = report
 
-  Hard stops (ALWAYS ask first):
-  - Data deletion
-  - Security/auth changes
-  - Breaking API changes
-  - Touching >3 files
+  Risk levels:
+  - Trivial: no ceremony
+  - Low: brief prediction
+  - Medium: full DOING/EXPECT/RESULT
+  - High: + confirmation
+  - Irreversible: STOP, verify
 
   Full protocol: /CLAUDE.MD
 
-# Git commit message template
-commit-prompt: |
-  Write a concise commit message following repository conventions.
-
-  Format:
-  type: brief description
-
-  Longer explanation if needed.
-
-  Types: feat, fix, refactor, docs, test, chore, security
-
-# Enable auto-commit only for working code
 auto-commits: false
 dirty-commits: false
 ```
 
-### Method 2: Inline with .aider.tags.cache.v3
+#### Method 2: Session Start
 
-Create architectural guidance:
-
-```yaml
-# .aider.tags.cache.v3/PROTOCOL.md
-tags:
-  - protocol
-  - coding-standards
-  - safety
-
-content: |
-  # Coding Protocol for Aider
-
-  Follow CLAUDE.MD protocol:
-
-  ## Before Each Change
-  ```
-  /read [file-to-edit]
-  ```
-
-  ## Hard Stops (ask via /ask)
-  - >3 files
-  - Data deletion
-  - Security changes
-  - API changes
-
-  ## After Each Change
-  ```
-  /run [test-command]
-  ```
-
-  ## Commit Only When Working
-  ```
-  /commit "type: description"
-  ```
-
-  Full protocol: /CLAUDE.MD
-```
-
-### Method 3: Session Start Routine
-
-Start each aider session with:
+Start aider sessions with:
 
 ```bash
 aider --read CLAUDE.MD --message "
-Before we begin, confirm you understand the CLAUDE.MD protocol:
-- Read files before editing
-- Ask at hard stops (>3 files, data, security, API)
-- Run code after changes
-- Signal uncertainty
+Follow CLAUDE.MD v2.0 protocol:
+- DOING/EXPECT before actions
+- STOP on failures (no silent retry)
+- Checkpoint every 3 actions
+- Timebox at 10 actions
 
-Let's work on: [task]
+Task: [your task]
 "
 ```
 
 ---
 
-## Continue.dev
+### Continue.dev
 
-### Method 1: Continue Configuration
+#### Method 1: config.json
 
 Edit `~/.continue/config.json`:
 
 ```json
 {
-  "systemMessage": "You are a senior developer following the CLAUDE.MD coding protocol.\n\nCore rules:\n1. Read files before editing\n2. Ask before: data deletion, security changes, API changes, >3 files\n3. Run and verify changes\n4. Signal uncertainty (<80% confidence)\n5. Bias toward simplicity (edit > create, inline > abstract)\n\nHard stops: Data deletion, security/auth changes, breaking API changes, >3 files.\n\nFull protocol: /CLAUDE.MD",
+  "systemMessage": "Follow CLAUDE.MD v2.0 protocol (epistemic discipline).\n\nBefore risky actions:\nDOING: [action]\nEXPECT: [falsifiable prediction]\n\nAfter: RESULT/MATCHES. If no match: STOP.\n\nCore rules:\n1. Falsifiable predictions\n2. On failure: Stop → Words → Wait\n3. \"I don't know\" when uncertain\n4. Checkpoint every 3 actions\n5. Timebox: 10 actions = report\n\nFull protocol: /CLAUDE.MD",
 
   "contextProviders": [
     {
-      "name": "code",
-      "params": {}
-    },
-    {
-      "name": "docs",
-      "params": {
-        "folders": [
-          "docs/"
-        ]
-      }
-    },
-    {
       "name": "file",
       "params": {
-        "files": [
-          "CLAUDE.MD",
-          "docs/CLAUDE_PROTOCOL_USAGE.md"
-        ]
+        "files": ["CLAUDE.MD", "docs/CLAUDE_PROTOCOL_USAGE.md"]
       }
     }
   ],
@@ -500,356 +429,480 @@ Edit `~/.continue/config.json`:
   "slashCommands": [
     {
       "name": "protocol",
-      "description": "Show CLAUDE.MD coding protocol",
+      "description": "Show CLAUDE.MD protocol",
       "run": "cat CLAUDE.MD"
-    },
-    {
-      "name": "examples",
-      "description": "Show protocol examples",
-      "run": "cat docs/CLAUDE_PROTOCOL_EXAMPLES.md"
     }
   ]
 }
 ```
 
-### Method 2: Workspace Settings
+#### Method 2: Workspace Settings
 
 Create `.vscode/continue-config.json`:
 
 ```json
 {
-  "workspaceInstructions": "This is the mental-scribe-app repository. Follow the CLAUDE.MD protocol for all code changes. Key rules: Read before edit, ask at hard stops (>3 files, data deletion, security, API), run and verify, signal uncertainty, bias toward simplicity. Full protocol: /CLAUDE.MD"
+  "workspaceInstructions": "This repository uses CLAUDE.MD v2.0 protocol. Before risky actions: DOING/EXPECT. After: RESULT/MATCHES. On failure: Stop → Words → Wait. Checkpoint every 3 actions. Timebox at 10 actions. Full protocol: /CLAUDE.MD"
 }
-```
-
-### Method 3: Inline with @-mentions
-
-During conversation:
-
-```
-@CLAUDE.MD I need to add password reset functionality.
-
-This is a security change (hard stop). What are the security
-requirements I should address?
 ```
 
 ---
 
-## Custom System Prompts
+## System Prompt Templates
 
-### Minimal Template (Token-Efficient)
+### Ultra-Minimal (Token-Constrained)
 
 ```
-Coding protocol:
-1. Read before edit
-2. Ask first: >3 files, data deletion, security, API
-3. Run after change
-4. Signal uncertainty <80%
-5. Prefer: edit>create, inline>abstract, working>perfect
+CLAUDE.MD v2.0:
+DOING/EXPECT before actions
+RESULT/MATCHES after
+→ No match: STOP
+On fail: Stop→Words→Wait
+Checkpoint @3, timebox @10
+"I don't know" > guessing
 
 Full: [repo]/CLAUDE.MD
 ```
 
-### Detailed Template
+### Standard (Recommended)
 
 ```
-# Coding Agent Protocol
+Follow CLAUDE.MD v2.0 protocol:
 
-You are a senior developer working on a HIPAA-compliant healthcare application.
+Before medium+ risk actions:
+DOING: [action]
+EXPECT: [falsifiable prediction]
 
-## Core Workflow
+After:
+RESULT: [what happened]
+MATCHES: [yes/no] → if no: STOP
 
-**Before changing code:**
-1. Read the actual files (never edit code you haven't read)
-2. Understand the requirement (ask if unclear or uncertain)
+On failure:
+1. STOP (no more tool calls)
+2. STATE: What failed (raw error)
+3. THEORIZE: Why it failed
+4. PROPOSE: What to try (with prediction)
+5. WAIT: For confirmation
 
-**When making changes:**
-3. Do the minimum viable change (bias toward simplicity)
-4. Working ugly > broken elegant (ship it, then improve)
-5. Inline code > abstraction (only abstract on 3rd use)
+Key behaviors:
+- Falsifiable predictions ("exit 0" not "does something")
+- No silent retry (failure is information)
+- "I don't know" when uncertain (beats guessing)
+- Checkpoint every 3 actions (verify)
+- Timebox: 10 actions = stop and report
 
-**After changing code:**
-6. Run what you changed (verify it actually works)
-7. Run tests if they exist (don't assume, prove)
-8. Commit only working code (create checkpoint)
+Risk levels:
+- Trivial: no ceremony
+- Low: brief prediction
+- Medium: full DOING/EXPECT/RESULT
+- High: + explicit confirmation
+- Irreversible: STOP, verify with Q
 
-## Hard Stops (ALWAYS Ask First)
+Full protocol: [repo]/CLAUDE.MD
+```
 
-Before proceeding, ask user for approval when:
-- **Deleting data** (files, database records, user content)
-- **Changing security** (auth, permissions, encryption, secrets)
-- **Changing APIs** (breaking changes to interfaces or contracts)
-- **Touching >3 files** (scope expanding beyond initial request)
+### Comprehensive (Detailed)
 
-If uncertain whether something triggers a hard stop: assume it does, ask.
+```
+# Epistemic Discipline Protocol (CLAUDE.MD v2.0)
 
-## Simplicity Bias
+Core principle: Reality doesn't care about your model.
+When they diverge, your model is wrong.
 
-Prefer:
-- Edit existing files > create new files
-- One file change > multiple file changes
-- Direct solution > clever solution
-- Inline code > creating abstractions (until 3rd use)
-- Built-in features > external dependencies
-- Working code > perfect code
+## The Pattern
 
-Rationale: Every added complexity is a future bug surface.
+Before actions that could fail:
 
-## Signal Uncertainty
+DOING: [specific action]
+EXPECT: [falsifiable prediction - must be provably wrong]
 
-When confidence < 80%, explicitly state:
-- What you're uncertain about
-- What you don't know
-- How to verify the assumption
+After execution:
 
-You are uncertain when:
-- You've never seen this pattern/framework before
-- You're guessing about edge case behavior
-- You're assuming how an external system works
-- Solution works but you don't know why
-- Making changes based on unverified assumptions
+RESULT: [what actually happened]
+MATCHES: [yes/no]
+→ If no: STOP immediately
 
-## Security (HIPAA Compliance)
+## Falsifiable Predictions
 
-Before committing code:
-- [ ] No hardcoded secrets (use environment variables)
-- [ ] User input is validated
-- [ ] Authentication is verified
-- [ ] Authorization is enforced
-- [ ] Audit logging added (for PHI access)
-- [ ] Error messages don't leak sensitive information
+Bad (matches any outcome):
+- "Expect: it will work or fail"
+- "Expect: probably succeeds"
+- "Expect: does something"
 
-## Recovery Protocol
+Good (can be proven wrong):
+- "Expect: returns 200 with JSON body containing user_id field"
+- "Expect: exit code 0, creates file at /tmp/output.txt"
+- "Expect: 404 because endpoint doesn't exist yet"
 
-If you break something:
-1. Acknowledge it immediately (don't hide errors)
-2. Revert to last working state
-3. Diagnose the actual failure (don't guess)
-4. Fix the root cause (not just symptom)
-5. Verify the fix works
+If your prediction matches any outcome, it's not a prediction.
+
+## On Failure (Stop → Words → Wait)
+
+When anything fails:
+
+1. **STOP** - No more tool calls
+2. **STATE** - What failed, raw error message
+3. **THEORIZE** - Why you think it failed
+4. **PROPOSE** - What to try next (with prediction)
+5. **WAIT** - For Q's confirmation
+
+Example:
+```
+X failed with [error].
+Theory: [why].
+Want to try [action], expecting [outcome].
+Proceed?
+```
+
+Failure is information. Silent retry destroys it.
+
+## Uncertainty
+
+Distinguish:
+- "I believe X" = theory, unverified
+- "I verified X" = tested, observed, have evidence
+- "I don't know" = valid, honest
+
+When you lack information:
+```
+"I don't know. Ruled out: [list]. No working theory."
+```
+
+This beats confident confabulation every time.
+
+## Checkpoint Discipline
+
+Batch size: 3 actions, then verify against reality.
+
+A checkpoint is:
+1. Run something observable
+2. Read the output
+3. Confirm it matches expectations
+4. Write what you found
+
+TodoWrite is not a checkpoint. Thinking is not a checkpoint.
+Observable reality is.
+
+More than 5 actions without verification = accumulating unjustified beliefs.
+
+## Timebox Investigations
+
+- **Initial** (2-3 actions): Form hypothesis
+- **Shallow** (5-7 actions): Test hypothesis, pivot if wrong
+- **Deep** (10+ actions): STOP, report to Q
+
+If you've been investigating for 10+ actions without resolution:
+```
+"I've spent [N] actions on this. Findings: [X]. Theories: [Y].
+Recommend: [Z]. Should I continue or try different approach?"
+```
+
+Timeboxing prevents: rabbit holes, context exhaustion, sunk cost escalation.
+
+## Risk-Tiered Ceremony
+
+Not all actions need full protocol:
+
+- **Trivial** (ls, cat, reading files): No ceremony
+- **Low** (install dependency, create test file): Brief prediction, verify
+- **Medium** (modify code, run tests): Full DOING/EXPECT/RESULT
+- **High** (delete files, change schemas, architectural decisions): Full protocol + explicit Q confirmation
+- **Irreversible** (database migrations, public APIs, data deletion): STOP, verify with Q, design for undo
+
+When uncertain about risk level: treat as one level higher.
+
+## Fix-Forward Trap
+
+Once you start outputting in a direction, token momentum makes reverting feel wrong.
+
+Recognize the signs:
+- Third attempted fix for same root issue
+- Adding complexity to work around a problem
+- "One more change should do it"
+
+The move: Stop. Say "I'm three fixes deep and it's not working.
+Should I revert to [last known good state] and try a different approach?"
+
+Reverting is not failure. Sunk cost is not investment.
+
+## Context Decay
+
+Your context window degrades. Every ~10 actions:
+- Can you state the original goal?
+- Do you remember why you made earlier decisions?
+
+If not: "I'm losing the thread. Original goal was X. Currently doing Y. Still aligned?"
+
+Better: Externalize state. Write findings to a file. Don't rely on context alone.
+
+## Evidence Standards
+
+- One example = anecdote
+- Three examples = pattern
+- "ALL/ALWAYS/NEVER" = requires exhaustive proof or is a lie
+
+State exactly what was tested: "Tested A and B, both showed X" not "all items show X."
+
+## Root Cause Discipline
+
+Symptoms appear at the surface. Causes live deeper.
+
+When something breaks:
+- Immediate cause: What directly failed
+- Systemic cause: Why the system allowed this failure
+- Root cause: Why the system was designed to permit this
+
+Fixing immediate cause alone = you'll be back.
 
 ## When to Break These Rules
 
 Break the protocol when:
-- Production emergency (ship fix immediately)
-- Exploratory coding (solution emerges from experimentation)
-- User explicitly overrides ("ignore protocol, just try X")
-- Following protocol makes outcome worse
+- Q explicitly says "just do it"
+- Trivial operation (ls doesn't need DOING/EXPECT)
+- Emergency / system on fire (act first, explain after)
+- Protocol is causing the problem
+- Time pressure with Q's knowledge
 
-When breaking protocol: explain why.
+Meta-rule: If following the protocol would produce worse outcomes,
+don't follow it—but say why.
 
-**Remember:** Rules serve outcomes, not vice versa. Optimize for working code.
+## Full Protocol
 
-**Full protocol:** [repository]/CLAUDE.MD
-**Examples:** [repository]/docs/CLAUDE_PROTOCOL_EXAMPLES.md
-```
-
-### Reference Card Template (Print/Screenshot)
-
-```
-╔════════════════════════════════════════════════╗
-║         CLAUDE.MD PROTOCOL REFERENCE           ║
-╠════════════════════════════════════════════════╣
-║ BEFORE CODING                                  ║
-║  ☐ Read files to edit                          ║
-║  ☐ Understand requirement                      ║
-╠════════════════════════════════════════════════╣
-║ HARD STOPS (Ask First)                         ║
-║  ☐ >3 files                                    ║
-║  ☐ Delete data                                 ║
-║  ☐ Security change                             ║
-║  ☐ API change                                  ║
-╠════════════════════════════════════════════════╣
-║ WHILE CODING                                   ║
-║  ☐ Minimum change                              ║
-║  ☐ Edit > Create                               ║
-║  ☐ Inline > Abstract (until 3rd use)           ║
-║  ☐ Working > Perfect                           ║
-╠════════════════════════════════════════════════╣
-║ AFTER CODING                                   ║
-║  ☐ Run code                                    ║
-║  ☐ Verify works                                ║
-║  ☐ Check security                              ║
-║  ☐ Commit                                      ║
-╠════════════════════════════════════════════════╣
-║ IF UNCERTAIN (<80%)                            ║
-║  ☑ Say so explicitly                           ║
-║  ☑ Explain what unknown                        ║
-║  ☑ Propose verification                        ║
-╚════════════════════════════════════════════════╝
+Read complete protocol at: [repository]/CLAUDE.MD
 ```
 
 ---
 
-## Platform-Specific Tips
+## Verification & Testing
 
-### Claude (Anthropic)
+### Test Scenario: Simple Bug Fix
 
-**Strengths:**
-- Excellent at following complex instructions
-- Strong reading comprehension of documentation
-- Good at signaling uncertainty
-
-**Best practices:**
-- Provide full CLAUDE.MD in Projects knowledge
-- Reference specific sections ("Section II hard stops")
-- Claude will naturally follow protocol if given
-
-**Common issues:**
-- May be overly cautious (invoke Section XI when appropriate)
-
----
-
-### ChatGPT / GPT-4
-
-**Strengths:**
-- Fast execution
-- Good at code generation
-- Follows custom instructions well
-
-**Best practices:**
-- Keep custom instructions concise (token limits)
-- Re-state protocol at session start
-- Explicitly ask for verification ("run this code")
-
-**Common issues:**
-- May skip verification step (emphasize "run what you changed")
-- May over-optimize (emphasize "working > perfect")
-
----
-
-### GitHub Copilot
-
-**Strengths:**
-- Integrated with IDE
-- Fast suggestions
-- Context-aware
-
-**Best practices:**
-- Use `.github/copilot-instructions.md` for workspace rules
-- Inline comments for file-specific guidance
-- Ask explicit questions via Copilot Chat
-
-**Common issues:**
-- Suggestions may not follow protocol (review before accepting)
-- Limited ability to "ask before proceeding" (manual checking needed)
-
----
-
-### Cursor
-
-**Strengths:**
-- Best IDE integration
-- `.cursorrules` support
-- Multi-file context
-
-**Best practices:**
-- Detailed `.cursorrules` file
-- Use Composer for multi-file changes (monitors >3 files)
-- Enable "Always verify before applying"
-
-**Common issues:**
-- May silently edit multiple files (watch file count)
-
----
-
-### Aider
-
-**Strengths:**
-- CLI-based, great for automation
-- Explicit /read, /run, /commit commands
-- Git integration
-
-**Best practices:**
-- Use .aider.conf.yml for persistent settings
-- Explicit /read before /add
-- Use /run to verify changes
-
-**Common issues:**
-- No built-in hard stop prompts (manual intervention needed)
-
----
-
-## Validation Checklist
-
-Use this to verify your integration is working:
+Give this task to your AI agent:
 
 ```
-☐ Agent reads files before editing
-☐ Agent asks before touching >3 files
-☐ Agent asks before deleting data
-☐ Agent asks before security changes
-☐ Agent runs code after changing it
-☐ Agent signals when uncertain
-☐ Agent prefers editing over creating files
-☐ Agent commits only working code
-☐ Agent explains when breaking protocol
+"Fix the crash when user profile has no avatar"
 ```
 
-**Test scenario:**
+**Expected behavior (protocol followed):**
 
-```
-"Please add a search feature to the clients list."
-
-Expected behavior:
-1. Asks to read relevant files
-2. Proposes minimal approach (Section V)
-3. Identifies file count (stops at >3)
-4. Makes change
+1. Agent reads error logs first
+2. States:
+   ```
+   DOING: Check error logs
+   EXPECT: Stack trace showing which line crashes
+   ```
+3. After finding error, states theory
+4. Makes fix with prediction:
+   ```
+   DOING: Add null check to avatar access
+   EXPECT: Component renders without error when avatar is null
+   ```
 5. Runs code to verify
-6. Commits when working
+6. Reports:
+   ```
+   RESULT: ✓ No crash, shows default avatar
+   MATCHES: Yes
+   ```
 
-If any step is skipped: integration needs adjustment.
+**Red flags (protocol not followed):**
+- ❌ Edits code without reading error
+- ❌ No DOING/EXPECT statements
+- ❌ Doesn't run code to verify
+- ❌ Makes assumptions without testing
+
+### Test Scenario: Failure Handling
+
+Give this task that will fail:
+
+```
+"Install the package 'nonexistent-npm-package-xyz'"
+```
+
+**Expected behavior:**
+
+1. Agent attempts install with prediction:
+   ```
+   DOING: npm install nonexistent-npm-package-xyz
+   EXPECT: Package added to package.json, node_modules updated
+   ```
+2. After failure, agent STOPS:
+   ```
+   RESULT: Exit 1, error "404 Not Found - GET https://registry.npmjs.org/nonexistent-npm-package-xyz"
+   MATCHES: No
+
+   STOP. Package doesn't exist in npm registry.
+
+   Theory: Package name is incorrect or doesn't exist.
+
+   Propose: Check if package name is correct, or try alternative package.
+
+   Proceed?
+   ```
+
+**Red flags:**
+- ❌ Retries silently
+- ❌ Tries alternatives without explaining
+- ❌ Doesn't stop and ask
+
+### Validation Checklist
+
+Use this to verify integration is working:
+
+```
+Protocol Behavior Checklist:
+
+☐ Agent states DOING/EXPECT before risky actions
+☐ Agent reports RESULT/MATCHES after actions
+☐ Agent STOPS when predictions don't match
+☐ On failure: States what failed (raw error)
+☐ On failure: Theorizes why it failed
+☐ On failure: Proposes fix with prediction
+☐ On failure: Waits for confirmation
+☐ Agent says "I don't know" when uncertain
+☐ Agent checkpoints every 3 actions
+☐ Agent stops at 10 actions to report findings
+☐ Predictions are falsifiable (not "does something")
+☐ No silent retries on failures
+
+If any checklist item fails: integration needs adjustment.
 ```
 
 ---
 
-## Troubleshooting
+## Common Issues & Fixes
 
-### Problem: Agent ignores protocol
+### Issue: Agent skips DOING/EXPECT
 
-**Solution:**
-- Verify protocol is in system prompt/instructions
-- Re-inject protocol at conversation start
-- Reference specific sections ("Per CLAUDE.MD Section II...")
+**Symptom:** Agent just does things without stating expectations
 
-### Problem: Agent asks too many questions
+**Fix:**
+```
+"Before you execute that, state:
+DOING: [what you're about to do]
+EXPECT: [specific, falsifiable prediction]
 
-**Solution:**
-- Invoke Section XI ("when to break rules")
-- Clarify scope upfront ("this is a simple fix, proceed without asking")
-- Adjust hard stop thresholds (e.g., 5 files instead of 3)
+Be concrete. What output? What error? What file changes?"
+```
 
-### Problem: Agent doesn't verify changes
+### Issue: Predictions are not falsifiable
 
-**Solution:**
-- Explicitly request: "Run the code to verify (Section I.6)"
-- Provide verification commands in protocol
-- Make verification a hard requirement in system prompt
+**Symptom:** "Expect: it will work or fail"
+
+**Fix:**
+```
+"That prediction matches any outcome, so it's not a prediction.
+
+What specifically do you expect?
+- Exit code?
+- Output text?
+- File contents?
+- Error message?
+
+Be concrete enough that I could verify it's wrong."
+```
+
+### Issue: Agent doesn't stop on failure
+
+**Symptom:** Keeps trying fixes without asking
+
+**Fix:**
+```
+"STOP. You just had a prediction mismatch.
+
+Per CLAUDE.MD protocol:
+1. STOP (no more actions)
+2. STATE: What failed
+3. THEORIZE: Why it failed
+4. PROPOSE: What to try
+5. WAIT: For my OK
+
+Do that now."
+```
+
+### Issue: Agent confabulates
+
+**Symptom:** "It's probably X, maybe Y, could be Z..."
+
+**Fix:**
+```
+"Do you KNOW or are you GUESSING?
+
+Protocol: 'I don't know' is valid.
+
+What have you:
+- Verified (tested, observed)?
+- Ruled out (tested, disproven)?
+- Not tested (theories only)?
+
+Be explicit about what's evidence vs theory."
+```
+
+### Issue: No checkpoints
+
+**Symptom:** Makes 10 changes then runs everything
+
+**Fix:**
+```
+"Protocol: Checkpoint every 3 actions.
+
+You just made 10 changes without verifying.
+
+Revert to last known good state, then:
+- Actions 1-3 → verify
+- Actions 4-6 → verify
+- Actions 7-9 → verify
+
+Batch size is 3."
+```
 
 ---
 
-## Recommended Setup (All Platforms)
+## Quick Reference Card (Print/Screenshot)
 
-**Minimum setup:**
-1. Add CLAUDE.MD to repository root
-2. Add protocol reference to system prompt
-3. Start sessions with "Follow CLAUDE.MD protocol"
-
-**Optimal setup:**
-1. Add CLAUDE.MD to repository root
-2. Create platform-specific config (.cursorrules, .aider.conf.yml, etc.)
-3. Add protocol to custom instructions/system message
-4. Include in project knowledge/context
-5. Create quick reference card (print or screenshot)
-6. Review examples in CLAUDE_PROTOCOL_EXAMPLES.md
-7. Track metrics (protocol-metrics.md)
+```
+╔════════════════════════════════════════════════════════╗
+║         CLAUDE.MD v2.0 QUICK REFERENCE                 ║
+╠════════════════════════════════════════════════════════╣
+║ BEFORE ACTION (medium+ risk)                           ║
+║   DOING: [specific action]                             ║
+║   EXPECT: [falsifiable prediction]                     ║
+╠════════════════════════════════════════════════════════╣
+║ AFTER ACTION                                           ║
+║   RESULT: [what happened]                              ║
+║   MATCHES: [yes/no]                                    ║
+║   → If no: STOP immediately                            ║
+╠════════════════════════════════════════════════════════╣
+║ ON FAILURE                                             ║
+║   1. STOP (no more tool calls)                         ║
+║   2. STATE: What failed (raw error)                    ║
+║   3. THEORIZE: Why it failed                           ║
+║   4. PROPOSE: What to try (with prediction)            ║
+║   5. WAIT: For Q confirmation                          ║
+╠════════════════════════════════════════════════════════╣
+║ CHECKPOINTS & TIMEBOXES                                ║
+║   □ Every 3 actions: verify against reality            ║
+║   □ Every 10 actions: stop and report findings         ║
+║   □ Checkpoint = run something observable              ║
+╠════════════════════════════════════════════════════════╣
+║ UNCERTAINTY                                            ║
+║   "I believe X" = unverified theory                    ║
+║   "I verified X" = tested, observed                    ║
+║   "I don't know" = valid, honest                       ║
+╠════════════════════════════════════════════════════════╣
+║ RISK LEVELS                                            ║
+║   Trivial: no ceremony                                 ║
+║   Low: brief prediction                                ║
+║   Medium: full DOING/EXPECT/RESULT                     ║
+║   High: + explicit confirmation                        ║
+║   Irreversible: STOP, verify, design for undo          ║
+╚════════════════════════════════════════════════════════╝
+```
 
 ---
 
-**Version:** 1.0
-**Last Updated:** 2025-12-02
+**Version:** 2.0
+**Last Updated:** 2025-12-03
 **Related Documents:**
-- `/CLAUDE.MD` - Core protocol
-- `/docs/CLAUDE_PROTOCOL_USAGE.md` - Usage guide
-- `/docs/CLAUDE_PROTOCOL_EXAMPLES.md` - Code examples
+- `/CLAUDE.MD` (core protocol)
+- `/docs/CLAUDE_PROTOCOL_USAGE.md` (usage guide)
+- `/docs/CLAUDE_PROTOCOL_EXAMPLES.md` (code examples)
